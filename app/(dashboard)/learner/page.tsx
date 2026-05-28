@@ -1,8 +1,10 @@
 import { requireAuth } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
-import { GradeBadge, StatusBadge } from '@/components/ui/Badge';
-import { fmt } from '@/utils';
-import { CalendarCheck2, BarChart3, FolderKanban, TrendingUp } from 'lucide-react';
+import { redirect } from 'next/navigation';
+
+export default async function LearnerPortalPage() {
+  await requireAuth(['learner']);
+  redirect('/student');
+}
 
 async function getLearnerData(userId: string) {
   const supabase = await createClient();
