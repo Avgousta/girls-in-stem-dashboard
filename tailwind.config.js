@@ -11,7 +11,11 @@ module.exports = {
         },
         mint: { 400: '#2DD4A0', 500: '#10b981', 600: '#059669' },
       },
-      fontFamily: { sans: ['var(--font-inter)', 'sans-serif'] },
+      fontFamily: {
+        sans:    ['var(--font-inter)', 'sans-serif'],
+        display: ['var(--font-playfair)', 'serif'],
+        body:    ['var(--font-dm-sans)', 'sans-serif'],
+      },
     },
   },
   plugins: [],

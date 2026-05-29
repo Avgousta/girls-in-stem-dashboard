@@ -20,9 +20,9 @@ const ROLE_HOME: Record<string, string> = {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Redirect bare root to dashboard (layout will redirect to login if unauth'd)
+  // Landing page is public — serve it directly.
   if (pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.next();
   }
 
   // Allow public paths and static assets through without auth checks.
