@@ -10,7 +10,16 @@
       "Bash(npm run *)",
       "Bash(./node_modules/.bin/next build *)",
       "Bash(npm install *)",
-      "Bash(sed -i \"s|from '@/lib/data'|from '@/lib/server-data'|g\" ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/candidates/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/candidates/\\\\[id\\\\]/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/dashboard/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/reports/page.tsx && echo \"Done\")"
+      "Bash(sed -i \"s|from '@/lib/data'|from '@/lib/server-data'|g\" ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/candidates/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/candidates/\\\\[id\\\\]/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/dashboard/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/reports/page.tsx && echo \"Done\")",
+      "Bash(gh repo *)",
+      "Bash(ls ~/girls-stem-dashboard/CLAUDE.md ~/CLAUDE.md 2>&1 && echo \"---\" && pwd)",
+      "Bash(npm i *)",
+      "Bash(vercel link *)",
+      "Bash(vercel --prod)",
+      "Bash(vercel logs *)",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__get_deployment_build_logs",
+      "Bash(vercel inspect *)",
+      "Bash(vercel ls *)"
     ]
   }
 }
