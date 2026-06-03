@@ -21,89 +21,70 @@ const ROLE_HOME: Record<string, string> = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths and static assets through without auth checks.
-  if (
-    PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/')) ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/')
-  ) {
-    // Still refresh session cookies on public paths so tokens stay fresh
-    const response = NextResponse.next({ request: { headers: request.headers } });
-
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        {
-          cookies: {
-            getAll: () => request.cookies.getAll(),
-            setAll: (cookies) => {
-              cookies.forEach(({ name, value, options }) =>
-                response.cookies.set(name, value, options)
-              );
-            },
-          },
-        }
-      );
-    }
-
-    return response;
-  }
-
-  // For all protected paths — check session and refresh cookies
+  // Always build a response that can carry refreshed cookies
   const response = NextResponse.next({ request: { headers: request.headers } });
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return response;
-  }
+  const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookies) => {
-          cookies.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
+  // If env vars missing, allow everything through (misconfiguration — don't block users)
+  if (!SUPA_URL || !SUPA_ANON) return response;
+
+  // Create client — this MUST run on every request to keep session cookies fresh
+  const supabase = createServerClient(SUPA_URL, SUPA_ANON, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (cookiesToSet) => {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
+        });
       },
-    }
-  );
+    },
+  });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use getSession() for middleware — reads from cookie, no extra network round-trip.
+  // (getUser() makes a server-side JWT validation call which can fail under latency.)
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (!user) {
+  const isPublic =
+    PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/')) ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/');
+
+  // Unauthenticated on a protected route → redirect to login
+  if (!session && !isPublic) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role, is_active')
-    .eq('user_id', user.id)
-    .single();
+  // Authenticated — enforce role-based portal access
+  if (session && !isPublic) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role, is_active')
+      .eq('user_id', session.user.id)
+      .single();
 
-  if (!profile) return response;
+    if (profile && !profile.is_active) {
+      return NextResponse.redirect(new URL('/login?error=pending_approval', request.url));
+    }
 
-  if (!profile.is_active) {
-    return NextResponse.redirect(new URL('/login?error=pending_approval', request.url));
-  }
+    if (profile) {
+      const role     = profile.role as string;
+      const roleHome = ROLE_HOME[role] ?? '/dashboard';
 
-  const role     = profile.role as string;
-  const roleHome = ROLE_HOME[role] ?? '/dashboard';
+      const wrongPortal =
+        (role === 'learner'    && (pathname.startsWith('/dashboard') || pathname.startsWith('/teacher') || pathname.startsWith('/sponsor') || pathname.startsWith('/admin'))) ||
+        (role === 'instructor' && (pathname.startsWith('/student')   || pathname.startsWith('/sponsor') || pathname.startsWith('/admin'))) ||
+        (role === 'sponsor'    && (pathname.startsWith('/dashboard') || pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/admin'))) ||
+        (role === 'parent'     && (pathname.startsWith('/dashboard') || pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/sponsor') || pathname.startsWith('/admin')));
 
-  // Redirect users who hit the wrong portal
-  const wrongPortal =
-    (role === 'learner'    && (pathname.startsWith('/dashboard') || pathname.startsWith('/teacher') || pathname.startsWith('/sponsor') || pathname.startsWith('/admin'))) ||
-    (role === 'instructor' && (pathname.startsWith('/student')   || pathname.startsWith('/sponsor') || pathname.startsWith('/admin')))   ||
-    (role === 'sponsor'    && (pathname.startsWith('/dashboard') || pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/admin'))) ||
-    (role === 'parent'     && (pathname.startsWith('/dashboard') || pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/sponsor') || pathname.startsWith('/admin')));
-
-  if (wrongPortal) {
-    return NextResponse.redirect(new URL(roleHome, request.url));
+      if (wrongPortal) {
+        return NextResponse.redirect(new URL(roleHome, request.url));
+      }
+    }
   }
 
   return response;
