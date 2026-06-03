@@ -4,10 +4,50 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Loader2, AlertTriangle, BookOpen, CalendarCheck2,
-  AlertOctagon, MessageCircle, Monitor, FileText,
+  AlertOctagon, MessageCircle, Monitor, FileText, Wand2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
+
+// ─── Intervention Templates ───────────────────────────────────────────────────
+const TEMPLATES = [
+  {
+    label: 'Academic Underperformance — First Warning',
+    type: 'academic', priority: 'medium',
+    reason: 'Learner\'s assessment scores have dropped below 50% across two consecutive assessments. Current average score is below the programme threshold.',
+    action_plan: '1. One-on-one academic support session within 3 days\n2. Review areas of difficulty with instructor\n3. Create a personalised study plan\n4. Follow up in 2 weeks to assess improvement',
+  },
+  {
+    label: 'Chronic Absenteeism',
+    type: 'attendance', priority: 'high',
+    reason: 'Learner has missed 3 or more consecutive sessions without communication. Attendance rate has dropped below 75%, putting programme standing at risk.',
+    action_plan: '1. Contact learner and guardian/parent within 24 hours\n2. Understand the cause of absences\n3. Create an attendance improvement plan\n4. Schedule catch-up sessions for missed content',
+  },
+  {
+    label: 'Engagement Drop — At Risk of Disengagement',
+    type: 'personal', priority: 'medium',
+    reason: 'Learner has shown a marked decline in participation, assignment submission, and engagement with platform activities. Mentor has flagged concern.',
+    action_plan: '1. Empathetic one-on-one check-in (non-academic focus)\n2. Identify barriers — personal, family, or technical\n3. Connect with mentor for additional support\n4. Review workload and adjust expectations if needed',
+  },
+  {
+    label: 'Critical Academic Failure — Immediate Support',
+    type: 'academic', priority: 'critical',
+    reason: 'Learner is failing all assessed areas with scores below 40%. Without immediate intervention, learner is at risk of programme dismissal.',
+    action_plan: '1. Emergency support session today or tomorrow\n2. Notify programme coordinator\n3. Develop an intensive remediation plan\n4. Daily check-ins for the next 2 weeks\n5. Consider reducing workload while rebuilding fundamentals',
+  },
+  {
+    label: 'Technical Barrier — Device or Connectivity',
+    type: 'technical', priority: 'medium',
+    reason: 'Learner has reported persistent issues accessing the platform due to device failure or unreliable internet connectivity. This is impacting participation.',
+    action_plan: '1. Assess the specific technical issue\n2. Coordinate with programme office for device/data support\n3. Provide offline alternatives where possible\n4. Follow up within 5 days to confirm resolution',
+  },
+  {
+    label: 'Behavioural Concern — Peer or Instructor Conflict',
+    type: 'behavioural', priority: 'high',
+    reason: 'Learner has had a reported conflict with a peer or instructor that is impacting their and others\' learning environment. Situation requires structured follow-up.',
+    action_plan: '1. Private meeting with learner to hear their perspective\n2. Mediation session with all parties if appropriate\n3. Set clear behavioural expectations going forward\n4. Monitor for 2 weeks; escalate if behaviour continues',
+  },
+] as const;
 
 interface Props {
   learners:       Array<{ learner_id:string; full_name:string; school:string }>;
@@ -48,7 +88,21 @@ export default function NewInterventionForm({ learners, instructors, preselected
     status:            'open',
   });
 
+  const [showTemplates, setShowTemplates] = useState(false);
+
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const applyTemplate = (t: typeof TEMPLATES[number]) => {
+    setForm(f => ({
+      ...f,
+      intervention_type: t.type,
+      priority:          t.priority,
+      reason:            t.reason,
+      action_plan:       t.action_plan,
+    }));
+    setShowTemplates(false);
+    toast.success(`Template applied: ${t.label}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +144,42 @@ export default function NewInterventionForm({ learners, instructors, preselected
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
+      {/* Templates */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setShowTemplates(s => !s)}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+          style={{ background: DS.primaryLight, color: DS.primary, border:`1px solid ${DS.primaryBorder}` }}
+        >
+          <span className="flex items-center gap-2">
+            <Wand2 className="w-4 h-4" />
+            Use a Template — pre-fill common scenarios
+          </span>
+          {showTemplates ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+        {showTemplates && (
+          <div className="mt-2 rounded-xl overflow-hidden" style={{ border:`1px solid ${DS.border}` }}>
+            {TEMPLATES.map((t, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => applyTemplate(t)}
+                className="w-full text-left px-4 py-3.5 transition-all cursor-pointer border-b last:border-b-0"
+                style={{ borderColor: DS.borderLight, background: 'transparent' }}
+                onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.background = DS.surfaceHover; }}
+                onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              >
+                <p className="text-sm font-semibold" style={{ color: DS.text }}>{t.label}</p>
+                <p className="text-xs mt-0.5 capitalize" style={{ color: DS.textMuted }}>
+                  {t.type} · {t.priority} priority
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Learner */}
       <div>

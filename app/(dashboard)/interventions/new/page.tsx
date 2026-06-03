@@ -27,19 +27,21 @@ export default async function NewInterventionPage({ searchParams }: Props) {
     <div className="max-w-2xl space-y-6">
       <div>
         <Link href={preselected ? `/learners/${learner}` : '/interventions'}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
+          className="inline-flex items-center gap-1.5 text-sm mb-4 hover:underline"
+          style={{ color: 'var(--ds-text-mid)' }}>
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <AlertTriangle className="w-6 h-6 text-amber-500" /> Log Intervention
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
+          <AlertTriangle className="w-6 h-6" style={{ color: 'var(--ds-warn)' }} />
+          Log Intervention
         </h1>
         {preselected && (
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-mid)' }}>
             For <strong>{(preselected as any).learner_profiles?.first_name} {(preselected as any).learner_profiles?.last_name}</strong>
           </p>
         )}
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div className="rounded-2xl p-6" style={{ background: 'var(--ds-surface)', border: '1px solid var(--ds-border)' }}>
         <NewInterventionForm
           learners={(learnersRes.data || []).map((l: any) => ({
             learner_id: l.learner_id,

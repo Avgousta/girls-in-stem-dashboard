@@ -6,6 +6,8 @@ const updateSchema = z.object({
   action_taken:   z.string().optional(),
   follow_up_date: z.string().optional(),
   status:         z.enum(['open', 'in_progress', 'resolved']).optional(),
+  assigned_to:    z.string().uuid().optional(),
+  priority:       z.enum(['low', 'medium', 'high', 'critical']).optional(),
 });
 
 interface Params { params: Promise<{ id: string }> }
