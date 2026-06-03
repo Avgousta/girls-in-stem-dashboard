@@ -1,24 +1,28 @@
-// Design tokens — no 'use client' directive so server components can import
+// Design tokens backed by CSS custom properties — theme-aware.
+// The CSS vars are defined in app/globals.css for dark (default) and
+// [data-theme="light"]. Components reference DS.* as inline style values
+// and they automatically respond to theme changes.
+
 export const DS = {
-  bg:            '#0C0919',
-  bg2:           '#160B2E',
-  sidebar:       '#080514',
-  surface:       'rgba(255,255,255,0.05)',
-  surfaceHover:  'rgba(255,255,255,0.08)',
-  border:        'rgba(255,255,255,0.09)',
-  borderLight:   'rgba(255,255,255,0.05)',
-  primary:       '#7C3AED',
-  primaryLight:  'rgba(124,58,237,0.15)',
-  primaryBorder: 'rgba(124,58,237,0.4)',
-  text:          '#F0EEFF',
-  textMid:       'rgba(240,238,255,0.65)',
-  textMuted:     'rgba(240,238,255,0.4)',
-  danger:        '#F87171',
-  dangerLight:   'rgba(248,113,113,0.15)',
-  warn:          '#FBBF24',
-  warnLight:     'rgba(251,191,36,0.15)',
-  success:       '#34D399',
-  successLight:  'rgba(52,211,153,0.15)',
-  purple:        '#A78BFA',
-  purpleLight:   'rgba(167,139,250,0.15)',
+  bg:            'var(--ds-bg)',
+  bg2:           'var(--ds-bg2)',
+  sidebar:       'var(--ds-sidebar)',
+  surface:       'var(--ds-surface)',
+  surfaceHover:  'var(--ds-surface-hover)',
+  border:        'var(--ds-border)',
+  borderLight:   'var(--ds-border-light)',
+  primary:       '#7C3AED',                  // violet — works on both themes
+  primaryLight:  'var(--ds-primary-light)',
+  primaryBorder: 'var(--ds-primary-border)',
+  text:          'var(--ds-text)',
+  textMid:       'var(--ds-text-mid)',
+  textMuted:     'var(--ds-text-muted)',
+  danger:        'var(--ds-danger)',
+  dangerLight:   'var(--ds-danger-light)',
+  warn:          'var(--ds-warn)',
+  warnLight:     'var(--ds-warn-light)',
+  success:       'var(--ds-success)',
+  successLight:  'var(--ds-success-light)',
+  purple:        'var(--ds-purple)',
+  purpleLight:   'var(--ds-purple-light)',
 } as const;

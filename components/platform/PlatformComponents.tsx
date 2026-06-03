@@ -69,7 +69,7 @@ export function CardHeader({ title, sub, action }: { title: string; sub?: string
     <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3"
       style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
       <div>
-        <p className="text-sm font-bold uppercase tracking-wider" style={{ color: 'rgba(240,238,255,0.6)' }}>{title}</p>
+        <p className="text-sm font-bold uppercase tracking-wider" style={{ color: DS.textMid }}>{title}</p>
         {sub && <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{sub}</p>}
       </div>
       {action && <div>{action}</div>}
@@ -88,16 +88,17 @@ export function ProgressBar({ value, color = DS.primary }: { value: number; colo
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
+// Status map uses CSS custom properties so colours adapt to the current theme
 const STATUS_MAP: Record<string, { bg: string; color: string; dot: string }> = {
-  active:    { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
-  inactive:  { bg: 'rgba(255,255,255,0.08)',  color: 'rgba(240,238,255,0.5)', dot: 'rgba(240,238,255,0.3)' },
-  high:      { bg: 'rgba(248,113,113,0.15)',  color: '#F87171', dot: '#F87171' },
-  medium:    { bg: 'rgba(251,191,36,0.15)',   color: '#FBBF24', dot: '#FBBF24' },
-  low:       { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
-  open:      { bg: 'rgba(248,113,113,0.15)',  color: '#F87171', dot: '#F87171' },
-  resolved:  { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
-  pending:   { bg: 'rgba(251,191,36,0.15)',   color: '#FBBF24', dot: '#FBBF24' },
-  completed: { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
+  active:    { bg: 'var(--ds-status-active-bg)',   color: 'var(--ds-status-active-text)',   dot: 'var(--ds-status-active-dot)' },
+  inactive:  { bg: 'var(--ds-status-inactive-bg)', color: 'var(--ds-status-inactive-text)', dot: 'var(--ds-status-inactive-dot)' },
+  high:      { bg: 'var(--ds-status-high-bg)',      color: 'var(--ds-status-high-text)',      dot: 'var(--ds-status-high-dot)' },
+  medium:    { bg: 'var(--ds-status-medium-bg)',    color: 'var(--ds-status-medium-text)',    dot: 'var(--ds-status-medium-dot)' },
+  low:       { bg: 'var(--ds-status-low-bg)',       color: 'var(--ds-status-low-text)',       dot: 'var(--ds-status-low-dot)' },
+  open:      { bg: 'var(--ds-status-high-bg)',      color: 'var(--ds-status-high-text)',      dot: 'var(--ds-status-high-dot)' },
+  resolved:  { bg: 'var(--ds-status-active-bg)',    color: 'var(--ds-status-active-text)',    dot: 'var(--ds-status-active-dot)' },
+  pending:   { bg: 'var(--ds-status-medium-bg)',    color: 'var(--ds-status-medium-text)',    dot: 'var(--ds-status-medium-dot)' },
+  completed: { bg: 'var(--ds-status-active-bg)',    color: 'var(--ds-status-active-text)',    dot: 'var(--ds-status-active-dot)' },
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {

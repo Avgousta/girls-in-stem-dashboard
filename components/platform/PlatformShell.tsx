@@ -3,11 +3,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useTheme } from '@/components/ThemeProvider';
 import {
   LayoutDashboard, Users, BookOpen, CalendarCheck2, BarChart3,
   HeartHandshake, AlertTriangle, FolderKanban, School, Settings,
   GraduationCap, LogOut, UserCheck, Award, FileText, Bell, Video,
-  ChevronDown, Menu, X, TrendingUp, Building2, ShieldCheck, Activity
+  ChevronDown, Menu, X, TrendingUp, Building2, ShieldCheck, Activity,
+  Sun, Moon,
 } from 'lucide-react';
 
 // ─── Design tokens (shared across all portals) ───────────────────────────────
@@ -61,6 +63,7 @@ export default function PlatformShell({
 }: Props) {
   const pathname  = usePathname();
   const router    = useRouter();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const nav = role === 'admin' ? ADMIN_NAV : INSTRUCTOR_NAV;
@@ -192,6 +195,21 @@ export default function PlatformShell({
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="p-2 rounded-xl transition-all duration-200 cursor-pointer"
+              style={{ color: DS.textMid, background: 'transparent' }}
+              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--ds-surface-hover)'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >
+              {theme === 'dark'
+                ? <Sun className="w-4 h-4" />
+                : <Moon className="w-4 h-4" />
+              }
+            </button>
+
             {/* Notification bell */}
             <Link href={role === 'admin' ? '/notifications' : '/notifications'}
               className="relative p-2 rounded-xl transition-colors hover:bg-white/8"
