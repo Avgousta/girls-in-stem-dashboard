@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = [
@@ -21,30 +21,35 @@ const ROLE_HOME: Record<string, string> = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Always build a response that can carry refreshed cookies
+  // Always build a mutable response so we can refresh session cookies on it
   const response = NextResponse.next({ request: { headers: request.headers } });
 
   const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // If env vars missing, allow everything through (misconfiguration — don't block users)
+  // If env vars missing don't block anything — misconfiguration shouldn't lock users out
   if (!SUPA_URL || !SUPA_ANON) return response;
 
-  // Create client — this MUST run on every request to keep session cookies fresh
+  // Must create the client on EVERY request so expired tokens get refreshed and
+  // new cookies are written back to the response (critical for session persistence).
   const supabase = createServerClient(SUPA_URL, SUPA_ANON, {
     cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          request.cookies.set(name, value);
-          response.cookies.set(name, value, options);
-        });
+      // @supabase/ssr v0.3.x uses get/set/remove (not getAll/setAll)
+      get(name: string) {
+        return request.cookies.get(name)?.value;
+      },
+      set(name: string, value: string, options: CookieOptions) {
+        request.cookies.set({ name, value, ...options } as any);
+        response.cookies.set({ name, value, ...options } as any);
+      },
+      remove(name: string, options: CookieOptions) {
+        request.cookies.set({ name, value: '', ...options } as any);
+        response.cookies.set({ name, value: '', ...options } as any);
       },
     },
   });
 
-  // Use getSession() for middleware — reads from cookie, no extra network round-trip.
-  // (getUser() makes a server-side JWT validation call which can fail under latency.)
+  // getSession reads from the cookie — no extra network call
   const { data: { session } } = await supabase.auth.getSession();
 
   const isPublic =
@@ -52,14 +57,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/');
 
-  // Unauthenticated on a protected route → redirect to login
+  // Unauthenticated on a protected route → send to login
   if (!session && !isPublic) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authenticated — enforce role-based portal access
+  // Authenticated — enforce role-based portal access on protected routes
   if (session && !isPublic) {
     const { data: profile } = await supabase
       .from('users')
