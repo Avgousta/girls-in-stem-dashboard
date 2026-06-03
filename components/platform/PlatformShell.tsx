@@ -80,11 +80,11 @@ export default function PlatformShell({
 
   const initials = userName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
   const roleLabel = role === 'admin' ? 'Administrator' : 'Instructor';
-  const roleColor = role === 'admin' ? DS.primary : '#059669';
+  const roleColor = role === 'admin' ? DS.primary : '#34D399';
 
   // Sidebar content (shared between mobile drawer + desktop)
   const SidebarContent = () => (
-    <div className="flex flex-col h-full" style={{ background: DS.text }}>
+    <div className="flex flex-col h-full" style={{ background: DS.sidebar }}>
 
       {/* Brand */}
       <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -121,11 +121,11 @@ export default function PlatformShell({
                 onClick={() => setSidebarOpen(false)}
                 className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 group"
                 style={{
-                  background:  isActive ? `${DS.primary}25` : 'transparent',
-                  color:       isActive ? '#93C5FD' : 'rgba(255,255,255,0.55)',
+                  background:  isActive ? 'rgba(124,58,237,0.18)' : 'transparent',
+                  color:       isActive ? '#C4B5FD' : 'rgba(255,255,255,0.55)',
                 }}>
                 <Icon className="w-4 h-4 shrink-0 transition-colors"
-                  style={{ color: isActive ? '#60A5FA' : 'rgba(255,255,255,0.35)' }} />
+                  style={{ color: isActive ? '#A78BFA' : 'rgba(255,255,255,0.35)' }} />
                 <span className="flex-1 truncate">{item.label}</span>
                 {badge > 0 && (
                   <span className="text-[10px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
@@ -161,7 +161,7 @@ export default function PlatformShell({
   );
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: DS.bg, fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: DS.bg, fontFamily: "'Plus Jakarta Sans','DM Sans',sans-serif" }}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -182,7 +182,7 @@ export default function PlatformShell({
           style={{ background: DS.surface, borderBottom: `1px solid ${DS.border}` }}>
 
           {/* Mobile menu button */}
-          <button onClick={() => setSidebarOpen(p => !p)} className="md:hidden p-1.5 rounded-lg hover:bg-gray-100">
+          <button onClick={() => setSidebarOpen(p => !p)} className="md:hidden p-1.5 rounded-lg hover:bg-white/10">
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
@@ -194,7 +194,7 @@ export default function PlatformShell({
           <div className="flex items-center gap-2 ml-auto">
             {/* Notification bell */}
             <Link href={role === 'admin' ? '/notifications' : '/notifications'}
-              className="relative p-2 rounded-xl transition-colors hover:bg-gray-50"
+              className="relative p-2 rounded-xl transition-colors hover:bg-white/8"
               title="Notifications">
               <Bell className="w-4 h-4" style={{ color: DS.textMid }} />
               {(unreadNotifications + (role === 'admin' ? pendingApprovals : 0)) > 0 && (
@@ -204,8 +204,9 @@ export default function PlatformShell({
 
             {/* Role chip */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold"
-              style={{ background: role === 'admin' ? DS.primaryLight : DS.successLight,
-                       color: role === 'admin' ? DS.primary : DS.success }}>
+              style={role === 'admin'
+                ? { background: 'rgba(124,58,237,0.2)', color: '#C4B5FD' }
+                : { background: 'rgba(52,211,153,0.15)', color: '#34D399' }}>
               {role === 'admin' ? <ShieldCheck className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
               {roleLabel}
             </div>
@@ -228,7 +229,7 @@ export default function PlatformShell({
         {role === 'admin' && pendingApprovals > 0 && (
           <Link href="/admin/approvals"
             className="flex items-center gap-3 px-6 py-2.5 text-sm transition-colors hover:opacity-90"
-            style={{ background: '#FEF3C7', borderBottom: `1px solid #FDE68A`, color: '#92400E' }}>
+            style={{ background: 'rgba(251,191,36,0.12)', borderBottom: '1px solid rgba(251,191,36,0.2)', color: '#FCD34D' }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: DS.warn }} />
             <span className="font-semibold">
               {pendingApprovals} teacher registration{pendingApprovals > 1 ? 's' : ''} waiting for approval

@@ -44,7 +44,7 @@ export function PageHeader({ eyebrow, title, sub, actions }: {
       <div>
         {eyebrow && <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: DS.primary }}>{eyebrow}</p>}
         <h1 className="text-3xl font-black tracking-tight" style={{ color: DS.text }}>{title}</h1>
-        {sub && <p className="text-sm mt-1" style={{ color: '#64748B' }}>{sub}</p>}
+        {sub && <p className="text-sm mt-1" style={{ color: 'rgba(240,238,255,0.6)' }}>{sub}</p>}
       </div>
       {actions && <div className="flex gap-2 flex-wrap items-center">{actions}</div>}
     </div>
@@ -69,7 +69,7 @@ export function CardHeader({ title, sub, action }: { title: string; sub?: string
     <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3"
       style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
       <div>
-        <p className="text-sm font-bold uppercase tracking-wider" style={{ color: '#64748B' }}>{title}</p>
+        <p className="text-sm font-bold uppercase tracking-wider" style={{ color: 'rgba(240,238,255,0.6)' }}>{title}</p>
         {sub && <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{sub}</p>}
       </div>
       {action && <div>{action}</div>}
@@ -89,15 +89,15 @@ export function ProgressBar({ value, color = DS.primary }: { value: number; colo
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const STATUS_MAP: Record<string, { bg: string; color: string; dot: string }> = {
-  active:    { bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
-  inactive:  { bg: DS.borderLight, color: DS.textMuted, dot: DS.textMuted },
-  high:      { bg: '#FEF2F2', color: '#DC2626', dot: '#EF4444' },
-  medium:    { bg: '#FFFBEB', color: '#D97706', dot: '#F59E0B' },
-  low:       { bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
-  open:      { bg: '#FEF2F2', color: '#DC2626', dot: '#EF4444' },
-  resolved:  { bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
-  pending:   { bg: '#FFFBEB', color: '#D97706', dot: '#F59E0B' },
-  completed: { bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
+  active:    { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
+  inactive:  { bg: 'rgba(255,255,255,0.08)',  color: 'rgba(240,238,255,0.5)', dot: 'rgba(240,238,255,0.3)' },
+  high:      { bg: 'rgba(248,113,113,0.15)',  color: '#F87171', dot: '#F87171' },
+  medium:    { bg: 'rgba(251,191,36,0.15)',   color: '#FBBF24', dot: '#FBBF24' },
+  low:       { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
+  open:      { bg: 'rgba(248,113,113,0.15)',  color: '#F87171', dot: '#F87171' },
+  resolved:  { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
+  pending:   { bg: 'rgba(251,191,36,0.15)',   color: '#FBBF24', dot: '#FBBF24' },
+  completed: { bg: 'rgba(52,211,153,0.15)',   color: '#34D399', dot: '#34D399' },
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
@@ -148,7 +148,7 @@ export function DataTable({ headers, children, footer }: {
       </table>
       {footer && (
         <div className="px-5 py-3 text-xs text-center"
-          style={{ borderTop: `1px solid ${DS.borderLight}`, color: DS.textMuted, background: '#F8FAFC' }}>
+          style={{ borderTop: `1px solid ${DS.borderLight}`, color: DS.textMuted, background: 'rgba(255,255,255,0.03)' }}>
           {footer}
         </div>
       )}
@@ -157,7 +157,7 @@ export function DataTable({ headers, children, footer }: {
 }
 
 export function TR({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
-  return <tr style={{ borderBottom: `1px solid #F8FAFC`, ...style }}>{children}</tr>;
+  return <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.05)`, ...style }}>{children}</tr>;
 }
 
 export function TD({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -208,7 +208,7 @@ export function EmptyState({ icon, title, sub }: { icon: string; title: string; 
   return (
     <div className="text-center py-20 rounded-2xl" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
       <div className="text-4xl mb-3">{icon}</div>
-      <p className="font-semibold" style={{ color: '#64748B' }}>{title}</p>
+      <p className="font-semibold" style={{ color: 'rgba(240,238,255,0.6)' }}>{title}</p>
       {sub && <p className="text-sm mt-1" style={{ color: DS.textMuted }}>{sub}</p>}
     </div>
   );

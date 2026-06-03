@@ -8,6 +8,9 @@ import { cn } from '@/utils';
 
 type Role = 'learner' | 'instructor';
 
+const DARK_BG = 'linear-gradient(160deg, #0F0820 0%, #1C0B38 50%, #2D1B4E 100%)';
+const GLASS = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' };
+
 export default function RegisterPage() {
   const [role,        setRole]        = useState<Role>('learner');
   const [step,        setStep]        = useState<1|2>(1);
@@ -106,16 +109,18 @@ export default function RegisterPage() {
   };
 
   if (done) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 px-4">
+    <div className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: DARK_BG, fontFamily: "'Plus Jakarta Sans','DM Sans',sans-serif" }}>
       <div className="w-full max-w-md text-center">
-        <div className="bg-white rounded-2xl shadow-2xl p-10">
-          <div className="w-16 h-16 rounded-full bg-mint-400/20 flex items-center justify-center mx-auto mb-4">
-            <UserCheck className="w-8 h-8 text-mint-500" />
+        <div className="rounded-2xl p-10" style={GLASS}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(52,211,153,0.15)' }}>
+            <UserCheck className="w-8 h-8" style={{ color: '#34D399' }} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {role === 'instructor' ? 'Application Submitted!' : 'Welcome Aboard! 🎉'}
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {role === 'instructor' ? 'Application Submitted!' : 'Welcome Aboard!'}
           </h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-sm mb-6" style={{ color: 'rgba(240,238,255,0.6)' }}>
             {role === 'instructor'
               ? 'Your teacher account is pending approval by an administrator. You\'ll receive an email once approved.'
               : 'Your account is ready. Please check your email to verify your address, then sign in.'
@@ -130,32 +135,38 @@ export default function RegisterPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8"
+      style={{ background: DARK_BG, fontFamily: "'Plus Jakarta Sans','DM Sans',sans-serif" }}>
       <div className="w-full max-w-md">
 
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-mint-400/20 mb-3">
-            <GraduationCap className="w-7 h-7 text-mint-400" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
+            style={{ background: 'rgba(124,58,237,0.2)' }}>
+            <GraduationCap className="w-7 h-7" style={{ color: '#A78BFA' }} />
           </div>
           <h1 className="text-2xl font-bold text-white">Girls in STEM</h1>
-          <p className="text-brand-200 text-sm">Create your account</p>
+          <p className="text-sm" style={{ color: 'rgba(240,238,255,0.5)' }}>Create your account</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="rounded-2xl p-8" style={GLASS}>
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-6">
             {[1,2].map(n => (
               <div key={n} className="flex items-center gap-2 flex-1">
-                <div className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                  step >= n ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-400'
-                )}>{n}</div>
-                <span className={cn('text-xs font-medium', step >= n ? 'text-brand-700' : 'text-gray-400')}>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                  style={step >= n
+                    ? { background: '#7C3AED', color: 'white' }
+                    : { background: 'rgba(255,255,255,0.1)', color: 'rgba(240,238,255,0.4)' }}>
+                  {n}
+                </div>
+                <span className="text-xs font-medium"
+                  style={{ color: step >= n ? '#C4B5FD' : 'rgba(240,238,255,0.4)' }}>
                   {n === 1 ? 'Account' : 'Profile'}
                 </span>
-                {n < 2 && <div className={cn('flex-1 h-0.5 rounded', step > n ? 'bg-brand-700' : 'bg-gray-200')} />}
+                {n < 2 && <div className="flex-1 h-0.5 rounded"
+                  style={{ background: step > n ? '#7C3AED' : 'rgba(255,255,255,0.1)' }} />}
               </div>
             ))}
           </div>
@@ -165,28 +176,29 @@ export default function RegisterPage() {
             {step === 1 ? (
               <>
                 <div>
-                  <label className="form-label">Full Name <span className="text-red-500">*</span></label>
+                  <label className="form-label">Full Name <span style={{ color: '#F87171' }}>*</span></label>
                   <input value={form.full_name} onChange={e => set('full_name', e.target.value)}
                     className="form-input" placeholder="Nomvula Dlamini" />
                 </div>
                 <div>
-                  <label className="form-label">Email Address <span className="text-red-500">*</span></label>
+                  <label className="form-label">Email Address <span style={{ color: '#F87171' }}>*</span></label>
                   <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
                     className="form-input" placeholder="you@school.edu.za" />
                 </div>
                 <div>
-                  <label className="form-label">Password <span className="text-red-500">*</span></label>
+                  <label className="form-label">Password <span style={{ color: '#F87171' }}>*</span></label>
                   <div className="relative">
                     <input type={showPass ? 'text' : 'password'} value={form.password}
                       onChange={e => set('password', e.target.value)}
                       className="form-input pr-10" placeholder="Min 8 characters" />
                     <button type="button" onClick={() => setShowPass(p => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'rgba(240,238,255,0.4)' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                   {form.password.length > 0 && form.password.length < 8 && (
-                    <p className="text-xs text-red-500 mt-1">At least 8 characters required</p>
+                    <p className="text-xs mt-1" style={{ color: '#F87171' }}>At least 8 characters required</p>
                   )}
                 </div>
                 <div>
@@ -202,24 +214,25 @@ export default function RegisterPage() {
               <>
                 {/* Role selection */}
                 <div>
-                  <label className="form-label mb-2">I am a… <span className="text-red-500">*</span></label>
+                  <label className="form-label mb-2">I am a… <span style={{ color: '#F87171' }}>*</span></label>
                   <div className="grid grid-cols-2 gap-3">
                     {([
                       { value: 'learner',    label: 'Learner',    icon: GraduationCap, desc: 'I am a student in the programme' },
                       { value: 'instructor', label: 'Teacher',    icon: BookOpen,      desc: 'I teach / facilitate sessions' },
                     ] as const).map(({ value, label, icon: Icon, desc }) => (
                       <button key={value} type="button" onClick={() => handleRoleSelect(value)}
-                        className={cn(
-                          'border-2 rounded-xl p-3 text-left transition-all',
-                          role === value
-                            ? 'border-brand-600 bg-brand-50'
-                            : 'border-gray-200 hover:border-brand-300'
-                        )}>
-                        <Icon className={cn('w-5 h-5 mb-1.5', role === value ? 'text-brand-700' : 'text-gray-400')} />
-                        <p className={cn('text-sm font-semibold', role === value ? 'text-brand-800' : 'text-gray-700')}>
+                        className="rounded-xl p-3 text-left transition-all"
+                        style={{
+                          border: `2px solid ${role === value ? '#7C3AED' : 'rgba(255,255,255,0.12)'}`,
+                          background: role === value ? 'rgba(124,58,237,0.15)' : 'transparent',
+                        }}>
+                        <Icon className="w-5 h-5 mb-1.5"
+                          style={{ color: role === value ? '#A78BFA' : 'rgba(240,238,255,0.4)' }} />
+                        <p className="text-sm font-semibold"
+                          style={{ color: role === value ? '#C4B5FD' : 'rgba(240,238,255,0.8)' }}>
                           {label}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'rgba(240,238,255,0.4)' }}>{desc}</p>
                       </button>
                     ))}
                   </div>
@@ -228,11 +241,11 @@ export default function RegisterPage() {
                 {/* Learner fields */}
                 {role === 'learner' && (
                   <div>
-                    <label className="form-label">Learner Code <span className="text-red-500">*</span></label>
+                    <label className="form-label">Learner Code <span style={{ color: '#F87171' }}>*</span></label>
                     <input value={form.learner_code} onChange={e => set('learner_code', e.target.value)}
                       className="form-input font-mono uppercase" placeholder="LRN001"
                       maxLength={10} />
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs mt-1" style={{ color: 'rgba(240,238,255,0.4)' }}>
                       Your learner code was given to you by your instructor. It looks like LRN001.
                     </p>
                   </div>
@@ -241,7 +254,7 @@ export default function RegisterPage() {
                 {/* Teacher fields */}
                 {role === 'instructor' && (
                   <div>
-                    <label className="form-label">Your School <span className="text-red-500">*</span></label>
+                    <label className="form-label">Your School <span style={{ color: '#F87171' }}>*</span></label>
                     <select value={form.school_id} onChange={e => set('school_id', e.target.value)}
                       className="form-select">
                       <option value="">Select school…</option>
@@ -252,8 +265,8 @@ export default function RegisterPage() {
                           ))
                       }
                     </select>
-                    <p className="text-xs text-amber-600 mt-1">
-                      ⚠ Teacher accounts require admin approval before you can sign in.
+                    <p className="text-xs mt-1" style={{ color: '#FBBF24' }}>
+                      Teacher accounts require admin approval before you can sign in.
                     </p>
                   </div>
                 )}
@@ -271,9 +284,9 @@ export default function RegisterPage() {
             )}
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-4">
+          <p className="text-center text-xs mt-4" style={{ color: 'rgba(240,238,255,0.4)' }}>
             Already have an account?{' '}
-            <Link href="/login" className="text-brand-700 font-medium hover:underline">Sign in</Link>
+            <Link href="/login" className="font-medium hover:underline" style={{ color: '#A78BFA' }}>Sign in</Link>
           </p>
         </div>
       </div>
