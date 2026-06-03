@@ -27,10 +27,10 @@ export default async function SponsorLayout({ children }: { children: React.Reac
   const today = new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+    <div className="min-h-screen" style={{ background: '#0C0919', fontFamily: "'Plus Jakarta Sans','DM Sans',sans-serif" }}>
 
       {/* Top header bar */}
-      <header style={{ background: '#0F172A', borderBottom: '1px solid #1E293B' }}>
+      <header style={{ background: '#080514', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="max-w-7xl mx-auto px-6 py-0">
           <div className="flex items-center justify-between h-16">
 
@@ -40,7 +40,7 @@ export default async function SponsorLayout({ children }: { children: React.Reac
                 {/* GirlsInSTEM wordmark */}
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-md flex items-center justify-center text-white font-black text-xs"
-                    style={{ background: '#1D4ED8' }}>
+                    style={{ background: '#7C3AED' }}>
                     G
                   </div>
                   <span className="text-white font-bold text-sm tracking-tight hidden sm:block">
@@ -51,7 +51,7 @@ export default async function SponsorLayout({ children }: { children: React.Reac
                 {/* Sponsor badge */}
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black"
-                    style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                    style={{ background: 'linear-gradient(135deg,#7C3AED,#A78BFA)' }}>
                     {initials}
                   </div>
                   <div className="hidden sm:block">
@@ -94,12 +94,12 @@ export default async function SponsorLayout({ children }: { children: React.Reac
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto px-6 py-6 mt-12"
-        style={{ borderTop: '1px solid #E2E8F0' }}>
+        style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <p className="text-xs" style={{ color: '#94A3B8' }}>
+          <p className="text-xs" style={{ color: 'rgba(240,238,255,0.4)' }}>
             Girls in STEM Digital Platform — Sponsor Portal &nbsp;·&nbsp; Data updated in real-time
           </p>
-          <p className="text-xs" style={{ color: '#94A3B8' }}>
+          <p className="text-xs" style={{ color: 'rgba(240,238,255,0.4)' }}>
             Confidential &nbsp;·&nbsp; {sponsorName}
           </p>
         </div>
