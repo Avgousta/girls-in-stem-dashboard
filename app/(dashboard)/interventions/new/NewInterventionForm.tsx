@@ -2,8 +2,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import {
+  Loader2, AlertTriangle, BookOpen, CalendarCheck2,
+  AlertOctagon, MessageCircle, Monitor, FileText,
+} from 'lucide-react';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 interface Props {
   learners:       Array<{ learner_id:string; full_name:string; school:string }>;
@@ -13,35 +17,35 @@ interface Props {
 }
 
 const TYPE_OPTIONS = [
-  { value:'academic',    label:'📚 Academic',    desc:'Performance or learning difficulty' },
-  { value:'attendance',  label:'📅 Attendance',  desc:'Missed sessions or patterns of absence' },
-  { value:'behavioural', label:'⚠️ Behavioural', desc:'Conduct or engagement concerns' },
-  { value:'personal',    label:'💬 Personal',    desc:'Personal or family circumstances' },
-  { value:'technical',   label:'💻 Technical',   desc:'Device, connectivity, or platform issues' },
-  { value:'other',       label:'📋 Other',       desc:'Other concerns not listed above' },
+  { value:'academic',    Icon: BookOpen,       label:'Academic',    desc:'Performance or learning difficulty' },
+  { value:'attendance',  Icon: CalendarCheck2, label:'Attendance',  desc:'Missed sessions or patterns of absence' },
+  { value:'behavioural', Icon: AlertOctagon,   label:'Behavioural', desc:'Conduct or engagement concerns' },
+  { value:'personal',    Icon: MessageCircle,  label:'Personal',    desc:'Personal or family circumstances' },
+  { value:'technical',   Icon: Monitor,        label:'Technical',   desc:'Device, connectivity, or platform issues' },
+  { value:'other',       Icon: FileText,       label:'Other',       desc:'Other concerns not listed above' },
 ];
 
 const PRIORITY_OPTIONS = [
-  { value:'low',      label:'Low',      color:'#16A34A', desc:'Monitor — no immediate action needed' },
-  { value:'medium',   label:'Medium',   color:'#D97706', desc:'Act within the next 2 weeks' },
-  { value:'high',     label:'High',     color:'#EA580C', desc:'Act within the next 3 days' },
-  { value:'critical', label:'Critical', color:'#DC2626', desc:'Immediate action required today' },
+  { value:'low',      label:'Low',      color:'var(--ds-success)', bg:'var(--ds-success-light)', desc:'Monitor — no immediate action needed' },
+  { value:'medium',   label:'Medium',   color:'var(--ds-warn)',    bg:'var(--ds-warn-light)',    desc:'Act within the next 2 weeks' },
+  { value:'high',     label:'High',     color:'#F97316',            bg:'rgba(249,115,22,0.15)',   desc:'Act within the next 3 days' },
+  { value:'critical', label:'Critical', color:'var(--ds-danger)',  bg:'var(--ds-danger-light)', desc:'Immediate action required today' },
 ];
 
 export default function NewInterventionForm({ learners, instructors, preselectedId, currentUserId }: Props) {
-  const router = useRouter();
+  const router  = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    learner_id:       preselectedId || '',
-    intervention_type:'academic',
-    priority:         'medium',
-    reason:           '',
-    action_plan:      '',
-    action_taken:     '',
-    assigned_to:      currentUserId,
-    follow_up_date:   '',
-    due_date:         '',
-    status:           'open',
+    learner_id:        preselectedId || '',
+    intervention_type: 'academic',
+    priority:          'medium',
+    reason:            '',
+    action_plan:       '',
+    action_taken:      '',
+    assigned_to:       currentUserId,
+    follow_up_date:    '',
+    due_date:          '',
+    status:            'open',
   });
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -54,7 +58,8 @@ export default function NewInterventionForm({ learners, instructors, preselected
     setLoading(true);
     try {
       const res = await fetch('/api/v1/interventions', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           learner_id:        form.learner_id,
           flagged_by:        currentUserId,
@@ -71,12 +76,14 @@ export default function NewInterventionForm({ learners, instructors, preselected
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to log intervention');
-      toast.success('Intervention logged');
+      toast.success('Intervention logged successfully');
       router.push(preselectedId ? `/learners/${preselectedId}` : '/interventions');
       router.refresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const selectedPri = PRIORITY_OPTIONS.find(p => p.value === form.priority);
@@ -86,82 +93,135 @@ export default function NewInterventionForm({ learners, instructors, preselected
 
       {/* Learner */}
       <div>
-        <label className="form-label">Learner <span className="text-red-500">*</span></label>
-        <select value={form.learner_id} onChange={e => set('learner_id', e.target.value)}
-          className="form-select" disabled={!!preselectedId}>
+        <label className="form-label">
+          Learner <span style={{ color: 'var(--ds-danger)' }}>*</span>
+        </label>
+        <select
+          value={form.learner_id}
+          onChange={e => set('learner_id', e.target.value)}
+          className="form-select"
+          disabled={!!preselectedId}
+        >
           <option value="">Select learner…</option>
           {learners.map(l => (
-            <option key={l.learner_id} value={l.learner_id}>{l.full_name} — {l.school}</option>
+            <option key={l.learner_id} value={l.learner_id}>
+              {l.full_name} — {l.school}
+            </option>
           ))}
         </select>
       </div>
 
       {/* Type */}
       <div>
-        <label className="form-label">Type of Intervention <span className="text-red-500">*</span></label>
+        <label className="form-label">
+          Type of Intervention <span style={{ color: 'var(--ds-danger)' }}>*</span>
+        </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {TYPE_OPTIONS.map(t => (
-            <button key={t.value} type="button" onClick={() => set('intervention_type', t.value)}
-              className={`text-left px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
-                form.intervention_type === t.value
-                  ? 'border-brand-600 bg-brand-50'
-                  : 'border-gray-200 hover:border-brand-300'
-              }`}>
-              <p className="font-semibold">{t.label}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{t.desc}</p>
-            </button>
-          ))}
+          {TYPE_OPTIONS.map(t => {
+            const active = form.intervention_type === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => set('intervention_type', t.value)}
+                className="text-left px-3 py-2.5 rounded-xl border-2 text-sm transition-all cursor-pointer"
+                style={{
+                  borderColor:  active ? DS.primary : DS.border,
+                  background:   active ? DS.primaryLight : DS.surface,
+                  color:        DS.text,
+                }}
+              >
+                <div className="flex items-center gap-2 mb-0.5">
+                  <t.Icon className="w-4 h-4 shrink-0" style={{ color: active ? DS.primary : DS.textMuted }} />
+                  <p className="font-semibold text-sm">{t.label}</p>
+                </div>
+                <p className="text-xs pl-6" style={{ color: DS.textMuted }}>{t.desc}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Priority */}
       <div>
-        <label className="form-label">Priority <span className="text-red-500">*</span></label>
+        <label className="form-label">
+          Priority <span style={{ color: 'var(--ds-danger)' }}>*</span>
+        </label>
         <div className="grid grid-cols-4 gap-2">
-          {PRIORITY_OPTIONS.map(p => (
-            <button key={p.value} type="button" onClick={() => set('priority', p.value)}
-              className={`px-3 py-2 rounded-xl border-2 text-center text-sm font-semibold transition-all ${
-                form.priority === p.value ? 'border-current shadow-sm' : 'border-gray-200 text-gray-500'
-              }`}
-              style={form.priority === p.value ? { borderColor: p.color, color: p.color, background: p.color + '10' } : {}}>
-              {p.label}
-            </button>
-          ))}
+          {PRIORITY_OPTIONS.map(p => {
+            const active = form.priority === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => set('priority', p.value)}
+                className="px-3 py-2.5 rounded-xl border-2 text-center text-sm font-bold transition-all cursor-pointer"
+                style={{
+                  borderColor: active ? p.color : DS.border,
+                  background:  active ? p.bg : DS.surface,
+                  color:       active ? p.color : DS.textMid,
+                }}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
         {selectedPri && (
-          <p className="text-xs text-gray-400 mt-1.5">💡 {selectedPri.desc}</p>
+          <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: DS.textMuted }}>
+            <AlertTriangle className="w-3 h-3 shrink-0" style={{ color: selectedPri.color }} />
+            {selectedPri.desc}
+          </p>
         )}
       </div>
 
       {/* Reason */}
       <div>
-        <label className="form-label">Reason <span className="text-red-500">*</span></label>
-        <textarea value={form.reason} onChange={e => set('reason', e.target.value)}
-          rows={3} className="form-input"
-          placeholder="Why is this learner being flagged? Be specific about what you've observed." />
+        <label className="form-label">
+          Reason <span style={{ color: 'var(--ds-danger)' }}>*</span>
+        </label>
+        <textarea
+          value={form.reason}
+          onChange={e => set('reason', e.target.value)}
+          rows={3}
+          className="form-input"
+          placeholder="Why is this learner being flagged? Be specific about what you've observed."
+        />
       </div>
 
       {/* Action Plan */}
       <div>
         <label className="form-label">Action Plan</label>
-        <textarea value={form.action_plan} onChange={e => set('action_plan', e.target.value)}
-          rows={2} className="form-input"
-          placeholder="What is the plan to support this learner going forward?" />
+        <textarea
+          value={form.action_plan}
+          onChange={e => set('action_plan', e.target.value)}
+          rows={2}
+          className="form-input"
+          placeholder="What is the plan to support this learner going forward?"
+        />
       </div>
 
-      {/* Actions already taken */}
+      {/* Actions taken */}
       <div>
         <label className="form-label">Actions Already Taken</label>
-        <textarea value={form.action_taken} onChange={e => set('action_taken', e.target.value)}
-          rows={2} className="form-input"
-          placeholder="What has already been done?" />
+        <textarea
+          value={form.action_taken}
+          onChange={e => set('action_taken', e.target.value)}
+          rows={2}
+          className="form-input"
+          placeholder="What has already been done?"
+        />
       </div>
 
       {/* Assigned + Dates */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="form-label">Assign To</label>
-          <select value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)} className="form-select">
+          <select
+            value={form.assigned_to}
+            onChange={e => set('assigned_to', e.target.value)}
+            className="form-select"
+          >
             {instructors.map(i => (
               <option key={i.user_id} value={i.user_id}>
                 {i.full_name}{i.user_id === currentUserId ? ' (me)' : ''}
@@ -171,20 +231,36 @@ export default function NewInterventionForm({ learners, instructors, preselected
         </div>
         <div>
           <label className="form-label">Due Date</label>
-          <input type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} className="form-input" />
+          <input
+            type="date"
+            value={form.due_date}
+            onChange={e => set('due_date', e.target.value)}
+            className="form-input"
+          />
         </div>
         <div>
           <label className="form-label">Follow-up Date</label>
-          <input type="date" value={form.follow_up_date} onChange={e => set('follow_up_date', e.target.value)} className="form-input" />
+          <input
+            type="date"
+            value={form.follow_up_date}
+            onChange={e => set('follow_up_date', e.target.value)}
+            className="form-input"
+          />
         </div>
       </div>
 
-      <div className="flex gap-3 pt-2 border-t border-gray-100">
+      {/* Submit */}
+      <div className="flex gap-3 pt-2" style={{ borderTop: `1px solid ${DS.borderLight}` }}>
         <button type="submit" disabled={loading} className="btn-primary">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
-          {loading ? 'Logging…' : 'Log Intervention'}
+          {loading
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Logging…</>
+            : <><AlertTriangle className="w-4 h-4" /> Log Intervention</>
+          }
         </button>
-        <Link href={preselectedId ? `/learners/${preselectedId}` : '/interventions'} className="btn-secondary">
+        <Link
+          href={preselectedId ? `/learners/${preselectedId}` : '/interventions'}
+          className="btn-secondary"
+        >
           Cancel
         </Link>
       </div>

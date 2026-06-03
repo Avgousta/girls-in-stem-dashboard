@@ -137,19 +137,19 @@ export default async function InterventionsPage() {
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-amber-500" />
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
+            <AlertTriangle className="w-6 h-6" style={{ color: 'var(--ds-warn)' }} />
             Interventions
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-mid)' }}>
             {data.interventions.length} total · {data.stats.open} open
             {data.stats.critical > 0 && ` · `}
             {data.stats.critical > 0 && (
-              <span className="text-red-600 font-semibold">{data.stats.critical} critical</span>
+              <span className="font-semibold" style={{ color: 'var(--ds-danger)' }}>{data.stats.critical} critical</span>
             )}
             {data.stats.overdue > 0 && ` · `}
             {data.stats.overdue > 0 && (
-              <span className="text-red-500 font-semibold">{data.stats.overdue} overdue</span>
+              <span className="font-semibold" style={{ color: 'var(--ds-danger)' }}>{data.stats.overdue} overdue</span>
             )}
           </p>
         </div>
