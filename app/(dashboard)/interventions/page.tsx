@@ -1,0 +1,164 @@
+import { requireAuth } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
+import InterventionsClient from './InterventionsClient';
+import Link from 'next/link';
+import { AlertTriangle, Plus } from 'lucide-react';
+
+async function getPageData() {
+  const supabase = await createClient();
+
+  const [intervRes, atRiskRes, learnersRes, instructorsRes] = await Promise.all([
+
+    supabase.from('interventions').select(`
+      intervention_id, intervention_type, priority, reason, action_plan,
+      action_taken, follow_up_date, due_date, status, created_at, resolved_at,
+      learner_id,
+      learners!inner(
+        learner_id, learner_code,
+        learner_profiles(first_name, last_name),
+        schools(school_name),
+        risk_scores(risk_level, attendance_rate, avg_score)
+      ),
+      flagged_by_user:users!flagged_by(full_name),
+      assigned_user:users!assigned_to(full_name, user_id),
+      intervention_updates(
+        update_id, note, status_change, created_at,
+        author:users!author_id(full_name)
+      )
+    `).order('created_at', { ascending: false }),
+
+    // At-risk: high + medium, include linked intervention status
+    supabase.from('risk_scores').select(`
+      risk_level, attendance_rate, avg_score,
+      learners!inner(
+        learner_id, learner_code,
+        learner_profiles(first_name, last_name),
+        schools(school_name),
+        interventions(intervention_id, status, priority)
+      )
+    `).in('risk_level', ['high', 'medium']),
+
+    supabase.from('learners')
+      .select(`learner_id, learner_code,
+        learner_profiles(first_name, last_name),
+        schools(school_name)`)
+      .eq('programme_status', 'active').order('learner_code'),
+
+    supabase.from('users')
+      .select('user_id, full_name').in('role', ['admin', 'instructor']).order('full_name'),
+  ]);
+
+  const interventions = (intervRes.data || []).map((i: any) => ({
+    id:           i.intervention_id,
+    type:         i.intervention_type || 'academic',
+    priority:     i.priority || 'medium',
+    reason:       i.reason,
+    action_plan:  i.action_plan  || '',
+    action_taken: i.action_taken || '',
+    follow_up:    i.follow_up_date,
+    due_date:     i.due_date,
+    status:       i.status,
+    created:      i.created_at,
+    resolved_at:  i.resolved_at,
+    learner_id:   i.learner_id,
+    learner:      `${i.learners?.learner_profiles?.first_name ?? ''} ${i.learners?.learner_profiles?.last_name ?? ''}`.trim(),
+    school:       i.learners?.schools?.school_name ?? '—',
+    risk:         i.learners?.risk_scores?.risk_level ?? 'low',
+    att:          Math.round(i.learners?.risk_scores?.attendance_rate ?? 0),
+    score:        Math.round(i.learners?.risk_scores?.avg_score ?? 0),
+    flagged_by:   i.flagged_by_user?.full_name ?? '—',
+    assigned_to:  i.assigned_user?.full_name  ?? null,
+    assigned_id:  i.assigned_user?.user_id    ?? null,
+    updates: (i.intervention_updates || [])
+      .map((u: any) => ({
+        id: u.update_id, note: u.note, status_change: u.status_change,
+        created: u.created_at, author: u.author?.full_name ?? '—',
+      }))
+      .sort((a: any, b: any) => a.created.localeCompare(b.created)),
+  }));
+
+  const atRisk = (atRiskRes.data || []).map((r: any) => {
+    const l        = r.learners;
+    const openI    = (l.interventions || []).filter((i: any) => i.status !== 'resolved');
+    const critI    = openI.find((i: any) => i.priority === 'critical' || i.priority === 'high');
+    return {
+      learner_id:            l.learner_id,
+      learner:               `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
+      school:                l.schools?.school_name ?? '—',
+      risk:                  r.risk_level,
+      att:                   Math.round(r.attendance_rate ?? 0),
+      score:                 Math.round(r.avg_score ?? 0),
+      open_interventions:    openI.length,
+      has_critical:          !!critI,
+    };
+  }).sort((a: any, b: any) => {
+    const order = { high: 0, medium: 1 };
+    return (order[a.risk as keyof typeof order] ?? 2) - (order[b.risk as keyof typeof order] ?? 2);
+  });
+
+  // Aggregate stats
+  const open        = interventions.filter(i => i.status === 'open').length;
+  const inProgress  = interventions.filter(i => i.status === 'in_progress').length;
+  const resolved    = interventions.filter(i => i.status === 'resolved').length;
+  const critical    = interventions.filter(i => i.priority === 'critical' && i.status !== 'resolved').length;
+  const overdue     = interventions.filter(i =>
+    i.due_date && new Date(i.due_date) < new Date() && i.status !== 'resolved').length;
+  const resRate     = interventions.length ? Math.round(resolved / interventions.length * 100) : 0;
+
+  // Avg days to resolve
+  const resolvedWithDates = interventions.filter(i => i.status === 'resolved' && i.resolved_at);
+  const avgDaysToResolve  = resolvedWithDates.length
+    ? Math.round(resolvedWithDates.reduce((sum, i) => {
+        return sum + (new Date(i.resolved_at!).getTime() - new Date(i.created).getTime()) / 86400000;
+      }, 0) / resolvedWithDates.length)
+    : null;
+
+  // Type distribution
+  const typeDist: Record<string, number> = {};
+  interventions.forEach(i => { typeDist[i.type] = (typeDist[i.type] || 0) + 1; });
+
+  return {
+    interventions, atRisk,
+    stats: { open, inProgress, resolved, critical, overdue, resRate, avgDaysToResolve, typeDist },
+    learners: (learnersRes.data || []).map((l: any) => ({
+      learner_id: l.learner_id,
+      full_name:  `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
+      school:     l.schools?.school_name ?? '',
+    })),
+    instructors: instructorsRes.data || [],
+  };
+}
+
+export default async function InterventionsPage() {
+  const user = await requireAuth(['admin', 'instructor']);
+  const data = await getPageData();
+
+  return (
+    <div className="space-y-6 max-w-7xl">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <AlertTriangle className="w-6 h-6 text-amber-500" />
+            Interventions
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {data.interventions.length} total · {data.stats.open} open
+            {data.stats.critical > 0 && ` · `}
+            {data.stats.critical > 0 && (
+              <span className="text-red-600 font-semibold">{data.stats.critical} critical</span>
+            )}
+            {data.stats.overdue > 0 && ` · `}
+            {data.stats.overdue > 0 && (
+              <span className="text-red-500 font-semibold">{data.stats.overdue} overdue</span>
+            )}
+          </p>
+        </div>
+        <Link href="/interventions/new" className="btn-primary">
+          <Plus className="w-4 h-4" /> Log Intervention
+        </Link>
+      </div>
+
+      <InterventionsClient {...data} currentUserId={user.user_id} />
+    </div>
+  );
+}

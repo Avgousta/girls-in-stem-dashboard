@@ -1,0 +1,21 @@
+// Design tokens — no 'use client' directive so server components can import
+export const DS = {
+  bg:           '#FAFAF9',
+  surface:      '#FFFFFF',
+  border:       '#E2E8F0',
+  borderLight:  '#F1F5F9',
+  primary:      '#1D4ED8',
+  primaryLight: '#EFF6FF',
+  primaryBorder:'#BFDBFE',
+  text:         '#0F172A',
+  textMid:      '#475569',
+  textMuted:    '#94A3B8',
+  danger:       '#EF4444',
+  dangerLight:  '#FEF2F2',
+  warn:         '#F59E0B',
+  warnLight:    '#FFFBEB',
+  success:      '#10B981',
+  successLight: '#ECFDF5',
+  purple:       '#7C3AED',
+  purpleLight:  '#F5F3FF',
+} as const;

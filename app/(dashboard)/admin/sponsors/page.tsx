@@ -1,0 +1,73 @@
+import { requireAuth } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
+import SponsorManager from './SponsorManager';
+import { Award, Link2 } from 'lucide-react';
+import Link from 'next/link';
+
+export default async function AdminSponsorsPage() {
+  await requireAuth(['admin']);
+  const supabase = await createClient();
+
+  const [sponsorsRes, learnersRes, linksRes] = await Promise.all([
+    // Sponsors with their login users
+    supabase
+      .from('sponsors')
+      .select('sponsor_id, sponsor_name, contact_name, contact_email, is_active, created_at, users!sponsor_id(user_id, full_name, email)')
+      .order('sponsor_name'),
+
+    // All active learners for the link modal
+    supabase
+      .from('learners')
+      .select('learner_id, learner_code, learner_profiles(first_name, last_name), schools(school_name)')
+      .eq('programme_status', 'active')
+      .order('learner_code'),
+
+    // All sponsor-learner links — we'll count these ourselves
+    supabase
+      .from('sponsor_learners')
+      .select('sponsor_id, learner_id'),
+  ]);
+
+  // Build real count per sponsor from the links table
+  const countMap: Record<string, number> = {};
+  (linksRes.data || []).forEach((lnk: any) => {
+    countMap[lnk.sponsor_id] = (countMap[lnk.sponsor_id] || 0) + 1;
+  });
+
+  const sponsors = (sponsorsRes.data || []).map((s: any) => ({
+    ...s,
+    learner_count: countMap[s.sponsor_id] || 0,
+    users:         s.users || [],
+  }));
+
+  const allLearners = (learnersRes.data || []).map((l: any) => ({
+    learner_id:   l.learner_id,
+    learner_code: l.learner_code,
+    full_name:    `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
+    school_name:  l.schools?.school_name || '—',
+  }));
+
+  return (
+    <div className="max-w-6xl space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Award className="w-6 h-6 text-brand-700" /> Sponsor Management
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Manage sponsors, create logins, and link learners
+          </p>
+        </div>
+        <Link href="/admin/sponsors/bulk-link" className="btn-secondary flex items-center gap-2">
+          <Link2 className="w-4 h-4" /> Bulk Link Learners
+        </Link>
+      </div>
+
+      <SponsorManager
+        sponsors={sponsors}
+        allLearners={allLearners}
+        sponsorUsers={[]}
+      />
+    </div>
+  );
+}
