@@ -34,15 +34,21 @@ function LoginInner() {
       return;
     }
 
-    const profileRes = await fetch('/api/v1/auth/me');
-    const profile    = await profileRes.json();
-    const role       = profile?.data?.role;
+    let dest = redirectTo && redirectTo !== '/login' ? redirectTo : '/dashboard';
 
-    let dest = '/dashboard';
-    if (role === 'learner')    dest = '/student';
-    if (role === 'instructor') dest = '/teacher';
-    if (role === 'sponsor')    dest = '/sponsor';
-    if (redirectTo && redirectTo !== '/dashboard') dest = redirectTo;
+    try {
+      const profileRes = await fetch('/api/v1/auth/me');
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        const role    = profile?.data?.role;
+        if (role === 'learner')    dest = '/student';
+        if (role === 'instructor') dest = '/teacher';
+        if (role === 'sponsor')    dest = '/sponsor';
+        if (role === 'admin')      dest = '/dashboard';
+      }
+    } catch {
+      // Profile fetch failed — redirect to default dashboard, layout will re-check auth
+    }
 
     window.location.href = dest;
   };
