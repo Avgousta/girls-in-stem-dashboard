@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude skill *)",
+      "Bash(ls ~/.claude/plugins/marketplaces/ 2>&1)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"education SaaS dashboard empowering vibrant professional nonprofit\" --design-system -p \"Girls in STEM\" -f markdown)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"education SaaS dashboard empowering vibrant professional nonprofit\" --design-system -p \"Girls in STEM\" -f markdown)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"hero stats portal cards features CTA footer\" --domain landing)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"nextjs app router\" --stack nextjs)",
+      "Bash(npm run *)",
+      "Bash(./node_modules/.bin/next build *)",
+      "Bash(npm install *)",
+      "Bash(sed -i \"s|from '@/lib/data'|from '@/lib/server-data'|g\" ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/candidates/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/candidates/\\\\[id\\\\]/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/dashboard/page.tsx ~/girls-stem-dashboard/src/app/\\\\\\(app\\\\\\)/reports/page.tsx && echo \"Done\")"
+    ]
+  }
+}
