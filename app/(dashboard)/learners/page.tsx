@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import LearnersClient from './LearnersClient';
 import Link from 'next/link';
-import { PlusCircle, Upload } from 'lucide-react';
+import { PlusCircle, Upload, Users } from 'lucide-react';
 
 async function getLearners() {
   const supabase = await createClient();
@@ -58,18 +58,28 @@ export default async function LearnersPage() {
   const [learners, sponsors] = await Promise.all([getLearners(), getSponsors()]);
   const isAdmin = user.role === 'admin';
 
-  // Derive filter options from real data
-  const grades  = [...new Set(learners.map(l => l.grade))].sort((a, b) => a - b);
-  const schools = [...new Set(learners.map(l => l.school))].filter(s => s !== '—').sort();
+  const grades  = Array.from(new Set(learners.map(l => l.grade))).sort((a, b) => a - b);
+  const schools = Array.from(new Set(learners.map(l => l.school))).filter(s => s !== '—').sort();
+
+  const active   = learners.filter(l => l.status === 'active').length;
+  const highRisk = learners.filter(l => l.risk === 'high').length;
 
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Learners</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{learners.length} learners registered</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
+            <Users className="w-6 h-6" style={{ color: 'var(--ds-purple)' }} />
+            Learners
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-muted)' }}>
+            {learners.length} registered · {active} active
+            {highRisk > 0 && (
+              <> · <span className="font-semibold" style={{ color: 'var(--ds-danger)' }}>{highRisk} high risk</span></>
+            )}
+          </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Link href="/learners/bulk" className="btn-secondary">
             <Upload className="w-4 h-4" /> Bulk Import
           </Link>
