@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   Download, School, Users, BarChart3, FolderKanban, Award,
-  TrendingUp, LayoutDashboard,
+  TrendingUp, LayoutDashboard, Search, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
@@ -128,10 +128,12 @@ function DRow({ cells, highlight }: { cells: React.ReactNode[]; highlight?: bool
   );
 }
 
-// ─── Attendance trend (8-week) ─────────────────────────────────────────────
+// ─── Attendance trend (variable period) ───────────────────────────────────
 function AttendanceTrend({ rawAttendance }: { rawAttendance: any[] }) {
-  const data = useMemo(() => Array.from({ length: 8 }, (_, i) => {
-    const weekOffset = 7 - i;
+  const [weeks, setWeeks] = useState<4 | 8 | 12>(8);
+
+  const data = useMemo(() => Array.from({ length: weeks }, (_, i) => {
+    const weekOffset = weeks - 1 - i;
     const end   = new Date(); end.setDate(end.getDate() - weekOffset * 7);
     const start = new Date(end); start.setDate(start.getDate() - 6);
     const label = `${start.getMonth() + 1}/${start.getDate()}`;
@@ -142,10 +144,25 @@ function AttendanceTrend({ rawAttendance }: { rawAttendance: any[] }) {
       ? Math.round(week.filter(a => a.status === 'present').length / week.length * 100)
       : null;
     return { label, 'Att Rate': rate };
-  }), [rawAttendance]);
+  }), [rawAttendance, weeks]);
+
+  const periodBtn = (w: 4 | 8 | 12) => (
+    <button onClick={() => setWeeks(w)}
+      className="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all"
+      style={weeks === w
+        ? { background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }
+        : { background: 'transparent', color: DS.textMuted as string, border: `1px solid transparent` }}>
+      {w}W
+    </button>
+  );
 
   return (
-    <SectionCard title="8-Week Attendance Trend">
+    <SectionCard title="Attendance Trend"
+      action={
+        <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: DS.surfaceHover }}>
+          {periodBtn(4)}{periodBtn(8)}{periodBtn(12)}
+        </div>
+      }>
       <div className="p-5">
         <ResponsiveContainer width="100%" height={160}>
           <LineChart data={data}>
@@ -309,12 +326,120 @@ function ExportBtn({ label, onClick, count }: { label: string; onClick: () => vo
   );
 }
 
+// ─── Search filter bar ──────────────────────────────────────────────────────
+function SearchFilter({ value, onChange, placeholder }: {
+  value: string; onChange: (v: string) => void; placeholder: string;
+}) {
+  return (
+    <div className="px-5 py-3" style={{ borderBottom: `1px solid ${DS.border}` }}>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: DS.textMuted }} />
+        <input value={value} onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full text-sm pl-8 pr-8 py-2 rounded-xl outline-none"
+          style={{ background: DS.surfaceHover, color: DS.text as string, border: `1px solid ${DS.border}` }} />
+        {value && (
+          <button onClick={() => onChange('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+            style={{ color: DS.textMuted }}>
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Paginated export preview ────────────────────────────────────────────────
+const PAGE_SIZE = 15;
+
+function ExportPreview({ headers, rows, filename, onDownload }: {
+  headers: string[];
+  rows: (string | number)[][];
+  filename: string;
+  onDownload: () => void;
+}) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+  const visible    = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+      {/* Header */}
+      <div className="px-5 py-4 flex items-center justify-between"
+        style={{ borderBottom: `1px solid ${DS.border}` }}>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: DS.text }}>Preview</p>
+          <p className="text-xs" style={{ color: DS.textMuted }}>
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, rows.length)} of {rows.length} rows
+          </p>
+        </div>
+        <button onClick={onDownload}
+          className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer"
+          style={{ background: DS.primary, color: '#fff' }}>
+          <Download className="w-3.5 h-3.5" />
+          Download {filename}
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${DS.border}` }}>
+              {headers.map(h => (
+                <th key={h} className="px-4 py-2.5 text-left font-bold uppercase tracking-wider"
+                  style={{ color: DS.textMuted }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((row, i) => (
+              <tr key={i} style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
+                {row.map((cell, j) => (
+                  <td key={j} className="px-4 py-2.5 truncate max-w-[180px]"
+                    style={{ color: j === 0 ? DS.text as string : DS.textMid as string }}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-5 py-3"
+          style={{ borderTop: `1px solid ${DS.border}` }}>
+          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+            className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-40"
+            style={{ background: DS.surfaceHover, color: DS.textMid as string }}>
+            <ChevronLeft className="w-3.5 h-3.5" /> Prev
+          </button>
+          <p className="text-xs" style={{ color: DS.textMuted }}>
+            Page {page + 1} of {totalPages}
+          </p>
+          <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
+            className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-40"
+            style={{ background: DS.surfaceHover, color: DS.textMid as string }}>
+            Next <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────
 export default function ReportsClient({
   schoolBreakdown, gradeBreakdown, programmeBreakdown, sponsorBreakdown,
   scoreDist, rawLearners, rawAttendance, rawAssessments, rawProjects, rawInterventions,
 }: Props) {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab,        setTab]        = useState<Tab>('overview');
+  const [schoolQ,    setSchoolQ]    = useState('');
+  const [progQ,      setProgQ]      = useState('');
+  const [exportView, setExportView] = useState<'learners' | 'assessments' | null>(null);
 
   const tabs: Array<{ key: Tab; label: string; icon: any }> = [
     { key: 'overview',    label: 'Overview',    icon: LayoutDashboard },
@@ -377,6 +502,35 @@ export default function ReportsClient({
      ])],
     'report_interventions.csv');
 
+  // ── Filtered breakdowns ─────────────────────────────────────────────────
+  const filteredSchools = useMemo(() =>
+    schoolQ ? schoolBreakdown.filter(s => s.name.toLowerCase().includes(schoolQ.toLowerCase())) : schoolBreakdown,
+    [schoolBreakdown, schoolQ]);
+
+  const filteredProgs = useMemo(() =>
+    progQ ? programmeBreakdown.filter(p => p.name.toLowerCase().includes(progQ.toLowerCase())) : programmeBreakdown,
+    [programmeBreakdown, progQ]);
+
+  // ── Preview rows ────────────────────────────────────────────────────────
+  const learnerPreviewRows: string[][] = rawLearners.map((l: any) => [
+    l.learner_code || '—',
+    `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim() || '—',
+    l.schools?.school_name || '—',
+    l.grade != null ? `Grade ${l.grade}` : '—',
+    l.programme_status,
+    `${Math.round(l.risk_scores?.attendance_rate || 0)}%`,
+    `${Math.round(l.risk_scores?.avg_score || 0)}%`,
+    l.risk_scores?.risk_level || 'low',
+  ]);
+
+  const assessmentPreviewRows: string[][] = rawAssessments.map((a: any) => [
+    a.assessment_date?.slice(0, 10) || '—',
+    a.subject || '—',
+    `${a.percentage ?? 0}%`,
+    a.grade_band || '—',
+    (a.programs as any)?.program_name || '—',
+  ]);
+
   return (
     <div className="space-y-5 pb-20">
 
@@ -417,11 +571,14 @@ export default function ReportsClient({
                 <Download className="w-3.5 h-3.5" /> Export CSV
               </button>
             }>
-            <SchoolChart data={schoolBreakdown} />
+            <SchoolChart data={filteredSchools} />
           </SectionCard>
-          <SectionCard title="School Data Table">
+          <SectionCard title={`School Data Table ${filteredSchools.length !== schoolBreakdown.length ? `(${filteredSchools.length} of ${schoolBreakdown.length})` : `(${schoolBreakdown.length})`}`}>
+            <SearchFilter value={schoolQ} onChange={setSchoolQ} placeholder="Filter by school name…" />
             <DTable headers={['School', 'Learners', 'Avg Attendance', 'Avg Score']}>
-              {schoolBreakdown.map((s, i) => (
+              {filteredSchools.length === 0 ? (
+                <tr><td colSpan={4} className="px-5 py-8 text-center text-sm" style={{ color: DS.textMuted }}>No schools match "{schoolQ}"</td></tr>
+              ) : filteredSchools.map((s, i) => (
                 <DRow key={i} cells={[
                   <span className="font-semibold" style={{ color: DS.text }}>{s.name}</span>,
                   <span className="font-bold tabular-nums" style={{ color: DS.primary }}>{s.count}</span>,
@@ -464,7 +621,8 @@ export default function ReportsClient({
 
       {/* ── PROGRAMMES ── */}
       {tab === 'programmes' && (
-        <SectionCard title="Programme Breakdown"
+        <SectionCard
+          title={`Programme Breakdown ${filteredProgs.length !== programmeBreakdown.length ? `(${filteredProgs.length} of ${programmeBreakdown.length})` : `(${programmeBreakdown.length})`}`}
           action={
             <button onClick={exportProgrammes}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer"
@@ -472,8 +630,11 @@ export default function ReportsClient({
               <Download className="w-3.5 h-3.5" /> Export CSV
             </button>
           }>
+          <SearchFilter value={progQ} onChange={setProgQ} placeholder="Filter by programme name…" />
           <DTable headers={['Programme', 'Type', 'Assessments', 'Avg Score']}>
-            {programmeBreakdown.map((p, i) => (
+            {filteredProgs.length === 0 ? (
+              <tr><td colSpan={4} className="px-5 py-8 text-center text-sm" style={{ color: DS.textMuted }}>No programmes match "{progQ}"</td></tr>
+            ) : filteredProgs.map((p, i) => (
               <DRow key={i} cells={[
                 <span className="font-semibold" style={{ color: DS.text }}>{p.name}</span>,
                 <span className="text-xs px-2 py-0.5 rounded-full"
@@ -520,18 +681,83 @@ export default function ReportsClient({
 
       {/* ── EXPORT ── */}
       {tab === 'export' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <p className="text-sm" style={{ color: DS.textMuted }}>
-            Download any dataset as a CSV file for use in Excel, Google Sheets, or your reporting tools.
+            Preview data before downloading, or export any dataset directly as CSV.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ExportBtn label="Learners"      onClick={exportLearners}      count={rawLearners.length}      />
-            <ExportBtn label="Assessments"   onClick={exportAssessments}   count={rawAssessments.length}   />
-            <ExportBtn label="Projects"      onClick={exportProjects}      count={rawProjects.length}      />
-            <ExportBtn label="Interventions" onClick={exportInterventions} count={rawInterventions.length} />
-            <ExportBtn label="Schools"       onClick={exportSchools}       count={schoolBreakdown.length}  />
-            <ExportBtn label="Grades"        onClick={exportGrades}        count={gradeBreakdown.length}   />
+
+          {/* Quick downloads */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <ExportBtn label="Schools"       onClick={exportSchools}       count={schoolBreakdown.length}    />
+            <ExportBtn label="Grades"        onClick={exportGrades}        count={gradeBreakdown.length}     />
             <ExportBtn label="Programmes"    onClick={exportProgrammes}    count={programmeBreakdown.length} />
+            <ExportBtn label="Projects"      onClick={exportProjects}      count={rawProjects.length}        />
+            <ExportBtn label="Interventions" onClick={exportInterventions} count={rawInterventions.length}   />
+          </div>
+
+          {/* Preview-first exports */}
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>
+              Preview before download
+            </p>
+
+            {/* Learners */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+              <button
+                onClick={() => setExportView(v => v === 'learners' ? null : 'learners')}
+                className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
+                style={{ borderBottom: exportView === 'learners' ? `1px solid ${DS.border}` : 'none' }}>
+                <div className="text-left">
+                  <p className="text-sm font-semibold" style={{ color: DS.text }}>Learner Export</p>
+                  <p className="text-xs" style={{ color: DS.textMuted }}>{rawLearners.length} learners · code, name, school, grade, status, attendance, score, risk</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={e => { e.stopPropagation(); exportLearners(); }}
+                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
+                    style={{ background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }}>
+                    <Download className="w-3 h-3" /> CSV
+                  </button>
+                  <span className="text-xs" style={{ color: DS.textMuted }}>{exportView === 'learners' ? '▲' : '▼'}</span>
+                </div>
+              </button>
+              {exportView === 'learners' && (
+                <ExportPreview
+                  headers={['Code', 'Name', 'School', 'Grade', 'Status', 'Att', 'Score', 'Risk']}
+                  rows={learnerPreviewRows}
+                  filename="report_learners.csv"
+                  onDownload={exportLearners}
+                />
+              )}
+            </div>
+
+            {/* Assessments */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+              <button
+                onClick={() => setExportView(v => v === 'assessments' ? null : 'assessments')}
+                className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
+                style={{ borderBottom: exportView === 'assessments' ? `1px solid ${DS.border}` : 'none' }}>
+                <div className="text-left">
+                  <p className="text-sm font-semibold" style={{ color: DS.text }}>Assessment Export</p>
+                  <p className="text-xs" style={{ color: DS.textMuted }}>{rawAssessments.length} records · date, subject, score, grade band, programme</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={e => { e.stopPropagation(); exportAssessments(); }}
+                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
+                    style={{ background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }}>
+                    <Download className="w-3 h-3" /> CSV
+                  </button>
+                  <span className="text-xs" style={{ color: DS.textMuted }}>{exportView === 'assessments' ? '▲' : '▼'}</span>
+                </div>
+              </button>
+              {exportView === 'assessments' && (
+                <ExportPreview
+                  headers={['Date', 'Subject', 'Score', 'Grade Band', 'Programme']}
+                  rows={assessmentPreviewRows}
+                  filename="report_assessments.csv"
+                  onDownload={exportAssessments}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
