@@ -3,9 +3,12 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
+} from 'recharts';
+import {
   AlertTriangle, TrendingDown, Calendar, Search, X,
-  ChevronDown, ChevronUp, RefreshCw, Loader2, Plus,
-  ShieldAlert, ShieldCheck, Shield,
+  ChevronDown, ChevronUp, Loader2, Plus,
+  ShieldAlert, ShieldCheck, Shield, BarChart2,
 } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 import { fmt } from '@/utils';
@@ -229,11 +232,166 @@ function RiskSection({
   );
 }
 
+// ─── Chart tooltip ────────────────────────────────────────────────────────────
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl px-3 py-2 text-xs shadow-xl"
+      style={{ background: DS.bg, border: `1px solid ${DS.border}` }}>
+      <p className="font-bold mb-1" style={{ color: DS.textMid }}>{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.name} style={{ color: p.fill ?? p.color }}>
+          {p.name}: <strong>{p.value}</strong>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// ─── Analytics panel ──────────────────────────────────────────────────────────
+function AnalyticsPanel({ risks }: { risks: RiskRow[] }) {
+  // School breakdown — count high + medium per school
+  const schoolData = useMemo(() => {
+    const map: Record<string, { school: string; high: number; medium: number }> = {};
+    risks.forEach(r => {
+      if (r.risk_level === 'low') return;
+      if (!map[r.school_name]) map[r.school_name] = { school: r.school_name, high: 0, medium: 0 };
+      map[r.school_name][r.risk_level]++;
+    });
+    return Object.values(map).sort((a, b) => (b.high + b.medium) - (a.high + a.medium));
+  }, [risks]);
+
+  // Flag frequency
+  const flagData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    risks.forEach(r => r.risk_flags.forEach(f => { counts[f] = (counts[f] ?? 0) + 1; }));
+    return Object.entries(counts)
+      .map(([flag, count]) => ({ flag: FLAG_LABELS[flag] ?? flag, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [risks]);
+
+  // Distribution proportions
+  const total  = risks.length;
+  const high   = risks.filter(r => r.risk_level === 'high').length;
+  const medium = risks.filter(r => r.risk_level === 'medium').length;
+  const low    = risks.filter(r => r.risk_level === 'low').length;
+
+  const maxFlag   = Math.max(...flagData.map(f => f.count), 1);
+  const maxSchool = Math.max(...schoolData.map(s => s.high + s.medium), 1);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      {/* ── School breakdown ── */}
+      <div className="lg:col-span-2 rounded-2xl p-5"
+        style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: DS.textMuted }}>
+          School Breakdown
+        </p>
+        <p className="text-sm font-semibold mb-4" style={{ color: DS.text }}>
+          High &amp; medium risk learners per school
+        </p>
+        {schoolData.length === 0 ? (
+          <p className="text-sm text-center py-6" style={{ color: DS.textMuted }}>No at-risk data</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={Math.max(schoolData.length * 40, 120)}>
+            <BarChart data={schoolData} layout="vertical" barSize={10} barGap={3}
+              margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={DS.borderLight as string} horizontal={false} />
+              <XAxis type="number" allowDecimals={false}
+                tick={{ fontSize: 10, fill: DS.textMuted as string }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="school" width={140}
+                tick={{ fontSize: 11, fill: DS.text as string }} axisLine={false} tickLine={false} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(124,58,237,0.06)' }} />
+              <Bar dataKey="high"   name="High"   fill="var(--ds-danger)" radius={[0,3,3,0]} stackId="a" />
+              <Bar dataKey="medium" name="Medium" fill="var(--ds-warn)"   radius={[0,3,3,0]} stackId="a" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+        <div className="flex gap-4 mt-3 justify-end">
+          {[{ color:'var(--ds-danger)', label:'High' }, { color:'var(--ds-warn)', label:'Medium' }].map(l => (
+            <span key={l.label} className="flex items-center gap-1 text-xs" style={{ color: DS.textMuted }}>
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />{l.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Right column: flags + distribution ── */}
+      <div className="flex flex-col gap-4">
+
+        {/* Distribution bar */}
+        <div className="rounded-2xl p-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: DS.textMuted }}>
+            Distribution
+          </p>
+          <p className="text-sm font-semibold mb-3" style={{ color: DS.text }}>Cohort risk breakdown</p>
+          {/* Stacked bar */}
+          <div className="h-4 rounded-full overflow-hidden flex mb-3" style={{ background: DS.borderLight }}>
+            {total > 0 && ([
+              { count: high,   color: 'var(--ds-danger)' },
+              { count: medium, color: 'var(--ds-warn)'   },
+              { count: low,    color: 'var(--ds-success)' },
+            ]).filter(s => s.count > 0).map((s, i) => (
+              <div key={i} className="h-full transition-all duration-500"
+                style={{ width: `${(s.count / total) * 100}%`, background: s.color }} />
+            ))}
+          </div>
+          <div className="space-y-2">
+            {([
+              { label:'High',   count: high,   color:'var(--ds-danger)'  },
+              { label:'Medium', count: medium, color:'var(--ds-warn)'    },
+              { label:'Low',    count: low,    color:'var(--ds-success)' },
+            ]).map(({ label, count, color }) => (
+              <div key={label} className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                  <span style={{ color: DS.textMid }}>{label}</span>
+                </span>
+                <span className="font-bold tabular-nums" style={{ color }}>
+                  {count} <span style={{ color: DS.textMuted }}>({total ? Math.round(count/total*100) : 0}%)</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Flag frequency */}
+        <div className="rounded-2xl p-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: DS.textMuted }}>
+            Risk Flags
+          </p>
+          <p className="text-sm font-semibold mb-3" style={{ color: DS.text }}>Most common triggers</p>
+          {flagData.length === 0 ? (
+            <p className="text-xs" style={{ color: DS.textMuted }}>No flags recorded</p>
+          ) : (
+            <div className="space-y-3">
+              {flagData.map(({ flag, count }) => (
+                <div key={flag}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium truncate" style={{ color: DS.textMid }}>{flag}</span>
+                    <span className="text-xs font-black tabular-nums ml-2" style={{ color: DS.text }}>{count}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(count / maxFlag) * 100}%`, background: 'var(--ds-danger)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function RiskClient({ risks, schools, currentUserId }: Props) {
-  const [search,  setSearch]  = useState('');
-  const [schoolF, setSchoolF] = useState('');
-  const [levelF,  setLevelF]  = useState('');
+  const [search,       setSearch]       = useState('');
+  const [schoolF,      setSchoolF]      = useState('');
+  const [levelF,       setLevelF]       = useState('');
+  const [showAnalytics,setShowAnalytics]= useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -290,6 +448,21 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
           );
         })}
       </div>
+
+      {/* Analytics toggle */}
+      <div className="flex gap-3">
+        <button onClick={() => setShowAnalytics(s => !s)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+          style={showAnalytics
+            ? { background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }
+            : { background: DS.surface,      color: DS.textMid as string, border: `1px solid ${DS.border}` }}>
+          <BarChart2 className="w-4 h-4" />
+          {showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
+          {showAnalytics ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        </button>
+      </div>
+
+      {showAnalytics && <AnalyticsPanel risks={risks} />}
 
       {/* Filter bar */}
       <div className="rounded-2xl p-4" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
