@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
 
 export async function POST() {

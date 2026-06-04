@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest } from 'next/server';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
 interface Params { params: Promise<{ id: string; learnerId: string }> }
