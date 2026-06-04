@@ -152,6 +152,72 @@ export async function emailInterventionEscalated({
   ]);
 }
 
+export async function emailRiskDigest({
+  adminEmails, adminUserIds, high, medium, bySchool, appUrl,
+}: {
+  adminEmails: string[]; adminUserIds: string[];
+  high: number; medium: number;
+  bySchool: { school: string; high: number; medium: number }[];
+  appUrl: string;
+}) {
+  const subject = `📊 Weekly Risk Report — ${high} high, ${medium} medium risk learners`;
+  const schoolRows = bySchool
+    .sort((a, b) => (b.high + b.medium) - (a.high + a.medium))
+    .slice(0, 8)
+    .map(s => `
+      <tr>
+        <td style="padding:8px 12px;font-size:13px;color:rgba(240,238,255,0.85);border-bottom:1px solid rgba(255,255,255,0.06);">${s.school}</td>
+        <td style="padding:8px 12px;text-align:center;font-weight:700;color:#EF4444;border-bottom:1px solid rgba(255,255,255,0.06);">${s.high}</td>
+        <td style="padding:8px 12px;text-align:center;font-weight:700;color:#FBBF24;border-bottom:1px solid rgba(255,255,255,0.06);">${s.medium}</td>
+      </tr>`)
+    .join('');
+
+  const html = baseHtml('Weekly Risk Report', `
+    <p style="color:rgba(240,238,255,0.8);font-size:14px;margin:0 0 20px;">
+      Here is your weekly snapshot of at-risk learners across all schools.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+      <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px;text-align:center;">
+        <p style="margin:0;font-size:32px;font-weight:900;color:#EF4444;">${high}</p>
+        <p style="margin:4px 0 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(239,68,68,0.8);">High Risk</p>
+      </div>
+      <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:16px;text-align:center;">
+        <p style="margin:0;font-size:32px;font-weight:900;color:#FBBF24;">${medium}</p>
+        <p style="margin:4px 0 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(251,191,36,0.8);">Medium Risk</p>
+      </div>
+    </div>
+
+    ${bySchool.length > 0 ? `
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(167,139,250,0.8);">By School</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.04);">
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(167,139,250,0.6);">School</th>
+          <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(239,68,68,0.6);">High</th>
+          <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(251,191,36,0.6);">Medium</th>
+        </tr>
+      </thead>
+      <tbody>${schoolRows}</tbody>
+    </table>` : ''}
+
+    <a href="${appUrl}/risk"
+      style="display:inline-block;margin-top:4px;padding:12px 24px;background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
+      View Full Risk Monitor →
+    </a>
+  `);
+
+  await Promise.all([
+    ...adminEmails.map(email => sendEmail(email, subject, html)),
+    ...adminUserIds.map(uid => createNotification({
+      user_id: uid,
+      type: 'risk_digest',
+      title: `Weekly Risk Report — ${high} high risk`,
+      body: `${medium} medium risk · ${bySchool.length} schools affected`,
+    })),
+  ]);
+}
+
 export async function emailInterventionResolved({
   flaggedByEmail, flaggedByUserId, learnerName, resolvedBy, resolution, interventionId,
 }: {

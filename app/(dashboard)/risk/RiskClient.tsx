@@ -93,7 +93,10 @@ function LogInterventionButton({ risk, currentUserId }: { risk: RiskRow; current
 }
 
 // ─── Risk card ────────────────────────────────────────────────────────────────
-function RiskCard({ risk, currentUserId }: { risk: RiskRow; currentUserId: string }) {
+function RiskCard({ risk, currentUserId, selected, onToggle }: {
+  risk: RiskRow; currentUserId: string;
+  selected: boolean; onToggle: (id: string) => void;
+}) {
   const cfg = RISK_CFG[risk.risk_level];
 
   return (
@@ -107,6 +110,11 @@ function RiskCard({ risk, currentUserId }: { risk: RiskRow; currentUserId: strin
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
+          {/* Checkbox */}
+          {risk.risk_level !== 'low' && (
+            <input type="checkbox" checked={selected} onChange={() => onToggle(risk.score_id)}
+              className="w-3.5 h-3.5 rounded cursor-pointer shrink-0 accent-violet-600" />
+          )}
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: cfg.bg }}>
             <cfg.Icon className="w-4 h-4" style={{ color: cfg.color }} />
@@ -182,10 +190,11 @@ function RiskCard({ risk, currentUserId }: { risk: RiskRow; currentUserId: strin
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 function RiskSection({
-  level, risks, currentUserId, defaultOpen = true,
+  level, risks, currentUserId, defaultOpen = true, selected, onToggle,
 }: {
   level: 'high' | 'medium' | 'low'; risks: RiskRow[];
   currentUserId: string; defaultOpen?: boolean;
+  selected: Set<string>; onToggle: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const cfg = RISK_CFG[level];
@@ -224,7 +233,10 @@ function RiskSection({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {risks.map(r => <RiskCard key={r.score_id} risk={r} currentUserId={currentUserId} />)}
+            {risks.map(r => (
+              <RiskCard key={r.score_id} risk={r} currentUserId={currentUserId}
+                selected={selected.has(r.score_id)} onToggle={onToggle} />
+            ))}
           </div>
         )
       )}
@@ -392,6 +404,8 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
   const [schoolF,      setSchoolF]      = useState('');
   const [levelF,       setLevelF]       = useState('');
   const [showAnalytics,setShowAnalytics]= useState(false);
+  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
+  const [bulkLoading,  setBulkLoading]  = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -409,6 +423,42 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
 
   const hasFilters = search || schoolF || levelF;
   const clear      = () => { setSearch(''); setSchoolF(''); setLevelF(''); };
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  const selectableFiltered = filtered.filter(r => r.risk_level !== 'low');
+  const allSelected        = selectableFiltered.length > 0 && selectableFiltered.every(r => selectedIds.has(r.score_id));
+  const toggleAll          = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(selectableFiltered.map(r => r.score_id)));
+  };
+
+  const bulkLog = async () => {
+    if (!window.confirm(`Log interventions for ${selectedIds.size} learner${selectedIds.size !== 1 ? 's' : ''}?`)) return;
+    setBulkLoading(true);
+    const targets = risks.filter(r => selectedIds.has(r.score_id));
+    let succeeded = 0;
+    await Promise.allSettled(targets.map(async r => {
+      const type   = r.risk_flags.some(f => f.includes('attendance')) ? 'attendance' : 'academic';
+      const reason = r.risk_flags.map(f => FLAG_LABELS[f] ?? f).join('; ') || 'Elevated risk score';
+      const res = await fetch('/api/v1/interventions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          learner_id: r.learner_id, flagged_by: currentUserId,
+          intervention_type: type,
+          priority: r.risk_level === 'high' ? 'high' : 'medium',
+          reason: `Bulk flagged from Risk Monitor: ${reason}.`,
+          status: 'open',
+        }),
+      });
+      if (res.ok) succeeded++;
+    }));
+    setBulkLoading(false);
+    setSelectedIds(new Set());
+    toast.success(`${succeeded} intervention${succeeded !== 1 ? 's' : ''} logged`);
+    if (succeeded < targets.length) toast.error(`${targets.length - succeeded} failed`);
+  };
 
   const selectStyle: React.CSSProperties = {
     background: DS.surfaceHover as string, color: DS.text as string,
@@ -493,6 +543,15 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
               <X className="w-3 h-3" /> Clear
             </button>
           )}
+          {selectableFiltered.length > 0 && (
+            <button onClick={toggleAll}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer ml-auto"
+              style={{ background: DS.surfaceHover, color: DS.textMid as string, border: `1px solid ${DS.border}` }}>
+              <input type="checkbox" readOnly checked={allSelected}
+                className="w-3 h-3 rounded accent-violet-600 pointer-events-none" />
+              {allSelected ? 'Deselect All' : `Select All (${selectableFiltered.length})`}
+            </button>
+          )}
         </div>
         {hasFilters && (
           <p className="text-xs mt-2" style={{ color: DS.textMuted }}>
@@ -510,9 +569,31 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
         </div>
       ) : (
         <div className="space-y-8">
-          <RiskSection level="high"   risks={high}   currentUserId={currentUserId} defaultOpen={true}  />
-          <RiskSection level="medium" risks={medium} currentUserId={currentUserId} defaultOpen={true}  />
-          <RiskSection level="low"    risks={low}    currentUserId={currentUserId} defaultOpen={false} />
+          <RiskSection level="high"   risks={high}   currentUserId={currentUserId} defaultOpen={true}  selected={selectedIds} onToggle={toggleSelect} />
+          <RiskSection level="medium" risks={medium} currentUserId={currentUserId} defaultOpen={true}  selected={selectedIds} onToggle={toggleSelect} />
+          <RiskSection level="low"    risks={low}    currentUserId={currentUserId} defaultOpen={false} selected={selectedIds} onToggle={toggleSelect} />
+        </div>
+      )}
+
+      {/* Sticky bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-3 rounded-2xl shadow-2xl"
+          style={{ background: DS.surface, border: `1px solid ${DS.primaryBorder}` }}>
+          <p className="text-sm font-semibold" style={{ color: DS.text }}>
+            {selectedIds.size} learner{selectedIds.size !== 1 ? 's' : ''} selected
+          </p>
+          <button onClick={bulkLog} disabled={bulkLoading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-60"
+            style={{ background: 'var(--ds-danger-light)', color: 'var(--ds-danger)', border: '1px solid var(--ds-danger)' }}>
+            {bulkLoading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Plus className="w-4 h-4" />}
+            Log {selectedIds.size} Intervention{selectedIds.size !== 1 ? 's' : ''}
+          </button>
+          <button onClick={() => setSelectedIds(new Set())}
+            className="p-1.5 rounded-lg cursor-pointer" style={{ color: DS.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
