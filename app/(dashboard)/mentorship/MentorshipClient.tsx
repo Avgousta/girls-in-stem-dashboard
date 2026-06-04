@@ -510,7 +510,7 @@ export default function MentorshipClient({
   sessions, goals: initialGoals, atRisk, mentorStats, stats, learners, mentors, currentUserId,
 }: Props) {
   const [goals,       setGoals]       = useState(initialGoals);
-  const [tab,         setTab]         = useState<'sessions'|'goals'|'at_risk'|'mentors'>('sessions');
+  const [tab,         setTab]         = useState<'sessions'|'goals'|'follow_up'|'at_risk'|'mentors'>('sessions');
   const [search,      setSearch]      = useState('');
   const [mentorF,     setMentorF]     = useState('');
   const [typeF,       setTypeF]       = useState('');
@@ -551,6 +551,19 @@ export default function MentorshipClient({
       return new Date(a.last_session).getTime() - new Date(b.last_session).getTime();
     return 0;
   }), [atRisk]);
+
+  // Follow-up queue: sessions needing follow-up that have no newer session for the same learner
+  const followUpQueue = useMemo(() => {
+    return sessions
+      .filter(s => s.outcome === 'needs_follow_up')
+      .filter(s => {
+        const newerExists = sessions.some(
+          other => other.learner_id === s.learner_id && other.date > s.date
+        );
+        return !newerExists;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date)); // oldest first — most urgent
+  }, [sessions]);
 
   const staleLearners = atRisk.filter(l => {
     if (!l.last_session) return true;
@@ -598,16 +611,19 @@ export default function MentorshipClient({
         style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
         <div className="flex gap-1 p-1 rounded-xl flex-wrap" style={{ background: DS.surfaceHover }}>
           {([
-            ['sessions', `Sessions (${sessions.length})`],
-            ['goals',    `Goals (${activeGoals} active${overdueGoals > 0 ? `, ${overdueGoals} overdue` : ''})`],
-            ['at_risk',  `At-Risk (${atRisk.length})`],
-            ['mentors',  `Mentors (${mentorStats.length})`],
+            ['sessions',   `Sessions (${sessions.length})`],
+            ['goals',      `Goals (${activeGoals} active${overdueGoals > 0 ? `, ${overdueGoals} overdue` : ''})`],
+            ['follow_up',  `Follow-up (${followUpQueue.length})`],
+            ['at_risk',    `At-Risk (${atRisk.length})`],
+            ['mentors',    `Mentors (${mentorStats.length})`],
           ] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer"
               style={tab === key
-                ? { background: DS.primary, color: '#fff' }
-                : { background: 'transparent', color: DS.textMid as string }}>
+                ? { background: key === 'follow_up' && followUpQueue.length > 0 ? 'var(--ds-warn)' : DS.primary, color: '#fff' }
+                : key === 'follow_up' && followUpQueue.length > 0
+                  ? { background: 'var(--ds-warn-light)', color: 'var(--ds-warn)' }
+                  : { background: 'transparent', color: DS.textMid as string }}>
               {label}
             </button>
           ))}
@@ -746,6 +762,88 @@ export default function MentorshipClient({
               <p className="font-medium" style={{ color: DS.textMid }}>No goals set yet</p>
               <p className="text-xs mt-1" style={{ color: DS.textMuted }}>Goals are created during sessions or using the Add Goal button</p>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── FOLLOW-UP QUEUE ── */}
+      {tab === 'follow_up' && (
+        <div className="space-y-3">
+          {followUpQueue.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl"
+              style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+              <p className="text-2xl mb-2">✅</p>
+              <p className="font-medium" style={{ color: DS.textMid }}>All sessions followed up — nothing pending</p>
+            </div>
+          ) : (
+            <>
+              <div className="px-4 py-3 rounded-2xl flex items-center gap-2"
+                style={{ background: 'var(--ds-warn-light)', border: '1px solid var(--ds-warn)' }}>
+                <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: 'var(--ds-warn)' }} />
+                <p className="text-sm font-medium" style={{ color: 'var(--ds-warn)' }}>
+                  {followUpQueue.length} session{followUpQueue.length !== 1 ? 's' : ''} flagged as needing follow-up with no subsequent session logged
+                </p>
+              </div>
+
+              {followUpQueue.map(s => {
+                const daysSince = Math.floor((Date.now() - new Date(s.date).getTime()) / 86_400_000);
+                const urgent    = daysSince >= 7;
+                return (
+                  <div key={s.id} className="rounded-2xl p-4"
+                    style={{
+                      background: DS.surface,
+                      border:     `1px solid ${urgent ? 'var(--ds-danger)' : 'var(--ds-warn)'}`,
+                      borderLeft: `4px solid ${urgent ? 'var(--ds-danger)' : 'var(--ds-warn)'}`,
+                    }}>
+                    <div className="flex flex-wrap items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link href={`/learners/${s.learner_id}`}
+                            className="font-bold text-sm hover:underline" style={{ color: DS.text }}>
+                            {s.learner}
+                          </Link>
+                          <SessionTypeBadge type={s.type} />
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: 'var(--ds-warn-light)', color: 'var(--ds-warn)' }}>
+                            Needs Follow-up
+                          </span>
+                          {urgent && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                              style={{ background: 'var(--ds-danger-light)', color: 'var(--ds-danger)' }}>
+                              {daysSince}d overdue
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-3 mt-1 text-xs" style={{ color: DS.textMuted }}>
+                          <span>📅 Session: {fmt.date(s.date)}</span>
+                          <span>🧑‍🏫 {s.mentor}</span>
+                          <span>🏫 {s.school}</span>
+                        </div>
+                        {s.next_steps && (
+                          <p className="text-xs mt-2 leading-relaxed px-3 py-2 rounded-lg"
+                            style={{ background: DS.surfaceHover, color: DS.textMid }}>
+                            <span className="font-bold" style={{ color: DS.textMuted }}>Next steps: </span>
+                            {s.next_steps}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <Link href={`/mentorship/new?learner=${s.learner_id}`}
+                          className="btn-primary text-xs px-3 py-1.5 text-center whitespace-nowrap">
+                          Log Follow-up
+                        </Link>
+                        <Link href={`/learners/${s.learner_id}`}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-xl text-center whitespace-nowrap"
+                          style={{ background: DS.surfaceHover, color: DS.textMid as string, border: `1px solid ${DS.border}` }}>
+                          View Profile
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
           )}
         </div>
       )}

@@ -41,8 +41,28 @@ export async function POST(req: NextRequest) {
   const body   = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.issues[0].message);
-  const { data, error } = await supabase
+
+  const { data: session, error } = await supabase
     .from('mentorship_sessions').insert(parsed.data).select().single();
   if (error) return err(error.message, 500);
-  return created(data);
+
+  // Auto-create a follow-up goal when outcome requires it (non-blocking)
+  if (parsed.data.outcome === 'needs_follow_up') {
+    const targetDate = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    supabase.from('mentorship_goals').insert({
+      learner_id:  parsed.data.learner_id,
+      mentor_id:   parsed.data.mentor_id,
+      title:       `Follow-up after ${parsed.data.session_type.replace(/_/g, ' ')} session`,
+      description: parsed.data.next_steps
+        ? `Next steps noted: ${parsed.data.next_steps}`
+        : 'Follow up from session marked as needing attention.',
+      target_date: targetDate,
+      status:      'active',
+      progress:    0,
+    }).then(({ error: gErr }) => {
+      if (gErr) console.error('[auto-goal] insert failed:', gErr.message);
+    });
+  }
+
+  return created(session);
 }
