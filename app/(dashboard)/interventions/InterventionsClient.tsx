@@ -10,7 +10,7 @@ import {
   Clock, CheckCircle2, AlertTriangle, TrendingUp, Activity,
   School, User, Calendar, ExternalLink, HeartHandshake,
   AlertCircle, BarChart2, Users, CheckSquare, Square,
-  RotateCcw, Layers, ChevronUp,
+  RotateCcw, Layers, ChevronUp, ArrowUpCircle, Download, Printer,
 } from 'lucide-react';
 import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
@@ -233,6 +233,141 @@ function OutcomePanel({ item }: { item: Interv }) {
   );
 }
 
+// ─── Escalate Panel ──────────────────────────────────────────────────────────
+const PRIORITY_ORDER = ['low', 'medium', 'high', 'critical'] as const;
+
+function EscalatePanel({
+  item, onClose, onEscalated,
+}: {
+  item: Interv;
+  onClose: () => void;
+  onEscalated: (newPriority: string, update: any) => void;
+}) {
+  const [reason,    setReason]    = useState('');
+  const [escalating, setEscalating] = useState(false);
+
+  const currentIdx = PRIORITY_ORDER.indexOf(item.priority as any);
+  const nextPriority = currentIdx < PRIORITY_ORDER.length - 1
+    ? PRIORITY_ORDER[currentIdx + 1]
+    : null;
+
+  const PRIORITY_COLORS: Record<string, string> = {
+    low: 'var(--ds-success)', medium: 'var(--ds-warn)',
+    high: '#F97316', critical: 'var(--ds-danger)',
+  };
+
+  const submit = async () => {
+    if (!reason.trim()) { toast.error('Please provide an escalation reason.'); return; }
+    setEscalating(true);
+    try {
+      const res  = await fetch(`/api/v1/interventions/${item.id}/escalate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Escalation failed');
+      onEscalated(json.data.priority, json.data.update);
+      toast.success(`Escalated to ${json.data.priority.toUpperCase()} priority`);
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message ?? 'Could not escalate');
+    } finally {
+      setEscalating(false);
+    }
+  };
+
+  return (
+    <div className="px-4 pb-4">
+      <div className="rounded-xl p-4 space-y-3"
+        style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.4)' }}>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold flex items-center gap-2" style={{ color: '#F97316' }}>
+            <ArrowUpCircle className="w-4 h-4" />
+            Escalate Priority
+          </p>
+          <button onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {nextPriority ? (
+          <>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-bold px-2.5 py-0.5 rounded-full text-xs"
+                style={{ background: `${PRIORITY_COLORS[item.priority]}20`, color: PRIORITY_COLORS[item.priority] }}>
+                {item.priority.toUpperCase()}
+              </span>
+              <span style={{ color: DS.textMuted }}>→</span>
+              <span className="font-black px-2.5 py-0.5 rounded-full text-xs animate-pulse"
+                style={{ background: `${PRIORITY_COLORS[nextPriority]}25`, color: PRIORITY_COLORS[nextPriority] }}>
+                {nextPriority.toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <label className="text-xs font-bold mb-1.5 block" style={{ color: DS.textMid }}>
+                Escalation reason <span style={{ color: 'var(--ds-danger)' }}>*</span>
+              </label>
+              <textarea
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                placeholder="Why does this intervention need to be escalated? What has changed?"
+                rows={3}
+                className="form-input w-full text-sm resize-none"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={submit} disabled={escalating || !reason.trim()}
+                className="btn-primary text-xs px-4 py-2">
+                {escalating ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowUpCircle className="w-3 h-3" />}
+                Confirm Escalation
+              </button>
+              <button onClick={onClose} className="btn-secondary text-xs px-4 py-2">Cancel</button>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm" style={{ color: DS.textMid }}>
+            This intervention is already at <strong>CRITICAL</strong> priority — the highest level.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── CSV Export ───────────────────────────────────────────────────────────────
+function exportCSV(items: Interv[]) {
+  const headers = [
+    'Learner', 'School', 'Type', 'Priority', 'Status', 'Risk',
+    'Attendance%', 'Score%', 'Reason', 'Action Plan', 'Assigned To',
+    'Flagged By', 'Created', 'Due Date', 'Follow-up', 'Resolved At', 'Updates',
+  ];
+
+  const rows = items.map(i => [
+    i.learner, i.school, i.type, i.priority, i.status, i.risk,
+    i.att, i.score,
+    `"${(i.reason || '').replace(/"/g, '""')}"`,
+    `"${(i.action_plan || '').replace(/"/g, '""')}"`,
+    i.assigned_to ?? '',
+    i.flagged_by,
+    i.created.slice(0, 10),
+    i.due_date ?? '',
+    i.follow_up ?? '',
+    i.resolved_at?.slice(0, 10) ?? '',
+    i.updates.length,
+  ]);
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `interventions-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`Exported ${items.length} interventions to CSV`);
+}
+
 // ─── Intervention Card ────────────────────────────────────────────────────────
 function IntervCard({
   item, onUpdate, selected, onSelect,
@@ -248,6 +383,8 @@ function IntervCard({
   const [status,     setStatus]     = useState(item.status);
   const [saving,     setSaving]     = useState(false);
   const [activeTab,  setActiveTab]  = useState<'detail'|'outcome'>('detail');
+  const [escalating, setEscalating] = useState(false);
+  const [priority,   setPriority]   = useState(item.priority);
 
   const overdue    = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'resolved';
   const isCrit     = item.priority === 'critical' && item.status !== 'resolved';
@@ -362,21 +499,49 @@ function IntervCard({
           </div>
         </div>
 
-        <div className="hidden sm:flex gap-4 shrink-0 text-right cursor-pointer" onClick={() => setOpen(o => !o)}>
-          {[
-            { v: item.att,           label:'Att',     bad: item.att < 75 },
-            { v: item.score,         label:'Score',   bad: item.score < 50 },
-            { v: item.updates.length,label:'Updates', bad: false },
-          ].map(({ v, label, bad }) => (
-            <div key={label}>
-              <p className="text-sm font-black tabular-nums" style={{ color: bad ? 'var(--ds-danger)' : DS.text }}>
-                {v}{label !== 'Updates' ? '%' : ''}
-              </p>
-              <p className="text-[10px]" style={{ color: DS.textMuted }}>{label}</p>
-            </div>
-          ))}
+        <div className="hidden sm:flex items-start gap-4 shrink-0">
+          {/* Mini stats */}
+          <div className="flex gap-4 text-right cursor-pointer" onClick={() => setOpen(o => !o)}>
+            {[
+              { v: item.att,           label:'Att',     bad: item.att < 75 },
+              { v: item.score,         label:'Score',   bad: item.score < 50 },
+              { v: item.updates.length,label:'Updates', bad: false },
+            ].map(({ v, label, bad }) => (
+              <div key={label}>
+                <p className="text-sm font-black tabular-nums" style={{ color: bad ? 'var(--ds-danger)' : DS.text }}>
+                  {v}{label !== 'Updates' ? '%' : ''}
+                </p>
+                <p className="text-[10px]" style={{ color: DS.textMuted }}>{label}</p>
+              </div>
+            ))}
+          </div>
+          {/* Escalate button — only for open non-critical interventions */}
+          {item.status !== 'resolved' && priority !== 'critical' && (
+            <button
+              onClick={() => setEscalating(e => !e)}
+              title="Escalate priority"
+              className="mt-0.5 p-1.5 rounded-lg cursor-pointer transition-colors"
+              style={{ color: escalating ? '#F97316' : DS.textMuted, background: escalating ? 'rgba(249,115,22,0.12)' : 'transparent' }}
+              onMouseOver={e => { if (!escalating) (e.currentTarget as HTMLButtonElement).style.color = '#F97316'; }}
+              onMouseOut={e => { if (!escalating) (e.currentTarget as HTMLButtonElement).style.color = DS.textMuted as string; }}
+            >
+              <ArrowUpCircle className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Escalate panel */}
+      {escalating && item.status !== 'resolved' && (
+        <EscalatePanel
+          item={{ ...item, priority }}
+          onClose={() => setEscalating(false)}
+          onEscalated={(newPriority, update) => {
+            setPriority(newPriority);
+            onUpdate(item.id, { status: item.status, newNote: { ...update, author: 'You' } });
+          }}
+        />
+      )}
 
       {/* Expanded */}
       {open && (
@@ -558,6 +723,7 @@ export default function InterventionsClient({
   const [resolving,   setResolving]   = useState(false);
   const [showWorkload,setShowWorkload]= useState(false);
   const [showTrend,   setShowTrend]   = useState(false);
+  const [autoFlagging,setAutoFlagging]= useState(false);
 
   const onUpdate = (id: string, data: any) =>
     setItems(prev => prev.map(i =>
@@ -619,6 +785,22 @@ export default function InterventionsClient({
   const clearFilters = () => { setSearch(''); setTypeF(''); setPrioF(''); setAssigneeF(''); };
   const hasFilters   = search || typeF || prioF || assigneeF;
 
+  const unflaggedCount = atRisk.filter(r => r.open_interventions === 0).length;
+
+  const autoFlag = async () => {
+    if (unflaggedCount === 0) return;
+    if (!window.confirm(`Auto-create interventions for ${unflaggedCount} at-risk learner${unflaggedCount === 1 ? '' : 's'} with no open intervention?`)) return;
+    setAutoFlagging(true);
+    try {
+      const res  = await fetch('/api/v1/interventions/auto-flag', { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error ?? 'Auto-flag failed'); return; }
+      toast.success(json.data.message);
+      window.location.reload();
+    } catch { toast.error('Auto-flag failed'); }
+    finally { setAutoFlagging(false); }
+  };
+
   return (
     <div className="space-y-5 pb-20">
 
@@ -654,6 +836,17 @@ export default function InterventionsClient({
           Workload
           {showWorkload ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
+
+        {unflaggedCount > 0 && (
+          <button onClick={autoFlag} disabled={autoFlagging}
+            className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer disabled:opacity-60"
+            style={{ background: 'var(--ds-warn-light)', color: 'var(--ds-warn)', border: '1px solid var(--ds-warn)' }}>
+            {autoFlagging
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <AlertTriangle className="w-4 h-4" />}
+            Auto-flag {unflaggedCount} at-risk
+          </button>
+        )}
       </div>
 
       {/* Trend chart */}
@@ -719,9 +912,22 @@ export default function InterventionsClient({
             </>
           )}
 
-          <Link href="/interventions/new" className="btn-primary text-sm ml-auto whitespace-nowrap">
-            <Plus className="w-4 h-4" />Log Intervention
-          </Link>
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Export CSV */}
+            {tab !== 'at_risk' && filtered.length > 0 && (
+              <button
+                onClick={() => exportCSV(filtered)}
+                className="btn-secondary text-xs px-3 py-1.5 whitespace-nowrap"
+                title="Export current view to CSV"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            )}
+            <Link href="/interventions/new" className="btn-primary text-sm whitespace-nowrap">
+              <Plus className="w-4 h-4" />Log Intervention
+            </Link>
+          </div>
         </div>
         {tab !== 'at_risk' && hasFilters && (
           <p className="text-xs" style={{ color: DS.textMuted }}>

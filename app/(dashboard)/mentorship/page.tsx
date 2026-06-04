@@ -23,7 +23,7 @@ async function getPageData() {
     `).order('session_date', { ascending: false }).limit(200),
 
     supabase.from('mentorship_goals').select(`
-      goal_id, title, description, target_date, status, created_at,
+      goal_id, title, description, target_date, status, progress, created_at,
       learner_id,
       learners!inner(learner_profiles(first_name, last_name), schools(school_name)),
       mentor:users!mentor_id(user_id, full_name)
@@ -77,6 +77,7 @@ async function getPageData() {
     desc:      g.description || '',
     due:       g.target_date,
     status:    g.status,
+    progress:  g.progress ?? 0,
     learner_id:g.learner_id,
     learner:   `${g.learners?.learner_profiles?.first_name ?? ''} ${g.learners?.learner_profiles?.last_name ?? ''}`.trim(),
     school:    g.learners?.schools?.school_name ?? '',
@@ -177,15 +178,17 @@ export default async function MentorshipPage() {
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <HeartHandshake className="w-6 h-6 text-brand-700" />
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
+            <HeartHandshake className="w-6 h-6" style={{ color: 'var(--ds-purple)' }} />
             Mentorship
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-muted)' }}>
             {data.stats.total} sessions · {data.stats.thisMonth} this month
             {data.stats.overdueGoals > 0 && ` · `}
             {data.stats.overdueGoals > 0 && (
-              <span className="text-amber-600 font-semibold">{data.stats.overdueGoals} overdue goal{data.stats.overdueGoals!==1?'s':''}</span>
+              <span className="font-semibold" style={{ color: 'var(--ds-warn)' }}>
+                {data.stats.overdueGoals} overdue goal{data.stats.overdueGoals !== 1 ? 's' : ''}
+              </span>
             )}
           </p>
         </div>

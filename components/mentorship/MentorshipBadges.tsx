@@ -1,34 +1,34 @@
 // Shared mentorship badge + display components
 export const SESSION_TYPE_CFG: Record<string, { icon:string; label:string; color:string }> = {
-  check_in:         { icon:'💬', label:'Check-in',        color:'#1D4ED8' },
-  goal_review:      { icon:'🎯', label:'Goal Review',     color:'#7C3AED' },
-  academic_support: { icon:'📚', label:'Academic Support',color:'#0891B2' },
-  career:           { icon:'🚀', label:'Career',          color:'#DB2777' },
-  pastoral:         { icon:'💛', label:'Pastoral',        color:'#D97706' },
-  other:            { icon:'📋', label:'Other',           color:'#64748B' },
+  check_in:         { icon:'💬', label:'Check-in',        color:'#818CF8' },
+  goal_review:      { icon:'🎯', label:'Goal Review',     color:'#A78BFA' },
+  academic_support: { icon:'📚', label:'Academic Support',color:'#38BDF8' },
+  career:           { icon:'🚀', label:'Career',          color:'#F472B6' },
+  pastoral:         { icon:'💛', label:'Pastoral',        color:'#FBBF24' },
+  other:            { icon:'📋', label:'Other',           color:'#94A3B8' },
 };
 
-export const OUTCOME_CFG: Record<string, { label:string; color:string; bg:string; dot:string }> = {
-  positive:        { label:'Positive',       color:'#16A34A', bg:'#F0FDF4', dot:'#22C55E' },
-  neutral:         { label:'Neutral',        color:'#6B7280', bg:'#F9FAFB', dot:'#9CA3AF' },
-  needs_follow_up: { label:'Needs Follow-up',color:'#D97706', bg:'#FFFBEB', dot:'#F59E0B' },
+export const OUTCOME_CFG: Record<string, { label:string; color:string; dot:string }> = {
+  positive:        { label:'Positive',        color:'#34D399', dot:'#34D399' },
+  neutral:         { label:'Neutral',         color:'#94A3B8', dot:'#94A3B8' },
+  needs_follow_up: { label:'Needs Follow-up', color:'#FBBF24', dot:'#FBBF24' },
 };
 
 export const MOOD_EMOJI  = ['', '😟', '😕', '😐', '😊', '😄'];
 export const MOOD_LABEL  = ['', 'Struggling', 'Low', 'Neutral', 'Good', 'Great'];
 
-export const GOAL_STATUS: Record<string, { label:string; color:string; bg:string }> = {
-  active:    { label:'Active',    color:'#1D4ED8', bg:'#EFF6FF' },
-  completed: { label:'Completed', color:'#16A34A', bg:'#F0FDF4' },
-  paused:    { label:'Paused',    color:'#D97706', bg:'#FFFBEB' },
-  abandoned: { label:'Abandoned', color:'#6B7280', bg:'#F9FAFB' },
+export const GOAL_STATUS: Record<string, { label:string; color:string }> = {
+  active:    { label:'Active',    color:'#818CF8' },
+  completed: { label:'Completed', color:'#34D399' },
+  paused:    { label:'Paused',    color:'#FBBF24' },
+  abandoned: { label:'Abandoned', color:'#94A3B8' },
 };
 
 export function SessionTypeBadge({ type }: { type: string }) {
   const c = SESSION_TYPE_CFG[type] ?? SESSION_TYPE_CFG.other;
   return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: `${c.color}15`, color: c.color }}>
+      style={{ background: `${c.color}20`, color: c.color }}>
       {c.icon} {c.label}
     </span>
   );
@@ -39,7 +39,7 @@ export function OutcomeBadge({ outcome }: { outcome: string | null }) {
   const c = OUTCOME_CFG[outcome] ?? OUTCOME_CFG.neutral;
   return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.color }}>
+      style={{ background: `${c.dot}20`, color: c.color }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />
       {c.label}
     </span>
@@ -50,23 +50,22 @@ export function GoalStatusBadge({ status }: { status: string }) {
   const c = GOAL_STATUS[status] ?? GOAL_STATUS.active;
   return (
     <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.color }}>
+      style={{ background: `${c.color}20`, color: c.color }}>
       {c.label}
     </span>
   );
 }
 
 export function MoodDisplay({ mood, size = 'sm' }: { mood: number | null; size?: 'sm' | 'lg' }) {
-  if (!mood) return <span className="text-gray-300">—</span>;
+  if (!mood) return <span style={{ color: 'var(--ds-text-muted)' }}>—</span>;
   return (
-    <span className={`${size === 'lg' ? 'text-2xl' : 'text-base'}`}
-      title={`${MOOD_LABEL[mood]} (${mood}/5)`}>
+    <span className={size === 'lg' ? 'text-2xl' : 'text-base'} title={`${MOOD_LABEL[mood]} (${mood}/5)`}>
       {MOOD_EMOJI[mood]}
     </span>
   );
 }
 
-// Learner-facing session card (simpler, encouraging)
+// Learner-facing session card (simpler, encouraging) — keeps light theme for student portal
 export function LearnerSessionSummary({
   type, date, mentorName, outcome, mood, nextSteps,
 }: {
@@ -115,8 +114,7 @@ export function LearnerGoalCard({
   return (
     <div className={`rounded-2xl border p-4 flex items-start gap-3
       ${done ? 'bg-green-50/30 border-green-200/50' : overdue ? 'bg-red-50/20 border-red-200' : 'bg-white border-gray-100 shadow-sm'}`}>
-      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0
-        ${done ? 'bg-green-100' : 'bg-blue-50'}`}>
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0 ${done ? 'bg-green-100' : 'bg-blue-50'}`}>
         {done ? '✅' : '🎯'}
       </div>
       <div className="flex-1 min-w-0">
