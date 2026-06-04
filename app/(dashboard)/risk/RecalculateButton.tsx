@@ -16,7 +16,7 @@ export default function RecalculateButton() {
       if (!res.ok) throw new Error(json.error || 'Recalculation failed');
       const count = json.data?.recalculated ?? 0;
       toast.success(`Risk scores updated for ${count} learner${count !== 1 ? 's' : ''}`);
-      router.refresh(); // reload the page data without full navigation
+      router.refresh();
     } catch (err: any) {
       toast.error(err.message || 'Something went wrong');
     } finally {
@@ -25,10 +25,8 @@ export default function RecalculateButton() {
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      className="btn-secondary text-xs">
+    <button onClick={handleClick} disabled={loading}
+      className="btn-secondary text-xs flex items-center gap-1.5">
       {loading
         ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
         : <RefreshCw className="w-3.5 h-3.5" />}
