@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 async function getSponsorData(sponsorId: string) {
   const supabase = await createClient();
@@ -72,8 +73,8 @@ function RingChart({ value, total, color, label }: { value: number; total: numbe
         </text>
       </svg>
       <p className="text-xs font-semibold text-center leading-tight w-full truncate px-1"
-        style={{ color: '#64748B' }}>{label}</p>
-      <p className="text-xs text-center leading-tight" style={{ color: '#94A3B8' }}>
+        style={{ color: DS.textMuted }}>{label}</p>
+      <p className="text-xs text-center leading-tight" style={{ color: DS.textMuted }}>
         {value} of {total}
       </p>
     </div>
@@ -85,7 +86,7 @@ function Bar({ value, max, color }: { value: number; max: number; color: string 
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
       </div>
       <span className="text-xs font-bold tabular-nums w-8 text-right" style={{ color }}>{pct}%</span>
@@ -143,7 +144,7 @@ export default async function SponsorDashboard() {
   const scoreColor = (v: number) => v >= 75 ? '#10B981' : v >= 50 ? '#F59E0B' : '#EF4444';
 
   return (
-    <div className="space-y-8" style={{ color: '#0F172A' }}>
+    <div className="space-y-8" style={{ color: DS.text }}>
 
       {/* Page header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -151,16 +152,16 @@ export default async function SponsorDashboard() {
           <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: '#1D4ED8' }}>
             Impact Dashboard
           </p>
-          <h1 className="text-3xl font-black tracking-tight" style={{ color: '#0F172A' }}>
+          <h1 className="text-3xl font-black tracking-tight" style={{ color: DS.text }}>
             {sponsorName}
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#64748B' }}>
+          <p className="text-sm mt-1" style={{ color: DS.textMuted }}>
             Sponsoring {total} learner{total !== 1 ? 's' : ''} across the Girls in STEM programme
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs" style={{ color: '#94A3B8' }}>Last updated</p>
-          <p className="text-xs font-semibold" style={{ color: '#475569' }}>{now}</p>
+          <p className="text-xs" style={{ color: DS.textMuted }}>Last updated</p>
+          <p className="text-xs font-semibold" style={{ color: DS.textMid }}>{now}</p>
           <Link href="/sponsor/reports"
             className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>
@@ -171,7 +172,7 @@ export default async function SponsorDashboard() {
 
       {/* Primary KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px"
-        style={{ background: '#E2E8F0', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+        style={{ background: DS.border, borderRadius: 16, overflow: 'hidden', border: `1px solid ${DS.border}` }}>
         {[
           {
             label:   'Learners Sponsored',
@@ -211,14 +212,14 @@ export default async function SponsorDashboard() {
             color:   highRisk > 0 ? '#EF4444' : '#10B981',
           },
         ].map(({ label, value, sub, color, big }) => (
-          <div key={label} className="p-5 flex flex-col gap-1" style={{ background: '#FFFFFF' }}>
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>
+          <div key={label} className="p-5 flex flex-col gap-1" style={{ background: DS.surface }}>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: DS.textMuted }}>
               {label}
             </p>
             <p className="text-3xl font-black tabular-nums leading-none mt-1" style={{ color }}>
               {value}
             </p>
-            <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{sub}</p>
+            <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{sub}</p>
           </div>
         ))}
       </div>
@@ -227,8 +228,8 @@ export default async function SponsorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Impact rings */}
-        <div className="lg:col-span-1 rounded-2xl p-6" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-6" style={{ color: '#64748B' }}>
+        <div className="lg:col-span-1 rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <h2 className="text-sm font-bold uppercase tracking-wider mb-6" style={{ color: DS.textMuted }}>
             Key Impact Indicators
           </h2>
           <div className="grid grid-cols-3 gap-2" style={{ overflow: 'hidden' }}>
@@ -236,18 +237,18 @@ export default async function SponsorDashboard() {
             <RingChart value={avgScore} total={100} color="#10B981" label="Avg Score" />
             <RingChart value={onTrack} total={Math.max(total,1)} color="#7C3AED" label="On Track" />
           </div>
-          <div className="mt-6 pt-5" style={{ borderTop: '1px solid #F1F5F9' }}>
-            <p className="text-xs font-semibold mb-3" style={{ color: '#94A3B8' }}>RISK DISTRIBUTION</p>
+          <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${DS.borderLight}` }}>
+            <p className="text-xs font-semibold mb-3" style={{ color: DS.textMuted }}>RISK DISTRIBUTION</p>
             <div className="space-y-2">
               {[
-                { label: 'Low Risk — On Track',      count: onTrack,  color: '#10B981' },
-                { label: 'Medium Risk — Monitoring', count: learners.filter((l:any)=>l.risk_scores?.risk_level==='medium').length, color: '#F59E0B' },
-                { label: 'High Risk — Needs Support', count: highRisk, color: '#EF4444' },
+                { label: 'Low Risk — On Track',      count: onTrack,  color: DS.success },
+                { label: 'Medium Risk — Monitoring', count: learners.filter((l:any)=>l.risk_scores?.risk_level==='medium').length, color: DS.warn },
+                { label: 'High Risk — Needs Support', count: highRisk, color: DS.danger },
               ].map(({ label, count, color }) => (
                 <div key={label} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                    <span style={{ color: '#475569' }}>{label}</span>
+                    <span style={{ color: DS.textMid }}>{label}</span>
                   </div>
                   <span className="font-bold tabular-nums" style={{ color }}>{count}</span>
                 </div>
@@ -257,25 +258,25 @@ export default async function SponsorDashboard() {
         </div>
 
         {/* Assessment grade distribution */}
-        <div className="lg:col-span-2 rounded-2xl p-6" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
+        <div className="lg:col-span-2 rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#64748B' }}>
+              <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>
                 Assessment Grade Distribution
               </h2>
-              <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{ass.length} assessments across all learners</p>
+              <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{ass.length} assessments across all learners</p>
             </div>
           </div>
 
           {ass.length === 0 ? (
-            <p className="text-sm text-center py-8" style={{ color: '#94A3B8' }}>No assessment data yet</p>
+            <p className="text-sm text-center py-8" style={{ color: DS.textMuted }}>No assessment data yet</p>
           ) : (
             <div className="space-y-5">
               {[
                 { label: 'Distinction', threshold: '80%+', color: '#1D4ED8' },
-                { label: 'Merit',       threshold: '70–79%', color: '#10B981' },
-                { label: 'Pass',        threshold: '50–69%', color: '#F59E0B' },
-                { label: 'Needs Support', threshold: 'Below 50%', color: '#EF4444' },
+                { label: 'Merit',       threshold: '70–79%', color: DS.success },
+                { label: 'Pass',        threshold: '50–69%', color: DS.warn },
+                { label: 'Needs Support', threshold: 'Below 50%', color: DS.danger },
               ].map(({ label, threshold, color }) => {
                 const count = bands[label] || 0;
                 const pct   = ass.length ? Math.round(count / ass.length * 100) : 0;
@@ -283,17 +284,17 @@ export default async function SponsorDashboard() {
                   <div key={label}>
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold" style={{ color: '#1E293B' }}>{label}</span>
-                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#F8FAFC', color: '#94A3B8', border: '1px solid #E2E8F0' }}>
+                        <span className="text-sm font-semibold" style={{ color: DS.text }}>{label}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: DS.surfaceHover, color: DS.textMuted, border: `1px solid ${DS.border}` }}>
                           {threshold}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-bold tabular-nums" style={{ color }}>{count}</span>
-                        <span className="text-xs" style={{ color: '#94A3B8' }}>{pct}%</span>
+                        <span className="text-xs" style={{ color: DS.textMuted }}>{pct}%</span>
                       </div>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+                    <div className="h-2 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
                       <div className="h-full rounded-full transition-all duration-700"
                         style={{ width: `${pct}%`, background: color }} />
                     </div>
@@ -305,8 +306,8 @@ export default async function SponsorDashboard() {
 
           {/* Score trend mini sparkline */}
           {recentAss.length > 1 && (
-            <div className="mt-6 pt-5" style={{ borderTop: '1px solid #F1F5F9' }}>
-              <p className="text-xs font-semibold mb-3" style={{ color: '#94A3B8' }}>RECENT SCORE TREND</p>
+            <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${DS.borderLight}` }}>
+              <p className="text-xs font-semibold mb-3" style={{ color: DS.textMuted }}>RECENT SCORE TREND</p>
               <div className="flex items-end gap-1.5 h-12">
                 {[...recentAss].reverse().map((a: any, i: number) => {
                   const pct = Number(a.percentage || 0);
@@ -319,8 +320,8 @@ export default async function SponsorDashboard() {
                 })}
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-xs" style={{ color: '#94A3B8' }}>Oldest</span>
-                <span className="text-xs" style={{ color: '#94A3B8' }}>Most Recent</span>
+                <span className="text-xs" style={{ color: DS.textMuted }}>Oldest</span>
+                <span className="text-xs" style={{ color: DS.textMuted }}>Most Recent</span>
               </div>
             </div>
           )}
@@ -331,18 +332,18 @@ export default async function SponsorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Schools */}
-        <div className="rounded-2xl p-6" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: '#64748B' }}>
+        <div className="rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: DS.textMuted }}>
             Schools
           </h2>
           {Object.keys(schoolMap).length === 0 ? (
-            <p className="text-sm" style={{ color: '#94A3B8' }}>No data</p>
+            <p className="text-sm" style={{ color: DS.textMuted }}>No data</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(schoolMap).sort(([,a],[,b]) => b-a).map(([school, count]) => (
                 <div key={school}>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-medium truncate max-w-[170px]" style={{ color: '#1E293B' }}>{school}</span>
+                    <span className="text-sm font-medium truncate max-w-[170px]" style={{ color: DS.text }}>{school}</span>
                     <span className="text-sm font-bold tabular-nums ml-2" style={{ color: '#1D4ED8' }}>{count}</span>
                   </div>
                   <Bar value={count} max={total} color="#1D4ED8" />
@@ -353,12 +354,12 @@ export default async function SponsorDashboard() {
         </div>
 
         {/* Grades */}
-        <div className="rounded-2xl p-6" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: '#64748B' }}>
+        <div className="rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: DS.textMuted }}>
             Grade Distribution
           </h2>
           {Object.keys(gradeMap).length === 0 ? (
-            <p className="text-sm" style={{ color: '#94A3B8' }}>No data</p>
+            <p className="text-sm" style={{ color: DS.textMuted }}>No data</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(gradeMap).sort(([a],[b]) => a.localeCompare(b)).map(([grade, count], i) => {
@@ -367,7 +368,7 @@ export default async function SponsorDashboard() {
                 return (
                   <div key={grade}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium" style={{ color: '#1E293B' }}>{grade}</span>
+                      <span className="text-sm font-medium" style={{ color: DS.text }}>{grade}</span>
                       <span className="text-sm font-bold tabular-nums" style={{ color }}>{count}</span>
                     </div>
                     <Bar value={count} max={total} color={color} />
@@ -379,24 +380,24 @@ export default async function SponsorDashboard() {
         </div>
 
         {/* Programmes */}
-        <div className="rounded-2xl p-6" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: '#64748B' }}>
+        <div className="rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: DS.textMuted }}>
             Programme Participation
           </h2>
           {Object.keys(progMap).length === 0 ? (
-            <p className="text-sm" style={{ color: '#94A3B8' }}>No programme data</p>
+            <p className="text-sm" style={{ color: DS.textMuted }}>No programme data</p>
           ) : (
             <div className="space-y-3">
               {Object.entries(progMap).sort(([,a],[,b]) => b.count - a.count).map(([name, { count, type }]) => (
                 <div key={name} className="flex items-center justify-between rounded-xl px-4 py-3"
-                  style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                  style={{ background: DS.surfaceHover, border: `1px solid ${DS.border}` }}>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate" style={{ color: '#1E293B' }}>{name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{type}</p>
+                    <p className="text-sm font-semibold truncate" style={{ color: DS.text }}>{name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{type}</p>
                   </div>
                   <div className="shrink-0 ml-3 text-right">
                     <p className="text-lg font-black tabular-nums" style={{ color: '#1D4ED8' }}>{count}</p>
-                    <p className="text-xs" style={{ color: '#94A3B8' }}>learners</p>
+                    <p className="text-xs" style={{ color: DS.textMuted }}>learners</p>
                   </div>
                 </div>
               ))}

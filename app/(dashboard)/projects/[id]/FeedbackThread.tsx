@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Send, Lock, MessageSquare } from 'lucide-react';
 import { fmt } from '@/utils';
-import { cn } from '@/utils';
+import { DS } from '@/components/platform/tokens';
 
 interface FeedbackItem {
   feedback_id: string; body: string; is_private: boolean;
@@ -14,8 +14,8 @@ interface Props {
   currentUserId: string; currentUserName: string; isAdmin: boolean;
 }
 
-const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-brand-700', instructor: 'bg-blue-600', learner: 'bg-mint-500',
+const ROLE_BG: Record<string, string> = {
+  admin: DS.primary as string, instructor: '#2563EB', learner: 'var(--ds-success)',
 };
 
 export default function FeedbackThread({ projectId, feedback: initial, currentUserName, isAdmin }: Props) {
@@ -45,49 +45,53 @@ export default function FeedbackThread({ projectId, feedback: initial, currentUs
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-      <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-        <MessageSquare className="w-4 h-4 text-brand-700" />
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+      <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: DS.text }}>
+        <MessageSquare className="w-4 h-4" style={{ color: DS.primary }} />
         Feedback & Comments
         {items.length > 0 && (
-          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{items.length}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: DS.surfaceHover, color: DS.textMuted }}>{items.length}</span>
         )}
       </h3>
 
       {items.length === 0 && (
-        <p className="text-sm text-gray-400 py-4 text-center">No feedback yet. Be the first to comment.</p>
+        <p className="text-sm py-4 text-center" style={{ color: DS.textMuted }}>No feedback yet. Be the first to comment.</p>
       )}
 
       <div className="space-y-3">
         {items.map(f => {
           const initials = f.users?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase();
-          const roleColor = ROLE_COLORS[f.users?.role] || 'bg-gray-500';
+          const roleBg   = ROLE_BG[f.users?.role] || DS.textMid as string;
           return (
             <div key={f.feedback_id}
-              className={cn('flex gap-3 p-3 rounded-xl', f.is_private ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50')}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${roleColor}`}>
+              className="flex gap-3 p-3 rounded-xl"
+              style={f.is_private
+                ? { background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)' }
+                : { background: DS.surfaceHover as string, border: `1px solid ${DS.borderLight}` }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                style={{ background: roleBg }}>
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs font-semibold text-gray-700">{f.users?.full_name}</p>
+                  <p className="text-xs font-semibold" style={{ color: DS.textMid }}>{f.users?.full_name}</p>
                   {f.is_private && (
-                    <span className="flex items-center gap-0.5 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
+                    <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                      style={{ background: 'rgba(251,191,36,0.15)', color: '#F59E0B' }}>
                       <Lock className="w-2.5 h-2.5" /> Private
                     </span>
                   )}
-                  <span className="text-[10px] text-gray-400 ml-auto">{fmt.date(f.created_at)}</span>
+                  <span className="text-[10px] ml-auto" style={{ color: DS.textMuted }}>{fmt.date(f.created_at)}</span>
                 </div>
-                <p className="text-sm text-gray-700 mt-1 whitespace-pre-line">{f.body}</p>
+                <p className="text-sm mt-1 whitespace-pre-line" style={{ color: DS.text }}>{f.body}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Post feedback */}
       {isAdmin && (
-        <div className="pt-3 border-t border-gray-100 space-y-2">
+        <div className="pt-3 space-y-2" style={{ borderTop: `1px solid ${DS.border}` }}>
           <textarea
             value={body} onChange={e => setBody(e.target.value)}
             rows={3} placeholder="Write feedback for this learner…"
@@ -95,7 +99,7 @@ export default function FeedbackThread({ projectId, feedback: initial, currentUs
             onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) submit(); }}
           />
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-xs cursor-pointer select-none" style={{ color: DS.textMuted }}>
               <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)}
                 className="rounded" />
               <Lock className="w-3 h-3" /> Private (instructors only)

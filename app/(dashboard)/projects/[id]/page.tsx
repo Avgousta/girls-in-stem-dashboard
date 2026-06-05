@@ -3,9 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { fmt } from '@/utils';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Award, MessageSquare, User } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import ProjectActions from './ProjectActions';
 import FeedbackThread from './FeedbackThread';
+import { DS } from '@/components/platform/tokens';
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -16,6 +17,9 @@ const STAGES = [
   { key: 'submitted',   label: 'Submitted',   color: '#2563EB', bg: '#EFF6FF' },
   { key: 'marked',      label: 'Marked ✅',   color: '#16A34A', bg: '#F0FDF4' },
 ] as const;
+
+const scoreColor = (pct: number) => pct >= 75 ? 'var(--ds-success)' : pct >= 50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
+const scoreBg    = (pct: number) => pct >= 75 ? 'var(--ds-success)' : pct >= 50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
 
 export default async function ProjectDetailPage({ params }: Props) {
   const user = await requireAuth(['admin', 'instructor']);
@@ -44,24 +48,28 @@ export default async function ProjectDetailPage({ params }: Props) {
   const profile  = learner?.learner_profiles;
   const stage    = STAGES.find(s => s.key === ((p as any).stage || 'planning')) || STAGES[0];
   const pct      = (p as any).score != null ? Math.round(((p as any).score / ((p as any).max_score || 100)) * 100) : null;
-  const feedback = (feedbackRes.data || []).filter((f: any) => !f.is_private || user.role === 'admin' || user.role === 'instructor');
+  const feedback = ((feedbackRes.data || []) as any[])
+    .filter((f: any) => !f.is_private || user.role === 'admin' || user.role === 'instructor')
+    .map((f: any) => ({ ...f, users: Array.isArray(f.users) ? f.users[0] ?? {} : f.users ?? {} }));
+  const overdue  = (p as any).due_date && new Date((p as any).due_date) < new Date() && !['submitted','marked'].includes((p as any).stage);
 
   return (
     <div className="max-w-4xl space-y-6">
       <div>
         <Link href="/projects"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
+          className="inline-flex items-center gap-1.5 text-sm hover:underline mb-4"
+          style={{ color: DS.textMuted }}>
           <ArrowLeft className="w-4 h-4" /> Back to Projects
         </Link>
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{(p as any).project_name}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="text-2xl font-bold" style={{ color: DS.text }}>{(p as any).project_name}</h1>
+            <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>
               {profile?.first_name} {profile?.last_name} · {(p as any).programs?.program_name}
             </p>
           </div>
           <span className="text-sm font-bold px-3 py-1.5 rounded-full"
-            style={{ background: stage.bg, color: stage.color }}>
+            style={{ background: `${stage.color}20`, color: stage.color }}>
             {stage.label}
           </span>
         </div>
@@ -73,92 +81,83 @@ export default async function ProjectDetailPage({ params }: Props) {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Info card */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <div className="rounded-2xl p-5 space-y-4" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
             {(p as any).description && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</h3>
-                <p className="text-sm text-gray-700">{(p as any).description}</p>
+                <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: DS.textMuted }}>Description</h3>
+                <p className="text-sm" style={{ color: DS.textMid }}>{(p as any).description}</p>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs text-gray-400 mb-0.5">Learner</p>
+                <p className="text-xs mb-0.5" style={{ color: DS.textMuted }}>Learner</p>
                 <Link href={`/learners/${learner?.learner_id}`}
-                  className="font-medium text-brand-700 hover:underline">
+                  className="font-medium hover:underline" style={{ color: DS.primary }}>
                   {profile?.first_name} {profile?.last_name}
                 </Link>
-                <p className="text-xs text-gray-400">Gr {learner?.grade} · {learner?.schools?.school_name}</p>
+                <p className="text-xs" style={{ color: DS.textMuted }}>Gr {learner?.grade} · {learner?.schools?.school_name}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 mb-0.5">Programme</p>
-                <p className="font-medium text-gray-800">{(p as any).programs?.program_name}</p>
-                <p className="text-xs text-gray-400">{(p as any).programs?.program_type}</p>
+                <p className="text-xs mb-0.5" style={{ color: DS.textMuted }}>Programme</p>
+                <p className="font-medium" style={{ color: DS.text }}>{(p as any).programs?.program_name}</p>
+                <p className="text-xs" style={{ color: DS.textMuted }}>{(p as any).programs?.program_type}</p>
               </div>
               {(p as any).due_date && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Due Date</p>
-                  <p className={`font-medium flex items-center gap-1 ${new Date((p as any).due_date) < new Date() && !['submitted','marked'].includes((p as any).stage) ? 'text-red-600' : 'text-gray-800'}`}>
+                  <p className="text-xs mb-0.5" style={{ color: DS.textMuted }}>Due Date</p>
+                  <p className="font-medium flex items-center gap-1"
+                    style={{ color: overdue ? 'var(--ds-danger)' : DS.text as string }}>
                     <Calendar className="w-3.5 h-3.5" />{fmt.date((p as any).due_date)}
-                    {new Date((p as any).due_date) < new Date() && !['submitted','marked'].includes((p as any).stage) && (
-                      <span className="text-xs">⚠ Overdue</span>
-                    )}
+                    {overdue && <span className="text-xs">⚠ Overdue</span>}
                   </p>
                 </div>
               )}
               {(p as any).submitted_at && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Submitted</p>
-                  <p className="font-medium text-gray-800">{fmt.date((p as any).submitted_at)}</p>
+                  <p className="text-xs mb-0.5" style={{ color: DS.textMuted }}>Submitted</p>
+                  <p className="font-medium" style={{ color: DS.text }}>{fmt.date((p as any).submitted_at)}</p>
                 </div>
               )}
             </div>
 
-            {/* Score */}
-            {(p as any).score != null && (
-              <div className="pt-3 border-t border-gray-100">
+            {pct !== null && (
+              <div className="pt-3" style={{ borderTop: `1px solid ${DS.border}` }}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Score</span>
-                  <span className={`text-2xl font-bold tabular-nums ${pct! >= 75 ? 'text-mint-600' : pct! >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {pct}%
-                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: DS.textMuted }}>Score</span>
+                  <span className="text-2xl font-bold tabular-nums" style={{ color: scoreColor(pct) }}>{pct}%</span>
                 </div>
-                <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="w-full h-3 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
                   <div className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${pct}%`,
-                      background: pct! >= 75 ? '#2DD4A0' : pct! >= 50 ? '#FCD34D' : '#F87171',
-                    }} />
+                    style={{ width: `${pct}%`, background: scoreBg(pct) }} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1 text-right">
+                <p className="text-xs mt-1 text-right" style={{ color: DS.textMuted }}>
                   {(p as any).score} / {(p as any).max_score} marks
                 </p>
               </div>
             )}
           </div>
 
-          {/* Stage pipeline visual */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Project Pipeline</h3>
+          {/* Stage pipeline */}
+          <div className="rounded-2xl p-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: DS.textMuted }}>Project Pipeline</h3>
             <div className="flex items-center gap-1 flex-wrap">
               {STAGES.map((s, i) => {
                 const isActive  = s.key === (p as any).stage;
                 const isPassed  = STAGES.findIndex(st => st.key === (p as any).stage) > i;
                 return (
                   <div key={s.key} className="flex items-center gap-1">
-                    <div className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                      isActive ? 'shadow-md scale-105' : ''
-                    }`}
+                    <div className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'scale-105' : ''}`}
                       style={{
-                        background: isActive ? s.color : isPassed ? s.color + '20' : '#F3F4F6',
-                        color:      isActive ? '#fff'   : isPassed ? s.color       : '#9CA3AF',
+                        background: isActive ? s.color : isPassed ? `${s.color}20` : DS.surfaceHover as string,
+                        color:      isActive ? '#fff'   : isPassed ? s.color       : DS.textMuted as string,
+                        boxShadow:  isActive ? `0 2px 8px ${s.color}60` : 'none',
                       }}>
                       {s.label}
                     </div>
                     {i < STAGES.length - 1 && (
-                      <div className="w-4 h-0.5 rounded" style={{
-                        background: isPassed ? s.color : '#E5E7EB',
-                      }} />
+                      <div className="w-4 h-0.5 rounded"
+                        style={{ background: isPassed ? s.color : DS.borderLight }} />
                     )}
                   </div>
                 );
@@ -166,7 +165,6 @@ export default async function ProjectDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Feedback thread */}
           <FeedbackThread
             projectId={id}
             feedback={feedback}

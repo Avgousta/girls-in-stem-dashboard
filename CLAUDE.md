@@ -177,18 +177,19 @@ All API routes have `export const dynamic = 'force-dynamic'` (prevents static pr
 | `/attendance` | Dark theme form + history, DS status/grade colours |
 | `middleware.ts` | Security: `getUser()` (not `getSession()`), allowlist per role |
 
-### ⏳ Still light-themed
-- `/assessments` + `/assessments/bulk`
-- `/projects` + `/projects/[id]`
-- `/programs` + `/programs/[id]`
-- `/admin/users`, `/admin/schools`, `/admin/sponsors`, `/admin/approvals`
-- `/learners/bulk`
+### ✅ All pages on dark theme (DS tokens) — including teacher + sponsor portals
+
+Additional pages upgraded (Jun 2026):
+- `programs/new`, `programs/[id]/edit` — form pages
+- `projects/new` — new project form with dark learner selector
+- `teacher/assessments` — marks capture table
+- `teacher/meetings` + `TeacherMeetingsClient` — scheduling UI
+- All `(sponsor)/*` pages — converted hardcoded hex to DS tokens
 
 ---
 
 ## Known Gaps / TODO
 
-- [ ] **Remaining light-themed pages** — see table above
 - [ ] **`pg_cron` not scheduled** — risk recalculation every 6h:
   ```sql
   SELECT cron.schedule('risk-scores', '0 */6 * * *', 'SELECT calculate_risk_scores()');

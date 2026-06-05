@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import NewProgramForm from './NewProgramForm';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { DS } from '@/components/platform/tokens';
 
 async function getInstructors() {
   const supabase = await createClient();
@@ -22,15 +23,16 @@ export default async function NewProgramPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <Link href="/programs"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
+          className="inline-flex items-center gap-1.5 text-sm hover:underline mb-4"
+          style={{ color: DS.textMuted }}>
           <ArrowLeft className="w-4 h-4" /> Back to Programmes
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Create Programme</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-2xl font-bold" style={{ color: DS.text }}>Create Programme</h1>
+        <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>
           Programmes can include learners from any school — no school restriction.
         </p>
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div className="rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
         <NewProgramForm instructors={instructors} />
       </div>
     </div>

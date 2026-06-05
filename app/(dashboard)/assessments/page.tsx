@@ -131,12 +131,13 @@ export default async function AssessmentsPage() {
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-brand-700" /> Assessment Intelligence
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
+            <BarChart3 className="w-6 h-6" style={{ color: 'var(--ds-purple)' }} /> Assessment Intelligence
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {data.stats.total} assessments · {data.stats.declining > 0 && `${data.stats.declining} declining · `}
-            {data.stats.atRisk > 0 && `${data.stats.atRisk} at risk`}
+          <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-muted)' }}>
+            {data.stats.total} assessments
+            {data.stats.declining > 0 && <> · <span style={{ color: 'var(--ds-danger)' }}>{data.stats.declining} declining</span></>}
+            {data.stats.atRisk > 0 && <> · <span style={{ color: 'var(--ds-danger)' }}>{data.stats.atRisk} at risk</span></>}
           </p>
         </div>
         <Link href="/assessments/bulk" className="btn-primary">

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { Loader2, Save, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 const PROGRAM_TYPES = [
   { value: 'Coding',             label: 'Coding' },
@@ -53,9 +54,9 @@ interface Props {
 
 export default function EditProgramForm({ program, instructors }: Props) {
   const router  = useRouter();
-  const [saving,   setSaving]   = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saving,         setSaving]        = useState(false);
+  const [deleting,       setDeleting]      = useState(false);
+  const [confirmDelete,  setConfirmDelete] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -120,13 +121,13 @@ export default function EditProgramForm({ program, instructors }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         <div className="sm:col-span-2">
-          <label className="form-label">Programme Name <span className="text-red-500">*</span></label>
+          <label className="form-label">Programme Name <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
           <input {...register('program_name')} className="form-input" />
           {errors.program_name && <p className="form-error">{errors.program_name.message}</p>}
         </div>
 
         <div>
-          <label className="form-label">Programme Type <span className="text-red-500">*</span></label>
+          <label className="form-label">Programme Type <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
           <select {...register('program_type')} className="form-select">
             {PROGRAM_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -160,7 +161,7 @@ export default function EditProgramForm({ program, instructors }: Props) {
         </div>
 
         <div>
-          <label className="form-label">Start Date <span className="text-red-500">*</span></label>
+          <label className="form-label">Start Date <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
           <input type="date" {...register('start_date')} className="form-input" />
           {errors.start_date && <p className="form-error">{errors.start_date.message}</p>}
         </div>
@@ -168,7 +169,7 @@ export default function EditProgramForm({ program, instructors }: Props) {
         <div>
           <label className="form-label">End Date</label>
           <input type="date" {...register('end_date')} className="form-input" />
-          <p className="text-xs text-gray-400 mt-1">Leave blank if ongoing.</p>
+          <p className="text-xs mt-1" style={{ color: DS.textMuted }}>Leave blank if ongoing.</p>
         </div>
 
         <div className="sm:col-span-2">
@@ -177,8 +178,8 @@ export default function EditProgramForm({ program, instructors }: Props) {
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100 flex-wrap gap-3">
+      <div className="flex items-center justify-between pt-2 flex-wrap gap-3"
+        style={{ borderTop: `1px solid ${DS.border}` }}>
         <div className="flex gap-3">
           <button type="submit" disabled={saving || !isDirty} className="btn-primary">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -187,10 +188,9 @@ export default function EditProgramForm({ program, instructors }: Props) {
           <Link href="/programs" className="btn-secondary">Cancel</Link>
         </div>
 
-        {/* Delete */}
         <div className="flex items-center gap-3">
           {confirmDelete && (
-            <span className="text-sm text-red-600 flex items-center gap-1.5">
+            <span className="text-sm flex items-center gap-1.5" style={{ color: 'var(--ds-danger)' }}>
               <AlertTriangle className="w-4 h-4" />
               This will deactivate the programme. Confirm?
             </span>
@@ -199,16 +199,16 @@ export default function EditProgramForm({ program, instructors }: Props) {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors
-              ${confirmDelete
-                ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'border border-red-200 text-red-600 hover:bg-red-50'}`}>
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors cursor-pointer"
+            style={confirmDelete
+              ? { background: 'var(--ds-danger)', color: '#fff' }
+              : { border: '1px solid var(--ds-danger)', color: 'var(--ds-danger)', background: 'var(--ds-danger-light)' }}>
             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             {deleting ? 'Deactivating…' : confirmDelete ? 'Yes, Deactivate' : 'Deactivate'}
           </button>
           {confirmDelete && (
             <button type="button" onClick={() => setConfirmDelete(false)}
-              className="text-sm text-gray-500 hover:text-gray-700">
+              className="text-sm cursor-pointer" style={{ color: DS.textMuted }}>
               Cancel
             </button>
           )}

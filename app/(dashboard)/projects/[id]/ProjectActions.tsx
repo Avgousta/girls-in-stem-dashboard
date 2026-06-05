@@ -3,12 +3,24 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, Save, MoveRight } from 'lucide-react';
+import { DS } from '@/components/platform/tokens';
 
 interface Props {
   project: { id: string; stage: string; score: number | null; max_score: number; due_date: string | null };
   stages:  readonly { key: string; label: string; color: string; bg: string }[];
   isAdmin: boolean;
 }
+
+const labelSt: React.CSSProperties = {
+  display: 'block', fontSize: '11px', fontWeight: 700,
+  textTransform: 'uppercase', letterSpacing: '0.06em',
+  marginBottom: '5px', color: DS.textMuted as string,
+};
+const inputSt: React.CSSProperties = {
+  width: '100%', background: DS.surfaceHover as string, color: DS.text as string,
+  border: `1px solid ${DS.border}`, borderRadius: '10px',
+  padding: '8px 10px', fontSize: '13px', outline: 'none',
+};
 
 export default function ProjectActions({ project, stages, isAdmin }: Props) {
   const router  = useRouter();
@@ -59,43 +71,43 @@ export default function ProjectActions({ project, stages, isAdmin }: Props) {
 
   if (!isAdmin) return null;
 
-  const stageInfo = stages.find(s => s.key === stage);
+  const pctVal = score && maxSc ? Math.round(Number(score) / Number(maxSc) * 100) : null;
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Update Project</h3>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+        <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>Update Project</h3>
 
         <div>
-          <label className="form-label">Stage</label>
-          <select value={stage} onChange={e => setStage(e.target.value)} className="form-select">
+          <label style={labelSt}>Stage</label>
+          <select value={stage} onChange={e => setStage(e.target.value)} style={inputSt}>
             {stages.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="form-label">Due Date</label>
-          <input type="date" value={due} onChange={e => setDue(e.target.value)} className="form-input" />
+          <label style={labelSt}>Due Date</label>
+          <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputSt} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="form-label">Score</label>
+            <label style={labelSt}>Score</label>
             <input type="number" value={score} onChange={e => setScore(e.target.value)}
-              className="form-input" placeholder="—" min={0} max={Number(maxSc)} />
+              style={inputSt} placeholder="—" min={0} max={Number(maxSc)} />
           </div>
           <div>
-            <label className="form-label">Out of</label>
+            <label style={labelSt}>Out of</label>
             <input type="number" value={maxSc} onChange={e => setMaxSc(e.target.value)}
-              className="form-input" min={1} />
+              style={inputSt} min={1} />
           </div>
         </div>
 
-        {score && maxSc && (
-          <div className="text-center py-2 rounded-xl bg-gray-50">
+        {pctVal !== null && (
+          <div className="text-center py-3 rounded-xl" style={{ background: DS.surfaceHover }}>
             <p className="text-2xl font-bold tabular-nums"
-              style={{ color: (Number(score)/Number(maxSc)*100) >= 75 ? '#16A34A' : (Number(score)/Number(maxSc)*100) >= 50 ? '#D97706' : '#DC2626' }}>
-              {Math.round(Number(score)/Number(maxSc)*100)}%
+              style={{ color: pctVal >= 75 ? 'var(--ds-success)' : pctVal >= 50 ? 'var(--ds-warn)' : 'var(--ds-danger)' }}>
+              {pctVal}%
             </p>
           </div>
         )}
@@ -106,11 +118,10 @@ export default function ProjectActions({ project, stages, isAdmin }: Props) {
         </button>
       </div>
 
-      {/* Quick advance stage */}
       {nextStage && (
         <button onClick={advanceStage} disabled={loading}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all hover:shadow-md"
-          style={{ borderColor: nextStage.color, background: nextStage.bg, color: nextStage.color }}>
+          className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 text-sm font-semibold transition-all cursor-pointer"
+          style={{ borderColor: nextStage.color, background: `${nextStage.color}15`, color: nextStage.color }}>
           <span>Move to {nextStage.label}</span>
           <MoveRight className="w-4 h-4" />
         </button>

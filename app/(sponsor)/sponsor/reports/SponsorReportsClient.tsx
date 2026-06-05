@@ -1,4 +1,5 @@
 'use client';
+import { DS } from '@/components/platform/tokens';
 import { useState } from 'react';
 
 interface Props {
@@ -76,7 +77,7 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
   ];
 
   return (
-    <div className="space-y-8" style={{ color: '#0F172A' }}>
+    <div className="space-y-8" style={{ color: DS.text }}>
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -85,7 +86,7 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
             Reports & Insights
           </p>
           <h1 className="text-3xl font-black tracking-tight">Impact Report</h1>
-          <p className="text-sm mt-1" style={{ color: '#64748B' }}>
+          <p className="text-sm mt-1" style={{ color: DS.textMuted }}>
             {sponsorName} &nbsp;·&nbsp; Generated {new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
@@ -97,19 +98,19 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
           </button>
           <button onClick={exportAssessments}
             className="text-sm font-semibold px-4 py-2 rounded-xl"
-            style={{ background: '#F0FDF4', color: '#059669', border: '1px solid #A7F3D0' }}>
+            style={{ background: DS.successLight, color: DS.success, border: '1px solid #A7F3D0' }}>
             ↓ Assessment Data
           </button>
           <button onClick={exportAttendance}
             className="text-sm font-semibold px-4 py-2 rounded-xl"
-            style={{ background: '#FFF7ED', color: '#D97706', border: '1px solid #FDE68A' }}>
+            style={{ background: DS.warnLight, color: DS.warn, border: '1px solid #FDE68A' }}>
             ↓ Attendance Data
           </button>
         </div>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-2xl" style={{ background: '#F1F5F9' }}>
+      <div className="flex gap-1 p-1 rounded-2xl" style={{ background: DS.borderLight }}>
         {tabs.map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)}
             className="flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all"
@@ -135,21 +136,21 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
               { label: 'Academic Performance',   value: `${avgScore}%`, unit: 'avg',color: scoreColor(avgScore), desc: `${assessments.length} assessments recorded` },
               { label: 'Projects Completed',     value: doneProj,   unit: 'done',   color: '#7C3AED', desc: `${projects.length} projects total` },
             ].map(({ label, value, unit, color, desc }) => (
-              <div key={label} className="rounded-2xl p-5" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
-                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#94A3B8' }}>{label}</p>
+              <div key={label} className="rounded-2xl p-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: DS.textMuted }}>{label}</p>
                 <p className="text-4xl font-black tabular-nums leading-none" style={{ color }}>
                   {value}
                 </p>
-                {unit && <p className="text-sm mt-0.5 font-medium" style={{ color: '#94A3B8' }}>{unit}</p>}
-                <p className="text-xs mt-2" style={{ color: '#CBD5E1' }}>{desc}</p>
+                {unit && <p className="text-sm mt-0.5 font-medium" style={{ color: DS.textMuted }}>{unit}</p>}
+                <p className="text-xs mt-2" style={{ color: DS.borderLight }}>{desc}</p>
               </div>
             ))}
           </div>
 
           {/* Subject performance breakdown */}
           {subjectBreakdown.length > 0 && (
-            <div className="rounded-2xl p-6" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
-              <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: '#64748B' }}>
+            <div className="rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+              <h2 className="text-sm font-bold uppercase tracking-wider mb-5" style={{ color: DS.textMuted }}>
                 Performance by Subject
               </h2>
               <div className="space-y-4">
@@ -157,14 +158,14 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                   <div key={subject}>
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold" style={{ color: '#1E293B' }}>{subject}</span>
-                        <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#F8FAFC', color: '#94A3B8', border: '1px solid #E2E8F0' }}>
+                        <span className="text-sm font-semibold" style={{ color: DS.text }}>{subject}</span>
+                        <span className="text-xs px-2 py-0.5 rounded" style={{ background: DS.surfaceHover, color: DS.textMuted, border: `1px solid ${DS.border}` }}>
                           {count} result{count!==1?'s':''}
                         </span>
                       </div>
                       <span className="text-sm font-bold tabular-nums" style={{ color: scoreColor(avg) }}>{avg}%</span>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+                    <div className="h-2 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
                       <div className="h-full rounded-full" style={{ width: `${avg}%`, background: scoreColor(avg) }} />
                     </div>
                   </div>
@@ -180,9 +181,9 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
             </h2>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: 'On Track',     count: learners.filter(l=>l.risk_scores?.risk_level==='low').length,    color: '#10B981', desc: 'Meeting all benchmarks' },
-                { label: 'Monitoring',   count: learners.filter(l=>l.risk_scores?.risk_level==='medium').length, color: '#F59E0B', desc: 'Needs some attention' },
-                { label: 'High Risk',    count: learners.filter(l=>l.risk_scores?.risk_level==='high').length,   color: '#EF4444', desc: 'Requires intervention' },
+                { label: 'On Track',     count: learners.filter(l=>l.risk_scores?.risk_level==='low').length,    color: DS.success, desc: 'Meeting all benchmarks' },
+                { label: 'Monitoring',   count: learners.filter(l=>l.risk_scores?.risk_level==='medium').length, color: DS.warn, desc: 'Needs some attention' },
+                { label: 'High Risk',    count: learners.filter(l=>l.risk_scores?.risk_level==='high').length,   color: DS.danger, desc: 'Requires intervention' },
               ].map(({ label, count, color, desc }) => (
                 <div key={label}>
                   <p className="text-3xl font-black tabular-nums" style={{ color }}>{count}</p>
@@ -197,11 +198,11 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
 
       {/* ASSESSMENTS TAB */}
       {tab === 'assessments' && (
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
-          <div className="px-6 py-4 flex items-center justify-between" style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${DS.border}` }}>
+          <div className="px-6 py-4 flex items-center justify-between" style={{ background: DS.surfaceHover, borderBottom: `1px solid ${DS.border}` }}>
             <div>
-              <p className="font-semibold" style={{ color: '#0F172A' }}>{assessments.length} Assessment Records</p>
-              <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Average: {avgScore}% across all subjects</p>
+              <p className="font-semibold" style={{ color: DS.text }}>{assessments.length} Assessment Records</p>
+              <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>Average: {avgScore}% across all subjects</p>
             </div>
             <button onClick={exportAssessments}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg"
@@ -209,12 +210,12 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
               ↓ CSV
             </button>
           </div>
-          <table className="w-full" style={{ background: '#FFF' }}>
+          <table className="w-full" style={{ background: DS.surface }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+              <tr style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
                 {['Date','Subject','Score','Grade','Programme'].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider"
-                    style={{ color: '#94A3B8' }}>{h}</th>
+                    style={{ color: DS.textMuted }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -223,8 +224,8 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                 const pct = Number(a.percentage || 0);
                 return (
                   <tr key={i} style={{ borderBottom: '1px solid #F8FAFC' }}>
-                    <td className="px-5 py-3 text-xs" style={{ color: '#64748B' }}>{a.assessment_date ? new Date(a.assessment_date).toLocaleDateString('en-ZA') : '—'}</td>
-                    <td className="px-5 py-3 text-sm font-semibold" style={{ color: '#1E293B' }}>{a.subject || '—'}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{a.assessment_date ? new Date(a.assessment_date).toLocaleDateString('en-ZA') : '—'}</td>
+                    <td className="px-5 py-3 text-sm font-semibold" style={{ color: DS.text }}>{a.subject || '—'}</td>
                     <td className="px-5 py-3 text-sm font-bold tabular-nums" style={{ color: scoreColor(pct) }}>{pct}%</td>
                     <td className="px-5 py-3">
                       {a.grade_band && (
@@ -237,14 +238,14 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-xs" style={{ color: '#94A3B8' }}>{(a.programs as any)?.program_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{(a.programs as any)?.program_name || '—'}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
           {assessments.length > 50 && (
-            <div className="px-5 py-3 text-center text-xs" style={{ borderTop: '1px solid #F1F5F9', color: '#94A3B8', background: '#F8FAFC' }}>
+            <div className="px-5 py-3 text-center text-xs" style={{ borderTop: `1px solid ${DS.borderLight}`, color: DS.textMuted, background: DS.surfaceHover }}>
               Showing 50 of {assessments.length} — download CSV for full data
             </div>
           )}
@@ -269,15 +270,15 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
             })}
           </div>
 
-          <div className="rounded-2xl p-5" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
+          <div className="rounded-2xl p-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-bold" style={{ color: '#0F172A' }}>Overall Attendance Rate</p>
+              <p className="text-sm font-bold" style={{ color: DS.text }}>Overall Attendance Rate</p>
               <p className="text-2xl font-black tabular-nums" style={{ color: attRate>=75?'#10B981':'#EF4444' }}>{attRate}%</p>
             </div>
-            <div className="h-3 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+            <div className="h-3 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
               <div className="h-full rounded-full" style={{ width: `${attRate}%`, background: attRate>=75?'#10B981':'#EF4444' }} />
             </div>
-            <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
+            <p className="text-xs mt-2" style={{ color: DS.textMuted }}>
               {attRate >= 75 ? '✓ Meeting 75% benchmark' : '⚠ Below 75% minimum attendance benchmark'}
             </p>
           </div>
@@ -286,11 +287,11 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
 
       {/* PROJECTS TAB */}
       {tab === 'projects' && (
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
-          <div className="px-6 py-4 flex items-center justify-between" style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${DS.border}` }}>
+          <div className="px-6 py-4 flex items-center justify-between" style={{ background: DS.surfaceHover, borderBottom: `1px solid ${DS.border}` }}>
             <div>
-              <p className="font-semibold" style={{ color: '#0F172A' }}>{projects.length} Projects</p>
-              <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{doneProj} completed</p>
+              <p className="font-semibold" style={{ color: DS.text }}>{projects.length} Projects</p>
+              <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{doneProj} completed</p>
             </div>
             <div className="flex gap-3">
               {[
@@ -303,12 +304,12 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
               ))}
             </div>
           </div>
-          <table className="w-full" style={{ background: '#FFF' }}>
+          <table className="w-full" style={{ background: DS.surface }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+              <tr style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
                 {['Project','Stage','Score','Programme'].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider"
-                    style={{ color: '#94A3B8' }}>{h}</th>
+                    style={{ color: DS.textMuted }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -327,7 +328,7 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                 const sc = stageCfg[p.stage || p.completion_status || 'not_started'] || stageCfg.not_started;
                 return (
                   <tr key={i} style={{ borderBottom: '1px solid #F8FAFC' }}>
-                    <td className="px-5 py-3 text-sm font-semibold" style={{ color: '#1E293B' }}>{p.project_name || '—'}</td>
+                    <td className="px-5 py-3 text-sm font-semibold" style={{ color: DS.text }}>{p.project_name || '—'}</td>
                     <td className="px-5 py-3">
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
                         style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
@@ -336,7 +337,7 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                       style={{ color: pct !== null ? scoreColor(pct) : '#94A3B8' }}>
                       {pct !== null ? `${pct}%` : '—'}
                     </td>
-                    <td className="px-5 py-3 text-xs" style={{ color: '#94A3B8' }}>{(p.programs as any)?.program_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{(p.programs as any)?.program_name || '—'}</td>
                   </tr>
                 );
               })}

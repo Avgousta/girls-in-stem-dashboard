@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import NewProjectForm from './NewProjectForm';
 import Link from 'next/link';
 import { ArrowLeft, FolderKanban } from 'lucide-react';
+import { DS } from '@/components/platform/tokens';
 
 export default async function NewProjectPage() {
   await requireAuth(['admin', 'instructor']);
@@ -32,15 +33,16 @@ export default async function NewProjectPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <Link href="/projects"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
+          className="inline-flex items-center gap-1.5 text-sm hover:underline mb-4"
+          style={{ color: DS.textMuted }}>
           <ArrowLeft className="w-4 h-4" /> Back to Projects
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <FolderKanban className="w-6 h-6 text-brand-700" /> Add Project
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: DS.text }}>
+          <FolderKanban className="w-6 h-6" style={{ color: DS.primary }} /> Add Project
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">Assign a project to a learner</p>
+        <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>Assign a project to a learner</p>
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div className="rounded-2xl p-6" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
         <NewProjectForm learners={learners} programs={programsRes.data || []} />
       </div>
     </div>

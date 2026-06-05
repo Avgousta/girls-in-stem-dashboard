@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import SponsorManager from './SponsorManager';
 import { Award, Link2 } from 'lucide-react';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 export default async function AdminSponsorsPage() {
   await requireAuth(['admin']);
@@ -51,10 +52,10 @@ export default async function AdminSponsorsPage() {
     <div className="max-w-6xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Award className="w-6 h-6 text-brand-700" /> Sponsor Management
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: DS.text }}>
+            <Award className="w-6 h-6" style={{ color: DS.primary }} /> Sponsor Management
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>
             Manage sponsors, create logins, and link learners
           </p>
         </div>

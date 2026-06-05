@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, FolderKanban } from 'lucide-react';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 interface Learner  { learner_id: string; learner_code: string; full_name: string; school_name: string }
 interface Program  { program_id: string; program_name: string; program_type: string }
@@ -16,6 +17,12 @@ const STAGES = [
   { key: 'submitted',   label: 'Submitted' },
   { key: 'marked',      label: 'Marked' },
 ];
+
+const sectionHeadSt: React.CSSProperties = {
+  fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+  letterSpacing: '0.08em', color: DS.textMuted as string,
+  paddingBottom: '10px', marginBottom: '12px', borderBottom: `1px solid ${DS.border}`,
+};
 
 export default function NewProjectForm({ learners, programs }: Props) {
   const router = useRouter();
@@ -81,22 +88,24 @@ export default function NewProjectForm({ learners, programs }: Props) {
 
       {/* Learner selector */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100">
-          Learner
-        </h2>
+        <p style={sectionHeadSt}>Learner</p>
         {selectedLearner ? (
-          <div className="flex items-center justify-between bg-brand-50 border border-brand-200 rounded-xl p-3">
+          <div className="flex items-center justify-between rounded-2xl p-3"
+            style={{ background: DS.primaryLight, border: `1px solid ${DS.primaryBorder}` }}>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-brand-700 flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                style={{ background: DS.primary }}>
                 {selectedLearner.full_name.split(' ').map(n => n[0]).join('').slice(0,2)}
               </div>
               <div>
-                <p className="font-semibold text-brand-800">{selectedLearner.full_name}</p>
-                <p className="text-xs text-brand-600">{selectedLearner.learner_code} · {selectedLearner.school_name}</p>
+                <p className="font-semibold text-sm" style={{ color: DS.text }}>{selectedLearner.full_name}</p>
+                <p className="text-xs" style={{ color: DS.textMuted }}>{selectedLearner.learner_code} · {selectedLearner.school_name}</p>
               </div>
             </div>
             <button type="button" onClick={() => { set('learner_id',''); setSearch(''); }}
-              className="text-xs text-brand-600 hover:text-brand-800 font-medium">Change</button>
+              className="text-xs font-medium cursor-pointer hover:underline" style={{ color: DS.primary }}>
+              Change
+            </button>
           </div>
         ) : (
           <div className="space-y-2">
@@ -104,19 +113,24 @@ export default function NewProjectForm({ learners, programs }: Props) {
               placeholder="Search learner by name, code or school…"
               className="form-input w-full" />
             {search && (
-              <div className="border border-gray-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+              <div className="rounded-2xl overflow-hidden max-h-48 overflow-y-auto"
+                style={{ border: `1px solid ${DS.border}` }}>
                 {filteredLearners.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No learners found</p>
+                  <p className="text-sm text-center py-4" style={{ color: DS.textMuted }}>No learners found</p>
                 ) : filteredLearners.slice(0, 20).map(l => (
                   <button key={l.learner_id} type="button"
                     onClick={() => { set('learner_id', l.learner_id); setSearch(''); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-brand-50 text-left transition-colors border-b border-gray-100 last:border-0">
-                    <div className="w-7 h-7 rounded-full bg-brand-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer"
+                    style={{ borderBottom: `1px solid ${DS.borderLight}`, background: 'transparent' }}
+                    onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.background = DS.surfaceHover as string; }}
+                    onMouseOut={e =>  { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                      style={{ background: DS.primary }}>
                       {l.full_name.split(' ').map(n => n[0]).join('').slice(0,2)}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{l.full_name}</p>
-                      <p className="text-xs text-gray-400">{l.learner_code} · {l.school_name}</p>
+                      <p className="text-sm font-medium" style={{ color: DS.text }}>{l.full_name}</p>
+                      <p className="text-xs" style={{ color: DS.textMuted }}>{l.learner_code} · {l.school_name}</p>
                     </div>
                   </button>
                 ))}
@@ -128,12 +142,10 @@ export default function NewProjectForm({ learners, programs }: Props) {
 
       {/* Project details */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100">
-          Project Details
-        </h2>
+        <p style={sectionHeadSt}>Project Details</p>
         <div className="space-y-4">
           <div>
-            <label className="form-label">Project Name <span className="text-red-500">*</span></label>
+            <label className="form-label">Project Name <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
             <input value={form.project_name} onChange={e => set('project_name', e.target.value)}
               className="form-input" placeholder="e.g. Arduino Line-Following Robot" />
           </div>
@@ -173,8 +185,7 @@ export default function NewProjectForm({ learners, programs }: Props) {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-3 pt-2 border-t border-gray-100">
+      <div className="flex gap-3 pt-2" style={{ borderTop: `1px solid ${DS.border}` }}>
         <button type="submit" disabled={loading} className="btn-primary">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderKanban className="w-4 h-4" />}
           {loading ? 'Creating…' : 'Create Project'}

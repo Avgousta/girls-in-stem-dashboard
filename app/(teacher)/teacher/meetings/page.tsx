@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import TeacherMeetingsClient from './TeacherMeetingsClient';
 import { Video } from 'lucide-react';
+import { DS } from '@/components/platform/tokens';
 
 export default async function TeacherMeetingsPage() {
   const user     = await requireAuth(['instructor', 'admin']);
@@ -29,15 +30,18 @@ export default async function TeacherMeetingsPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Video className="w-6 h-6 text-brand-700" /> Online Meetings
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: DS.text }}>
+          <Video className="w-6 h-6" style={{ color: DS.primary }} /> Online Meetings
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>
           Schedule virtual classes — learners will be notified and can join from their portal
         </p>
       </div>
       <TeacherMeetingsClient
-        meetings={meetingsRes.data || []}
+        meetings={((meetingsRes.data || []) as any[]).map((m: any) => ({
+          ...m,
+          programs: Array.isArray(m.programs) ? m.programs[0] ?? null : m.programs ?? null,
+        }))}
         programs={programsRes.data || []}
         instructorId={user.user_id}
       />

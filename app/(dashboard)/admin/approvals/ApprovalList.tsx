@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Loader2, UserCheck, UserX } from 'lucide-react';
 import { fmt } from '@/utils';
+import { DS } from '@/components/platform/tokens';
 
 interface User {
   user_id:     string;
@@ -66,13 +67,11 @@ export default function ApprovalList({ users: initial, section }: Props) {
   };
 
   if (users.length === 0) return (
-    <div className={`text-center py-10 rounded-xl border ${
-      section === 'pending'
-        ? 'bg-gray-50 border-gray-200'
-        : 'bg-white border-gray-100 shadow-sm'
-    }`}>
-      <CheckCircle2 className="w-10 h-10 text-mint-400 mx-auto mb-2" />
-      <p className="text-sm text-gray-500">
+    <div className="text-center py-10 rounded-2xl" style={{
+      background: DS.surface, border: `1px solid ${DS.border}`,
+    }}>
+      <CheckCircle2 className="w-10 h-10 mx-auto mb-2" style={{ color: 'var(--ds-success)' }} />
+      <p className="text-sm" style={{ color: DS.textMuted }}>
         {section === 'pending' ? 'No pending registrations.' : 'No active teachers yet.'}
       </p>
     </div>
@@ -82,37 +81,34 @@ export default function ApprovalList({ users: initial, section }: Props) {
     <div className="space-y-3">
       {users.map(u => (
         <div key={u.user_id}
-          className={`rounded-xl border shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap ${
-            section === 'pending'
-              ? 'bg-amber-50 border-amber-200'
-              : 'bg-white border-gray-100'
-          }`}>
+          className="rounded-2xl p-5 flex items-center justify-between gap-4 flex-wrap"
+          style={section === 'pending'
+            ? { background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)' }
+            : { background: DS.surface as string, border: `1px solid ${DS.border}` }}>
 
           <div className="flex items-center gap-3 min-w-0">
-            {/* Avatar */}
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 ${
-              section === 'pending' ? 'bg-amber-500' : 'bg-brand-700'
-            }`}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+              style={{ background: section === 'pending' ? '#F59E0B' : DS.primary as string }}>
               {u.full_name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-gray-800">{u.full_name}</p>
-              <p className="text-sm text-gray-500 truncate">{u.email}</p>
-              <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-400">
+              <p className="font-semibold" style={{ color: DS.text }}>{u.full_name}</p>
+              <p className="text-sm truncate" style={{ color: DS.textMuted }}>{u.email}</p>
+              <div className="flex flex-wrap gap-3 mt-1 text-xs" style={{ color: DS.textMuted }}>
                 <span>🏫 {u.school_name}</span>
                 <span>📅 {fmt.date(u.created_at)}</span>
               </div>
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex gap-2 shrink-0">
             {section === 'pending' ? (
               <>
                 <button
                   onClick={() => handleReject(u.user_id)}
                   disabled={!!loading}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-300 text-red-600 text-sm font-medium bg-white hover:bg-red-50 transition-colors disabled:opacity-50">
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                  style={{ border: '1px solid var(--ds-danger)', color: 'var(--ds-danger)', background: 'var(--ds-danger-light)' }}>
                   {loading === u.user_id + '_reject'
                     ? <Loader2 className="w-4 h-4 animate-spin" />
                     : <XCircle className="w-4 h-4" />}
@@ -121,7 +117,7 @@ export default function ApprovalList({ users: initial, section }: Props) {
                 <button
                   onClick={() => handleApprove(u.user_id)}
                   disabled={!!loading}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors disabled:opacity-50 shadow-sm">
+                  className="btn-primary text-sm disabled:opacity-50">
                   {loading === u.user_id
                     ? <Loader2 className="w-4 h-4 animate-spin" />
                     : <UserCheck className="w-4 h-4" />}
@@ -132,7 +128,8 @@ export default function ApprovalList({ users: initial, section }: Props) {
               <button
                 onClick={() => handleDeactivate(u.user_id)}
                 disabled={!!loading}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                style={{ border: `1px solid ${DS.border}`, color: DS.textMuted as string, background: DS.surfaceHover as string }}>
                 {loading === u.user_id + '_deact'
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <UserX className="w-4 h-4" />}

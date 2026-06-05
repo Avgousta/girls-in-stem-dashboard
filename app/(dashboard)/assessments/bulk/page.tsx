@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Save, Download, X } from 'lucide-react';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 interface Program { program_id:string; program_name:string }
 interface Row     { learner_id:string; full_name:string; learner_code:string; score:string; notes:string }
@@ -12,7 +13,34 @@ const TYPES     = [['test','📝 Test'],['quiz','⚡ Quiz'],['project','🚀 Pro
 const DIFFS     = [['easy','Easy'],['medium','Medium'],['hard','Hard'],['advanced','Advanced']] as const;
 const SKILLS    = ['Logic','Syntax','Debugging','Problem Solving','Data Structures','Algorithms','Robotics','Electronics','Mathematics','Science','Design Thinking','Presentation','Research','Collaboration'];
 const GRADE_BAND = (p: number|null) => p===null?null : p>=80?'Distinction':p>=70?'Merit':p>=50?'Pass':'Needs Support';
-const BAND_STYLE: Record<string,string> = { Distinction:'bg-green-50 text-green-700', Merit:'bg-blue-50 text-blue-700', Pass:'bg-yellow-50 text-yellow-700', 'Needs Support':'bg-red-50 text-red-700' };
+const scoreColor = (p: number|null) => p===null ? DS.textMuted as string : p>=80 ? 'var(--ds-success)' : p>=70 ? '#818CF8' : p>=50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
+const BAND_STYLE: Record<string,{color:string;bg:string}> = {
+  Distinction:   { color:'var(--ds-success)', bg:'var(--ds-success-light)' },
+  Merit:         { color:'#818CF8',            bg:'rgba(129,140,248,0.15)' },
+  Pass:          { color:'var(--ds-warn)',     bg:'var(--ds-warn-light)'   },
+  'Needs Support':{ color:'var(--ds-danger)',  bg:'var(--ds-danger-light)' },
+};
+
+const labelSt: React.CSSProperties = {
+  display: 'block', fontSize: '11px', fontWeight: 700,
+  textTransform: 'uppercase', letterSpacing: '0.06em',
+  marginBottom: '5px', color: DS.textMuted as string,
+};
+const selectSt: React.CSSProperties = {
+  width: '100%', background: DS.surfaceHover as string, color: DS.text as string,
+  border: `1px solid ${DS.border}`, borderRadius: '10px',
+  padding: '8px 10px', fontSize: '13px', outline: 'none',
+};
+const inputSt: React.CSSProperties = {
+  width: '100%', background: DS.surfaceHover as string, color: DS.text as string,
+  border: `1px solid ${DS.border}`, borderRadius: '10px',
+  padding: '8px 10px', fontSize: '13px', outline: 'none',
+};
+const thSt: React.CSSProperties = {
+  padding: '10px 16px', textAlign: 'left', fontSize: '10px', fontWeight: 700,
+  textTransform: 'uppercase', letterSpacing: '0.08em', color: DS.textMuted as string,
+  borderBottom: `1px solid ${DS.border}`, background: DS.surfaceHover as string,
+};
 
 export default function BulkAssessmentsPage() {
   const [programs,  setPrograms]  = useState<Program[]>([]);
@@ -100,13 +128,17 @@ export default function BulkAssessmentsPage() {
   };
 
   if (saved) return (
-    <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm max-w-md mx-auto">
-      <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-        <Save className="w-7 h-7 text-green-600" />
+    <div className="text-center py-16 rounded-2xl max-w-md mx-auto"
+      style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+        style={{ background: 'var(--ds-success-light)' }}>
+        <Save className="w-7 h-7" style={{ color: 'var(--ds-success)' }} />
       </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">Marks Saved!</h3>
+      <h3 className="text-xl font-bold mb-2" style={{ color: DS.text }}>Marks Saved!</h3>
       {classAvg !== null && (
-        <p className="text-sm text-gray-500 mb-2">Class average: <strong className={classAvg>=70?'text-green-600':classAvg>=50?'text-yellow-600':'text-red-600'}>{classAvg}%</strong></p>
+        <p className="text-sm mb-2" style={{ color: DS.textMuted }}>
+          Class average: <strong style={{ color: scoreColor(classAvg) }}>{classAvg}%</strong>
+        </p>
       )}
       <div className="flex gap-3 justify-center mt-4">
         <button onClick={() => { setSaved(false); setRows(prev=>prev.map(r=>({...r,score:'',notes:''}))); }}
@@ -119,55 +151,56 @@ export default function BulkAssessmentsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
-        <Link href="/assessments" className="text-sm text-gray-500 hover:text-gray-700">← Back</Link>
+        <Link href="/assessments" className="text-sm hover:underline" style={{ color: DS.textMuted }}>← Back</Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Capture Marks</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Record assessment results for your learners</p>
+          <h1 className="text-2xl font-bold" style={{ color: DS.text }}>Capture Marks</h1>
+          <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>Record assessment results for your learners</p>
         </div>
       </div>
 
       {/* Assessment config */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-5">
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Assessment Details</h2>
+      <div className="rounded-2xl p-5 space-y-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+        <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>Assessment Details</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="form-label">Programme <span className="text-red-500">*</span></label>
-            <select value={programId} onChange={e=>setProgramId(e.target.value)} className="form-select">
+            <label style={labelSt}>Programme <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
+            <select value={programId} onChange={e=>setProgramId(e.target.value)} style={selectSt}>
               <option value="">Select programme…</option>
               {programs.map(p => <option key={p.program_id} value={p.program_id}>{p.program_name}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label">Subject <span className="text-red-500">*</span></label>
-            <select value={subject} onChange={e=>setSubject(e.target.value)} className="form-select">
+            <label style={labelSt}>Subject <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
+            <select value={subject} onChange={e=>setSubject(e.target.value)} style={selectSt}>
               <option value="">Select subject…</option>
               {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label">Assessment Type</label>
-            <select value={type} onChange={e=>setType(e.target.value)} className="form-select">
+            <label style={labelSt}>Assessment Type</label>
+            <select value={type} onChange={e=>setType(e.target.value)} style={selectSt}>
               {TYPES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label">Difficulty</label>
-            <select value={diff} onChange={e=>setDiff(e.target.value)} className="form-select">
+            <label style={labelSt}>Difficulty</label>
+            <select value={diff} onChange={e=>setDiff(e.target.value)} style={selectSt}>
               {DIFFS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label">Total Marks</label>
-            <input type="number" value={maxScore} onChange={e=>setMaxScore(e.target.value)} className="form-input" min={1} max={1000} />
+            <label style={labelSt}>Total Marks</label>
+            <input type="number" value={maxScore} onChange={e=>setMaxScore(e.target.value)}
+              style={inputSt} min={1} max={1000} />
           </div>
           <div>
-            <label className="form-label">Date</label>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="form-input" />
+            <label style={labelSt}>Date</label>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inputSt} />
           </div>
           <div>
-            <label className="form-label">Term (optional)</label>
-            <select value={term} onChange={e=>setTerm(e.target.value)} className="form-select">
+            <label style={labelSt}>Term (optional)</label>
+            <select value={term} onChange={e=>setTerm(e.target.value)} style={selectSt}>
               <option value="">—</option>
               {[1,2,3,4].map(t => <option key={t} value={t}>Term {t}</option>)}
             </select>
@@ -176,21 +209,21 @@ export default function BulkAssessmentsPage() {
 
         {/* Skill tags */}
         <div>
-          <label className="form-label">Skills Assessed (select all that apply)</label>
+          <label style={labelSt}>Skills Assessed (select all that apply)</label>
           <div className="flex flex-wrap gap-2 mt-1">
             {SKILLS.map(sk => (
               <button key={sk} type="button" onClick={() => toggleSkill(sk)}
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                  skills.includes(sk)
-                    ? 'bg-brand-700 text-white border-brand-700'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-brand-400'
-                }`}>
+                className="text-xs font-semibold px-2.5 py-1 rounded-full transition-all cursor-pointer"
+                style={skills.includes(sk)
+                  ? { background: DS.primary, color: '#fff', border: `1px solid ${DS.primary}` }
+                  : { background: DS.surfaceHover as string, color: DS.textMid as string, border: `1px solid ${DS.border}` }}>
                 {sk}
               </button>
             ))}
           </div>
           {skills.length > 0 && (
-            <button onClick={() => setSkills([])} className="text-xs text-gray-400 hover:text-gray-600 mt-1 flex items-center gap-1">
+            <button onClick={() => setSkills([])} className="text-xs flex items-center gap-1 mt-2 cursor-pointer"
+              style={{ color: DS.textMuted }}>
               <X className="w-3 h-3" /> Clear skills
             </button>
           )}
@@ -199,64 +232,79 @@ export default function BulkAssessmentsPage() {
 
       {/* Marks grid */}
       {programId && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-wrap gap-3">
+        <div className="rounded-2xl overflow-hidden" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+          <div className="flex items-center justify-between px-5 py-4 flex-wrap gap-3"
+            style={{ borderBottom: `1px solid ${DS.border}` }}>
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-semibold text-gray-800">{rows.length} Learners</h2>
+              <h2 className="text-sm font-semibold" style={{ color: DS.text }}>{rows.length} Learners</h2>
               {classAvg !== null && (
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${classAvg>=70?'bg-green-50 text-green-700':classAvg>=50?'bg-yellow-50 text-yellow-700':'bg-red-50 text-red-700'}`}>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: classAvg>=70?'var(--ds-success-light)':classAvg>=50?'var(--ds-warn-light)':'var(--ds-danger-light)',
+                           color:      classAvg>=70?'var(--ds-success)':classAvg>=50?'var(--ds-warn)':'var(--ds-danger)' }}>
                   Avg: {classAvg}%
                 </span>
               )}
-              <span className="text-xs text-gray-400">{filledRows.length} entered</span>
+              <span className="text-xs" style={{ color: DS.textMuted }}>{filledRows.length} entered</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={exportCSV} disabled={!filledRows.length} className="btn-secondary text-xs"><Download className="w-3.5 h-3.5" /> CSV</button>
+              <button onClick={exportCSV} disabled={!filledRows.length} className="btn-secondary text-xs">
+                <Download className="w-3.5 h-3.5" /> CSV
+              </button>
               <button onClick={() => setRows(p => p.map(r=>({...r,score:maxScore})))} className="btn-secondary text-xs">Fill max</button>
               <button onClick={() => setRows(p => p.map(r=>({...r,score:''})))} className="btn-secondary text-xs">Clear</button>
             </div>
           </div>
 
           {loadingLrn ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-600" /></div>
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: DS.primary }} />
+            </div>
           ) : rows.length === 0 ? (
-            <p className="text-center py-12 text-gray-400">No learners enrolled in this programme</p>
+            <p className="text-center py-12 text-sm" style={{ color: DS.textMuted }}>No learners enrolled in this programme</p>
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 w-8">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Learner</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 w-28">Score/{maxScore}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 w-16">%</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 w-28">Grade</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 hidden sm:table-cell">Notes</th>
+                  {['#','Learner',`Score/${maxScore}`,'%','Grade','Notes'].map((h,i) => (
+                    <th key={h} style={{ ...thSt, display: i===5?undefined:undefined }} className={i===5?'hidden sm:table-cell':undefined}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => {
                   const p = pct(r.score);
                   const g = GRADE_BAND(p);
-                  const scoreColor = p===null?'text-gray-300':p>=80?'text-green-600':p>=70?'text-blue-600':p>=50?'text-yellow-600':'text-red-600';
+                  const bs = g ? BAND_STYLE[g] : null;
                   return (
-                    <tr key={r.learner_id} className="border-t border-gray-100 hover:bg-gray-50/50">
-                      <td className="px-4 py-3 text-xs text-gray-400">{i+1}</td>
+                    <tr key={r.learner_id}
+                      style={{ borderBottom: `1px solid ${DS.borderLight}` }}
+                      onMouseOver={e => { (e.currentTarget as HTMLTableRowElement).style.background = DS.surfaceHover as string; }}
+                      onMouseOut={e =>  { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}>
+                      <td className="px-4 py-3 text-xs" style={{ color: DS.textMuted }}>{i+1}</td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-gray-800">{r.full_name}</p>
-                        <p className="text-xs font-mono text-gray-400">{r.learner_code}</p>
+                        <p className="text-sm font-semibold" style={{ color: DS.text }}>{r.full_name}</p>
+                        <p className="text-xs font-mono" style={{ color: DS.textMuted }}>{r.learner_code}</p>
                       </td>
                       <td className="px-4 py-3">
                         <input type="number" value={r.score} min={0} max={Number(maxScore)}
                           onChange={e => setRow(r.learner_id,'score',e.target.value)}
                           placeholder="—"
-                          className="w-20 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-400 font-mono" />
+                          className="w-20 text-sm font-mono rounded-lg px-3 py-1.5 focus:outline-none"
+                          style={{ background: DS.surfaceHover as string, border: `1px solid ${DS.border}`, color: DS.text as string }} />
                       </td>
-                      <td className={`px-4 py-3 font-mono font-bold text-sm ${scoreColor}`}>{p!==null?`${p}%`:'—'}</td>
-                      <td className="px-4 py-3">{g ? <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${BAND_STYLE[g]}`}>{g}</span> : <span className="text-gray-300">—</span>}</td>
+                      <td className="px-4 py-3 font-mono font-bold text-sm"
+                        style={{ color: scoreColor(p) }}>{p!==null?`${p}%`:'—'}</td>
+                      <td className="px-4 py-3">
+                        {g && bs
+                          ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                              style={{ background: bs.bg, color: bs.color }}>{g}</span>
+                          : <span style={{ color: DS.borderLight }}>—</span>}
+                      </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <input type="text" value={r.notes} onChange={e=>setRow(r.learner_id,'notes',e.target.value)}
                           placeholder="Optional note…"
-                          className="w-full text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400 max-w-xs" />
+                          className="text-xs rounded px-2 py-1 focus:outline-none max-w-xs w-full"
+                          style={{ background: DS.surfaceHover as string, border: `1px solid ${DS.border}`, color: DS.text as string }} />
                       </td>
                     </tr>
                   );
@@ -266,8 +314,9 @@ export default function BulkAssessmentsPage() {
           )}
 
           {rows.length > 0 && (
-            <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between gap-4">
-              <p className="text-xs text-gray-500">
+            <div className="px-5 py-4 flex items-center justify-between gap-4"
+              style={{ borderTop: `1px solid ${DS.border}` }}>
+              <p className="text-xs" style={{ color: DS.textMuted }}>
                 {filledRows.length} of {rows.length} entered{classAvg!==null?` · Avg: ${classAvg}%`:''}
                 {skills.length > 0 && ` · Skills: ${skills.join(', ')}`}
               </p>

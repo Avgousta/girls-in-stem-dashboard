@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import BulkImportClient from './BulkImportClient';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { DS } from '@/components/platform/tokens';
 
 async function getFormData() {
   const supabase = await createClient();
@@ -24,11 +25,12 @@ export default async function BulkImportPage() {
     <div className="max-w-6xl space-y-6">
       <div>
         <Link href="/learners"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
+          className="inline-flex items-center gap-1.5 text-sm hover:underline mb-4"
+          style={{ color: DS.textMuted }}>
           <ArrowLeft className="w-4 h-4" /> Back to Learners
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Bulk Import Learners</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-2xl font-bold" style={{ color: DS.text }}>Bulk Import Learners</h1>
+        <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>
           Upload a CSV file or paste data to register multiple learners at once. Up to 200 per import.
         </p>
       </div>

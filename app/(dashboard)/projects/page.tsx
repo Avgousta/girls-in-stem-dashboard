@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { FolderKanban, Plus } from 'lucide-react';
 import ProjectBoard from './ProjectBoard';
+import { DS } from '@/components/platform/tokens';
 
 const STAGES = [
   { key: 'planning',    label: 'Planning',    color: '#6B7280', bg: '#F9FAFB' },
@@ -71,10 +72,10 @@ export default async function ProjectsPage() {
     <div className="max-w-full space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <FolderKanban className="w-6 h-6 text-brand-700" /> Projects
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: DS.text }}>
+            <FolderKanban className="w-6 h-6" style={{ color: DS.primary }} /> Projects
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{projects.length} projects across all programmes</p>
+          <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>{projects.length} projects across all programmes</p>
         </div>
         {isAdmin && (
           <Link href="/projects/new" className="btn-primary">
@@ -88,11 +89,11 @@ export default async function ProjectsPage() {
         {stageCounts.map(s => (
           <div key={s.key}
             className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold"
-            style={{ background: s.bg, borderColor: s.color + '40', color: s.color }}>
+            style={{ background: `${s.color}15`, borderColor: `${s.color}40`, color: s.color }}>
             <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
             {s.label}
             <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-              style={{ background: s.color + '20' }}>{s.count}</span>
+              style={{ background: `${s.color}25` }}>{s.count}</span>
           </div>
         ))}
       </div>

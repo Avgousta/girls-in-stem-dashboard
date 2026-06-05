@@ -1,11 +1,12 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 const RISK_CONFIG = {
-  high:   { label: 'High Risk',    bg: '#FEF2F2', color: '#DC2626', dot: '#EF4444' },
-  medium: { label: 'Monitoring',   bg: '#FFFBEB', color: '#D97706', dot: '#F59E0B' },
-  low:    { label: 'On Track',     bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
+  high:   { label: 'High Risk',    bg: '#FEF2F2', color: DS.danger, dot: '#EF4444' },
+  medium: { label: 'Monitoring',   bg: '#FFFBEB', color: DS.warn, dot: '#F59E0B' },
+  low:    { label: 'On Track',     bg: '#ECFDF5', color: DS.success, dot: '#10B981' },
 };
 
 const TRACK_ICONS: Record<string, string> = {
@@ -65,7 +66,7 @@ export default async function SponsorLearnersPage() {
   const scoreColor = (v: number) => v >= 75 ? '#10B981' : v >= 50 ? '#F59E0B' : '#EF4444';
 
   return (
-    <div className="space-y-8" style={{ color: '#0F172A' }}>
+    <div className="space-y-8" style={{ color: DS.text }}>
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -74,7 +75,7 @@ export default async function SponsorLearnersPage() {
             Learner Portfolio
           </p>
           <h1 className="text-3xl font-black tracking-tight">Sponsored Learners</h1>
-          <p className="text-sm mt-1" style={{ color: '#64748B' }}>
+          <p className="text-sm mt-1" style={{ color: DS.textMuted }}>
             {list.length} learners &nbsp;·&nbsp; {active} active &nbsp;·&nbsp; {onTrack} on track &nbsp;·&nbsp; {atRisk} need support
           </p>
         </div>
@@ -89,9 +90,9 @@ export default async function SponsorLearnersPage() {
       <div className="flex flex-wrap gap-3">
         {[
           { label: `${active} Active`,             color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
-          { label: `${onTrack} On Track`,           color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
-          { label: `${list.filter(l=>l.risk==='medium').length} Monitoring`, color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-          { label: `${atRisk} High Risk`,           color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+          { label: `${onTrack} On Track`,           color: DS.success, bg: '#ECFDF5', border: '#A7F3D0' },
+          { label: `${list.filter(l=>l.risk==='medium').length} Monitoring`, color: DS.warn, bg: '#FFFBEB', border: '#FDE68A' },
+          { label: `${atRisk} High Risk`,           color: DS.danger, bg: '#FEF2F2', border: '#FECACA' },
         ].map(({ label, color, bg, border }) => (
           <span key={label} className="text-xs font-bold px-3 py-1.5 rounded-full"
             style={{ background: bg, color, border: `1px solid ${border}` }}>
@@ -102,10 +103,10 @@ export default async function SponsorLearnersPage() {
 
       {/* Learner cards grid */}
       {list.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl" style={{ background: '#FFF', border: '1px solid #E2E8F0' }}>
+        <div className="text-center py-20 rounded-2xl" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
           <div className="text-4xl mb-3">👩‍🎓</div>
-          <p className="font-semibold" style={{ color: '#64748B' }}>No learners linked yet</p>
-          <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Contact the platform administrator to link learners.</p>
+          <p className="font-semibold" style={{ color: DS.textMuted }}>No learners linked yet</p>
+          <p className="text-sm mt-1" style={{ color: DS.textMuted }}>Contact the platform administrator to link learners.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -116,7 +117,7 @@ export default async function SponsorLearnersPage() {
             return (
               <Link key={l.id} href={`/api/v1/reports/learner/${l.id}`} target="_blank"
                 className="block rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-                style={{ background: '#FFF', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                style={{ background: DS.surface, border: `1px solid ${DS.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
 
                 {/* Card header */}
                 <div className="px-5 pt-5 pb-4">
@@ -134,8 +135,8 @@ export default async function SponsorLearnersPage() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-bold truncate" style={{ color: '#0F172A' }}>{l.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
+                        <p className="text-sm font-bold truncate" style={{ color: DS.text }}>{l.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>
                           {l.code} &nbsp;·&nbsp; Grade {l.grade}
                         </p>
                       </div>
@@ -152,22 +153,22 @@ export default async function SponsorLearnersPage() {
                   <div className="flex items-center gap-2 mt-3">
                     <span className="text-base">{icon}</span>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium truncate" style={{ color: '#475569' }}>{l.school}</p>
-                      {l.progs[0] && <p className="text-xs truncate" style={{ color: '#94A3B8' }}>{l.progs[0]}</p>}
+                      <p className="text-xs font-medium truncate" style={{ color: DS.textMid }}>{l.school}</p>
+                      {l.progs[0] && <p className="text-xs truncate" style={{ color: DS.textMuted }}>{l.progs[0]}</p>}
                     </div>
                   </div>
                 </div>
 
                 {/* Metrics strip */}
-                <div className="grid grid-cols-3 divide-x" style={{ borderTop: '1px solid #F1F5F9', borderColor: '#F1F5F9' }}>
+                <div className="grid grid-cols-3 divide-x" style={{ borderTop: `1px solid ${DS.borderLight}`, borderColor: DS.borderLight }}>
                   {[
                     { label: 'Attendance', value: `${l.att}%`, color: attColor },
                     { label: 'Avg Score',  value: `${l.score}%`, color: scoreColor(l.score) },
                     { label: 'Projects',   value: l.doneProj, color: '#7C3AED' },
                   ].map(({ label, value, color }) => (
-                    <div key={label} className="px-3 py-3 text-center" style={{ borderColor: '#F1F5F9' }}>
+                    <div key={label} className="px-3 py-3 text-center" style={{ borderColor: DS.borderLight }}>
                       <p className="text-base font-black tabular-nums" style={{ color }}>{value}</p>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#94A3B8' }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: DS.textMuted }}>
                         {label}
                       </p>
                     </div>
@@ -178,19 +179,19 @@ export default async function SponsorLearnersPage() {
                 <div className="px-5 py-4 space-y-2.5" style={{ borderTop: '1px solid #F8FAFC' }}>
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span style={{ color: '#94A3B8' }}>Attendance</span>
+                      <span style={{ color: DS.textMuted }}>Attendance</span>
                       <span className="font-semibold" style={{ color: attColor }}>{l.att}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
                       <div className="h-full rounded-full" style={{ width: `${l.att}%`, background: attColor }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span style={{ color: '#94A3B8' }}>Score</span>
+                      <span style={{ color: DS.textMuted }}>Score</span>
                       <span className="font-semibold" style={{ color: scoreColor(l.score) }}>{l.score}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: DS.borderLight }}>
                       <div className="h-full rounded-full"
                         style={{ width: `${l.score}%`, background: scoreColor(l.score) }} />
                     </div>
@@ -199,7 +200,7 @@ export default async function SponsorLearnersPage() {
 
                 {/* Footer */}
                 <div className="px-5 pb-4 flex items-center justify-between">
-                  <span className="text-xs" style={{ color: '#94A3B8' }}>
+                  <span className="text-xs" style={{ color: DS.textMuted }}>
                     {l.totalAss} assessment{l.totalAss !== 1 ? 's' : ''}
                   </span>
                   <span className="text-xs font-semibold" style={{ color: '#1D4ED8' }}>

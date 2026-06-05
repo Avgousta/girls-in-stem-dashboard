@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import UsersManager from './UsersManager';
 import { Users } from 'lucide-react';
+import { DS } from '@/components/platform/tokens';
 
 export default async function AdminUsersPage() {
   await requireAuth(['admin']);
@@ -15,10 +16,10 @@ export default async function AdminUsersPage() {
   return (
     <div className="max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Users className="w-6 h-6 text-brand-700" /> User Management
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: DS.text }}>
+          <Users className="w-6 h-6" style={{ color: DS.primary }} /> User Management
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>
           {(users || []).length} users · manage accounts, roles and access
         </p>
       </div>
