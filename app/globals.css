@@ -242,6 +242,7 @@
     background: var(--ds-input-bg);
     border: 1px solid var(--ds-input-border);
     color: var(--ds-input-text);
+    color-scheme: dark;
   }
   .form-select:focus {
     border-color: rgba(124,58,237,0.6);
