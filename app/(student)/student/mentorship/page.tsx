@@ -2,6 +2,13 @@ import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { LearnerSessionSummary, LearnerGoalCard } from '@/components/mentorship/MentorshipBadges';
 
+const t = {
+  text:   'var(--t-text)',
+  muted:  'var(--t-muted)',
+  card:   'var(--t-card)',
+  border: '1px solid var(--t-border)',
+};
+
 export default async function StudentMentorshipPage() {
   const user     = await requireAuth(['learner']);
   const supabase = await createClient();
@@ -12,7 +19,7 @@ export default async function StudentMentorshipPage() {
 
   if (!learnerId) return (
     <div className="text-center py-16">
-      <p className="text-white/50 font-semibold">Learner profile not linked.</p>
+      <p className="font-semibold" style={{ color: t.muted }}>Learner profile not linked.</p>
     </div>
   );
 
@@ -37,34 +44,38 @@ export default async function StudentMentorshipPage() {
   return (
     <div className="space-y-6 pt-1">
       <div>
-        <h1 className="text-2xl font-black text-white">My Mentorship 💬</h1>
-        <p className="text-sm text-white/40 mt-0.5">
+        <h1 className="text-2xl font-black" style={{ color: t.text }}>My Mentorship 💬</h1>
+        <p className="text-sm mt-0.5" style={{ color: t.muted }}>
           {sessions.length} session{sessions.length!==1?'s':''} · {activeGoals.length} active goal{activeGoals.length!==1?'s':''}
         </p>
       </div>
 
       {sessions.length === 0 && goals.length === 0 && (
         <div className="text-center py-16 rounded-2xl"
-          style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}>
+          style={{ background: t.card, border: t.border }}>
           <p className="text-4xl mb-3">💬</p>
-          <p className="text-white/60 font-semibold">No mentorship sessions yet</p>
-          <p className="text-sm text-white/30 mt-1">Your mentor sessions and goals will appear here</p>
+          <p className="font-semibold" style={{ color: t.muted }}>No mentorship sessions yet</p>
+          <p className="text-sm mt-1" style={{ color: t.muted }}>Your mentor sessions and goals will appear here</p>
         </div>
       )}
 
       {/* Latest next steps callout */}
       {latestNextStep && (
         <div className="rounded-2xl p-4"
-          style={{ background:'rgba(29,78,216,0.12)', border:'1px solid rgba(29,78,216,0.3)' }}>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">📌 Your Next Steps</p>
-          <p className="text-sm text-white/80 leading-relaxed">{(latestNextStep as any).next_steps}</p>
+          style={{ background: 'rgba(29,78,216,0.1)', border: '1px solid rgba(29,78,216,0.25)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#60A5FA' }}>
+            📌 Your Next Steps
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: t.text }}>{(latestNextStep as any).next_steps}</p>
         </div>
       )}
 
       {/* Active goals */}
       {activeGoals.length > 0 && (
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">🎯 My Goals</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: t.muted }}>
+            🎯 My Goals
+          </p>
           <div className="space-y-2">
             {activeGoals.map((g: any) => (
               <LearnerGoalCard key={g.goal_id} title={g.title} desc={g.description||''} due={g.target_date} status={g.status} />
@@ -76,7 +87,9 @@ export default async function StudentMentorshipPage() {
       {/* Session history */}
       {sessions.length > 0 && (
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Session History</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: t.muted }}>
+            Session History
+          </p>
           <div className="space-y-3">
             {sessions.map((s: any) => (
               <LearnerSessionSummary
@@ -94,8 +107,10 @@ export default async function StudentMentorshipPage() {
       )}
 
       {completedGoals.length > 0 && (
-        <div className="opacity-60">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">✅ Completed Goals ({completedGoals.length})</p>
+        <div className="opacity-70">
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: t.muted }}>
+            ✅ Completed Goals ({completedGoals.length})
+          </p>
           <div className="space-y-2">
             {completedGoals.map((g: any) => (
               <LearnerGoalCard key={g.goal_id} title={g.title} desc={g.description||''} due={g.target_date} status={g.status} />

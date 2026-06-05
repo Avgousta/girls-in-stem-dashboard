@@ -4,6 +4,7 @@ import { useTheme } from './StudentThemeProvider';
 import StudentNav from './StudentNav';
 import StudentSidebar from './StudentSidebar';
 import Link from 'next/link';
+import { Sun, Moon } from 'lucide-react';
 
 interface Props {
   children:  React.ReactNode;
@@ -13,7 +14,8 @@ interface Props {
 }
 
 export default function StudentShell({ children, firstName, avatarUrl, unread }: Props) {
-  const { theme, accentColor } = useTheme();
+  const { theme, accentColor, setThemeId } = useTheme();
+  const toggleDarkLight = () => setThemeId(theme.isDark ? 'sunrise' : 'space');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const initials = firstName.slice(0, 1).toUpperCase();
@@ -53,6 +55,16 @@ export default function StudentShell({ children, firstName, avatarUrl, unread }:
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Dark / light toggle */}
+              <button
+                onClick={toggleDarkLight}
+                title={theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer"
+                style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, color: theme.textMuted }}>
+                {theme.isDark
+                  ? <Sun  className="w-4 h-4" />
+                  : <Moon className="w-4 h-4" />}
+              </button>
               <Link href="/student/notifications"
                 className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
                 style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>

@@ -151,8 +151,8 @@ export default function MeetingsClient({ meetings: initial, learnerId }: { meeti
   if (meetings.length === 0) return (
     <div className="text-center py-20">
       <div className="text-6xl mb-4">📭</div>
-      <p className="text-white/40 font-bold">No classes scheduled yet</p>
-      <p className="text-white/20 text-sm mt-1">Your teacher will add classes here</p>
+      <p className="font-bold" style={{ color: 'var(--t-muted)' }}>No classes scheduled yet</p>
+      <p className="text-sm mt-1" style={{ color: 'var(--t-muted)' }}>Your teacher will add classes here</p>
     </div>
   );
 
@@ -167,8 +167,8 @@ export default function MeetingsClient({ meetings: initial, learnerId }: { meeti
     return (
       <div className="rounded-3xl overflow-hidden"
         style={{
-          background: status.live ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.04)',
-          border:     `1px solid ${status.live ? 'rgba(22,163,74,0.4)' : 'rgba(255,255,255,0.08)'}`,
+          background: status.live ? 'rgba(22,163,74,0.12)' : 'var(--t-card)',
+          border:     `1px solid ${status.live ? 'rgba(22,163,74,0.4)' : 'var(--t-border)'}`,
         }}>
         {status.live && (
           <div className="px-4 py-2 flex items-center gap-2"
@@ -188,9 +188,9 @@ export default function MeetingsClient({ meetings: initial, learnerId }: { meeti
                   {status.label}
                 </span>
               </div>
-              <h3 className="font-black text-white text-sm leading-tight">{m.title}</h3>
-              {m.programs && <p className="text-xs text-white/30 mt-0.5">📚 {m.programs.program_name}</p>}
-              {(m.users as any)?.full_name && <p className="text-xs text-white/30">👩‍🏫 {(m.users as any).full_name}</p>}
+              <h3 className="font-black text-sm leading-tight" style={{ color: 'var(--t-text)' }}>{m.title}</h3>
+              {m.programs && <p className="text-xs mt-0.5" style={{ color: 'var(--t-muted)' }}>📚 {m.programs.program_name}</p>}
+              {(m.users as any)?.full_name && <p className="text-xs" style={{ color: 'var(--t-muted)' }}>👩‍🏫 {(m.users as any).full_name}</p>}
             </div>
             {/* My rating badge */}
             {m.myRating && (
@@ -203,10 +203,10 @@ export default function MeetingsClient({ meetings: initial, learnerId }: { meeti
           </div>
 
           {m.description && (
-            <p className="text-xs text-white/40 bg-white/5 rounded-xl px-3 py-2">{m.description}</p>
+            <p className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--t-card)', color: 'var(--t-muted)' }}>{m.description}</p>
           )}
 
-          <div className="flex items-center gap-3 text-xs text-white/30">
+          <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--t-muted)' }}>
             <span>📅 {dateStr}</span>
             <span>🕐 {timeStr}</span>
             <span>⏱ {m.duration_min >= 60 ? `${m.duration_min/60}h` : `${m.duration_min}m`}</span>
@@ -261,7 +261,7 @@ export default function MeetingsClient({ meetings: initial, learnerId }: { meeti
       {/* Past meetings */}
       {past.length > 0 && (
         <div>
-          <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-3">Past Classes</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--t-muted)' }}>Past Classes</p>
           <div className="space-y-3">
             {past.slice(0, 5).map(m => <MeetingCard key={m.meeting_id} m={m} />)}
           </div>
