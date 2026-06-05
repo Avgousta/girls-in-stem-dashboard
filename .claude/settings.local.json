@@ -32,7 +32,30 @@
       "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"education SaaS dashboard admin dark premium\" --design-system --persist -p \"Girls in STEM\" -f markdown)",
       "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"dashboard sidebar navigation dark\" --domain ux -n 3)",
       "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"data table admin panel dark\" --domain style -n 2)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(node -e \"require\\('./node_modules/resend'\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npx supabase *)",
+      "mcp__4c91198b-0fc6-4788-a697-407a333efb9d__apply_migration",
+      "Bash(grep -rA 6 \"RISK_COLORS\" --include=\"*.ts\" --include=\"*.tsx\")",
+      "Bash(grep -rA 10 \"interface RiskScore\\\\|type RiskLevel\" --include=\"*.ts\" --include=\"*.tsx\")",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__list_deployments",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__deploy_to_vercel",
+      "Bash(vercel --version)",
+      "Bash(git push *)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__get_project",
+      "Bash(vercel --prod --yes)",
+      "Bash(git commit -m 'Fix: dark native dropdown + remove duplicate Girls in STEM programme *)",
+      "Bash(xargs grep -l \"programs.*learners\")",
+      "Bash(git commit -m 'Feature: grade tabs in bulk mark capture *)",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__get_runtime_logs",
+      "Bash(git commit -m 'Fix: remove event handlers from Server Components *)",
+      "Bash(git commit -m 'Redesign: learner report card — premium dark brand theme *)",
+      "Bash(xargs grep -l \"learner\\\\|student\")",
+      "Bash(git commit -m 'Feature: learner self-registration with pre-filled code links *)"
     ]
   }
 }
