@@ -29,11 +29,12 @@ const ADMIN_NAV: NavItem[] = [
   { label: 'Attendance',                          href: '/attendance',       icon: CalendarCheck2 },
   { label: 'Assessments',                         href: '/assessments',      icon: BarChart3 },
   { label: 'Projects',                            href: '/projects',         icon: FolderKanban },
-  { section: 'Administration', label: 'Users',    href: '/admin/users',      icon: Settings },
-  { label: 'Approvals',                           href: '/admin/approvals',  icon: UserCheck,  badge: 'approvals' },
-  { label: 'Sponsors',                            href: '/admin/sponsors',   icon: Award },
-  { label: 'Schools',                             href: '/admin/schools',    icon: School },
-  { label: 'Notifications',                       href: '/notifications',    icon: Bell,       badge: 'notifications' },
+  { section: 'Administration', label: 'Users',    href: '/admin/users',            icon: Settings },
+  { label: 'Approvals',                           href: '/admin/approvals',        icon: UserCheck,    badge: 'approvals' },
+  { label: 'Sponsors',                            href: '/admin/sponsors',         icon: Award },
+  { label: 'Schools',                             href: '/admin/schools',          icon: School },
+  { label: 'Learner Access',                      href: '/admin/learner-access',   icon: GraduationCap },
+  { label: 'Notifications',                       href: '/notifications',          icon: Bell,         badge: 'notifications' },
 ];
 
 const INSTRUCTOR_NAV: NavItem[] = [
