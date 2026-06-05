@@ -70,7 +70,6 @@ export default async function ProgramsPage() {
           <div key={p.program_id}
             className="rounded-2xl p-5 flex flex-col transition-all"
             style={{ background: DS.surface, border: `1px solid ${DS.border}` }}
-            onMouseOver={undefined}
           >
             {/* Header row */}
             <div className="flex items-start justify-between gap-2 mb-3">

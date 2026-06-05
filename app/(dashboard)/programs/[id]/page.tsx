@@ -185,8 +185,8 @@ export default async function ProgramDetailPage({ params }: Props) {
                 const l    = e.learners;
                 const risk = l?.risk_scores;
                 return (
-                  <tr key={e.enrollment_id} style={{ borderBottom: `1px solid ${DS.borderLight}` }}
-                    onMouseOver={undefined}>
+                  <tr key={e.enrollment_id} className="tr-hover"
+                    style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: DS.textMuted }}>{l?.learner_code}</td>
                     <td className="px-4 py-3">
                       <Link href={`/learners/${l?.learner_id}`}

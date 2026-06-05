@@ -250,6 +250,10 @@
   }
   .form-error  { @apply mt-1 text-xs; color: var(--ds-danger); }
 
+  /* Table row hover — use this class on <tr> in Server Components
+     instead of onMouseOver/onMouseOut JS handlers */
+  .tr-hover:hover { background: var(--ds-surface-hover) !important; }
+
   /* Badge */
   .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
 }

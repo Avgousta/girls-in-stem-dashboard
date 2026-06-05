@@ -58,9 +58,8 @@ export default async function AdminSchoolsPage() {
             </thead>
             <tbody>
               {schools.map(s => (
-                <tr key={s.school_id} style={{ borderBottom: `1px solid ${DS.borderLight}` }}
-                  onMouseOver={e => { (e.currentTarget as HTMLTableRowElement).style.background = DS.surfaceHover as string; }}
-                  onMouseOut={e =>  { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}>
+                <tr key={s.school_id} className="tr-hover"
+                  style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
                   <td className="px-4 py-3 font-medium" style={{ color: DS.text }}>{s.school_name}</td>
                   <td className="px-4 py-3" style={{ color: DS.textMid }}>{s.district}</td>
                   <td className="px-4 py-3" style={{ color: DS.textMid }}>{s.province}</td>
