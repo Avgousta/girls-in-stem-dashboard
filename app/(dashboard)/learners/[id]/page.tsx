@@ -202,16 +202,15 @@ export default async function LearnerProfilePage({ params }: Props) {
         </Section>
       )}
 
-      {/* Assessments — grouped by grade year → term, inline editable */}
-      {assessments.length > 0 && (
-        <Section title="Assessments" icon={BarChart3} iconColor={DS.primary} count={assessments.length}>
-          <AssessmentsClient
-            assessments={assessments}
-            learnerId={learner.learner_id}
-            programId={programs[0]?.program_id ?? ''}
-          />
-        </Section>
-      )}
+      {/* Assessments — always shown so marks can be added for new learners */}
+      <Section title="Assessments" icon={BarChart3} iconColor={DS.primary} count={assessments.length || undefined}>
+        <AssessmentsClient
+          assessments={assessments}
+          learnerId={learner.learner_id}
+          programId={programs[0]?.program_id ?? ''}
+          learnerGrade={learner.grade ? Number(learner.grade) : null}
+        />
+      </Section>
 
       {/* Mentorship sessions */}
       {mentorship.length > 0 && (

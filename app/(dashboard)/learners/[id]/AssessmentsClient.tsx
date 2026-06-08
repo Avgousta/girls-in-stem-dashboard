@@ -21,6 +21,7 @@ interface Props {
   assessments: Assessment[];
   learnerId: string;
   programId: string;
+  learnerGrade: number | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -273,7 +274,7 @@ function ScoreChip({ label, assessment, slot, learnerId, programId, onSaved, onD
 }
 
 // ── Main grouped component ────────────────────────────────────────────────────
-export default function AssessmentsClient({ assessments: initial, learnerId, programId }: Props) {
+export default function AssessmentsClient({ assessments: initial, learnerId, programId, learnerGrade }: Props) {
   const [assessments, setAssessments] = useState<Assessment[]>(initial);
 
   const handleSaved = (updated: Assessment) => {
@@ -315,7 +316,21 @@ export default function AssessmentsClient({ assessments: initial, learnerId, pro
   }
 
   const TERM_LABELS: Record<string, string> = { '1':'Term 1','2':'Term 2','3':'Term 3','4':'Term 4','none':'Other' };
-  const grades = GRADE_ORDER.filter(g => grouped[g]);
+
+  // Always include the learner's current grade year so new learners see an empty grid
+  const currentYear = new Date().getFullYear();
+  if (learnerGrade) {
+    const currentGradeLabel = `Grade ${learnerGrade} (${currentYear})`;
+    if (!grouped[currentGradeLabel]) grouped[currentGradeLabel] = {};
+    // Ensure all 4 terms exist so chips render
+    ['1','2','3','4'].forEach(t => {
+      if (!grouped[currentGradeLabel][t]) {
+        grouped[currentGradeLabel][t] = { mMaths: null, sMaths: null, mScience: null, sScience: null, app: [], assign: [], baseline: [] };
+      }
+    });
+  }
+
+  const grades = [...GRADE_ORDER, ...Object.keys(grouped).filter(g => !GRADE_ORDER.includes(g))].filter(g => grouped[g]);
 
   // Extract year from grade label e.g. "Grade 9 (2024)" → 2024
   const yearOf = (grade: string) => parseInt(grade.match(/\((\d{4})\)/)?.[1] ?? String(new Date().getFullYear()));
