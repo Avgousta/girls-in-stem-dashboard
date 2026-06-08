@@ -20,7 +20,7 @@ export async function GET(_: NextRequest, { params }: Params) {
       risk_scores(risk_level, attendance_rate, avg_score),
       program_enrollments(status, programs(program_name, program_type)),
       attendance(status),
-      assessments(subject, percentage, grade_band, assessment_date, score, max_score, assessment_type, programs(program_name)),
+      assessments(subject, percentage, grade_band, assessment_date, score, max_score, assessment_type, notes, term, programs(program_name)),
       projects(project_name, stage, completion_status, score, max_score, programs(program_name)),
       interventions(status, reason, created_at),
       mentorship_sessions(session_date, notes)
@@ -557,54 +557,129 @@ export async function GET(_: NextRequest, { params }: Params) {
       </div>
     </div>` : ''}
 
-    <!-- Assessment Results Table -->
-    ${ass.length > 0 ? `
-    <div class="section avoid-break">
+    <!-- Assessment Results — grouped by grade year → term -->
+    <div class="section">
       <div class="section-title">
         <span class="section-title-dot"></span>
         Assessment Results
         <span class="section-count">${ass.length} total</span>
       </div>
-      <div class="data-table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Subject</th>
-              <th>Type</th>
-              <th>Programme</th>
-              <th style="text-align:center">Score</th>
-              <th style="text-align:center">%</th>
-              <th>Grade Band</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${ass.slice(0, 20).map((a: any) => `
-              <tr>
-                <td style="color:#64748B;font-size:10px">${a.assessment_date ? new Date(a.assessment_date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
-                <td style="font-weight:600">${a.subject || '—'}</td>
-                <td style="color:#64748B;font-size:10px;text-transform:capitalize">${a.assessment_type || '—'}</td>
-                <td style="color:#64748B;font-size:10px">${(a.programs as any)?.program_name || '—'}</td>
-                <td style="text-align:center;font-family:'Courier New',monospace;font-size:10px">${a.score ?? '—'}/${a.max_score ?? 100}</td>
-                <td style="text-align:center;font-weight:800;color:${scoreCol(Number(a.percentage||0))}">${a.percentage ?? '—'}%</td>
-                <td>
-                  ${a.grade_band
-                    ? `<span class="badge" style="background:${bandBg(a.grade_band)};color:${bandCol(a.grade_band)}">${a.grade_band}</span>`
-                    : '<span style="color:#CBD5E1">—</span>'}
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-      ${ass.length > 20 ? `<p style="font-size:9px;color:#94A3B8;margin-top:6px;text-align:right">Showing 20 of ${ass.length} assessments &nbsp;·&nbsp; Download full data via the admin portal</p>` : ''}
-    </div>` : `
-    <div class="section avoid-break">
-      <div class="section-title"><span class="section-title-dot"></span>Assessment Results</div>
-      <div style="background:#FAFAFA;border:1px solid #E2E8F0;border-radius:10px;padding:20px;text-align:center;color:#94A3B8;font-size:11px">
-        No assessments recorded yet
-      </div>
-    </div>`}
+      ${(() => {
+        if (!ass.length) return `<div style="background:#FAFAFA;border:1px solid #E2E8F0;border-radius:10px;padding:20px;text-align:center;color:#94A3B8;font-size:11px">No assessments recorded yet</div>`;
+
+        // Group by grade year
+        const gradeOf = (a: any) => {
+          const m = (a.notes ?? '').match(/\(Grade (\d+) \((\d{4})\)\)/);
+          return m ? `Grade ${m[1]} (${m[2]})` : 'Other';
+        };
+        type TD = { mMaths:any; sMaths:any; mScience:any; sScience:any; app:any[]; assign:any[]; baseline:any[] };
+        const grouped: Record<string, Record<string, TD>> = {};
+        for (const a of ass) {
+          const grade = gradeOf(a);
+          const term  = String(a.term ?? 'none');
+          if (!grouped[grade]) grouped[grade] = {};
+          if (!grouped[grade][term]) grouped[grade][term] = { mMaths:null, sMaths:null, mScience:null, sScience:null, app:[], assign:[], baseline:[] };
+          const td = grouped[grade][term];
+          const notes: string = a.notes ?? '';
+          if (a.assessment_type === 'other' && notes.toLowerCase().includes('baseline')) td.baseline.push(a);
+          else if (a.assessment_type === 'assignment' || notes.toLowerCase().includes('assignment')) td.assign.push(a);
+          else if (a.assessment_type === 'quiz' || notes.toLowerCase().includes('application mark')) td.app.push(a);
+          else if (notes.startsWith('Melisizwe Maths'))  td.mMaths   = a;
+          else if (notes.startsWith('School Maths'))      td.sMaths   = a;
+          else if (notes.startsWith('Melisizwe Science')) td.mScience = a;
+          else if (notes.startsWith('School Science'))    td.sScience = a;
+        }
+
+        const GRADE_ORDER = ['Grade 9 (2024)', 'Grade 10 (2025)', 'Grade 11 (2026)', 'Other'];
+        const grades = GRADE_ORDER.filter(g => grouped[g]);
+        const TERM_LABELS: Record<string, string> = { '1':'Term 1','2':'Term 2','3':'Term 3','4':'Term 4','none':'Other' };
+
+        const chip = (a: any, label: string) => {
+          const pct  = a ? Number(a.percentage ?? 0) : null;
+          const col  = pct === null ? '#94A3B8' : pct >= 80 ? '#7C3AED' : pct >= 70 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+          const bg   = pct === null ? '#F8FAFC' : pct >= 80 ? '#F5F3FF' : pct >= 70 ? '#ECFDF5' : pct >= 50 ? '#FFFBEB' : '#FEF2F2';
+          const bdr  = pct === null ? '#E2E8F0' : col + '60';
+          return `<div style="flex:1;background:${bg};border:1px solid ${bdr};border-radius:10px;padding:10px 8px;text-align:center;min-width:80px">
+            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94A3B8;margin-bottom:4px">${label}</div>
+            ${pct !== null
+              ? `<div style="font-size:17px;font-weight:900;color:${col};line-height:1">${Math.round(pct)}%</div>
+                 <div style="font-size:8px;font-weight:700;color:${col};margin-top:2px;text-transform:uppercase">${a.grade_band ?? ''}</div>
+                 <div style="font-size:8px;color:#94A3B8;margin-top:1px">${a.score ?? ''}/${a.max_score ?? 100}</div>`
+              : `<div style="font-size:14px;color:#CBD5E1">—</div>`}
+          </div>`;
+        };
+
+        return grades.map(grade => {
+          const terms = grouped[grade];
+          const termKeys = Object.keys(terms).sort((a,b) => a==='none'?-1:b==='none'?1:Number(a)-Number(b));
+          const allBaselines = termKeys.flatMap(t => terms[t].baseline);
+          const allApp       = termKeys.flatMap(t => terms[t].app);
+          const allAssign    = termKeys.flatMap(t => terms[t].assign);
+          const termDataKeys = termKeys.filter(t => t !== 'none');
+
+          return `
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#7C3AED">${grade}</span>
+              <div style="flex:1;height:1px;background:#E2E8F0"></div>
+            </div>
+
+            ${allBaselines.length ? `
+            <div style="margin-bottom:10px">
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">Baseline Assessments</div>
+              <div style="display:flex;gap:8px;padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap">
+                ${allBaselines.map((a:any) => chip(a, (a.notes??'').replace(/ \(Grade.*$/,'').replace('Melisizwe ','M. '))).join('')}
+              </div>
+            </div>` : ''}
+
+            ${allApp.length ? `
+            <div style="margin-bottom:10px">
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">Application Marks</div>
+              <div style="display:flex;gap:8px;padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap">
+                ${allApp.map((a:any) => chip(a, a.subject)).join('')}
+              </div>
+            </div>` : ''}
+
+            ${termDataKeys.map(t => {
+              const td = terms[t];
+              const hasMath = td.mMaths || td.sMaths;
+              const hasSci  = td.mScience || td.sScience;
+              if (!hasMath && !hasSci) return '';
+              return `
+              <div style="margin-bottom:10px;break-inside:avoid">
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">${TERM_LABELS[t]}</div>
+                <div style="padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px">
+                  ${hasMath ? `
+                  <div style="margin-bottom:8px">
+                    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#CBD5E1;margin-bottom:5px">Mathematics</div>
+                    <div style="display:flex;gap:8px">
+                      ${chip(td.mMaths, 'Melisizwe')}
+                      ${chip(td.sMaths, 'School')}
+                    </div>
+                  </div>` : ''}
+                  ${hasSci ? `
+                  <div>
+                    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#CBD5E1;margin-bottom:5px">Science</div>
+                    <div style="display:flex;gap:8px">
+                      ${chip(td.mScience, 'Melisizwe')}
+                      ${chip(td.sScience, 'School')}
+                    </div>
+                  </div>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+
+            ${allAssign.length ? `
+            <div style="margin-bottom:10px">
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">Assignments</div>
+              <div style="display:flex;gap:8px;padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap">
+                ${allAssign.map((a:any) => chip(a, (a.notes??'').replace(/ \(Grade.*$/,'').replace('June ',''))).join('')}
+              </div>
+            </div>` : ''}
+          </div>`;
+        }).join('');
+      })()}
+    </div>
 
     <!-- Projects -->
     ${projects.length > 0 ? `
