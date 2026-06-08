@@ -1,17 +1,63 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, Download, X } from 'lucide-react';
+import { Loader2, Save, Download, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
 
 interface Program { program_id:string; program_name:string }
 interface Row     { learner_id:string; full_name:string; learner_code:string; grade:number; score:string; notes:string }
 
-const SUBJECTS  = ['Coding','Robotics','Mathematics','Science','Design','Electronics','AI/ML','Project Work','Practical','Written Test','Assignment','Other'];
-const TYPES     = [['test','📝 Test'],['quiz','⚡ Quiz'],['project','🚀 Project'],['practical','🔬 Practical'],['assignment','📋 Assignment'],['oral','🗣️ Oral'],['other','📄 Other']] as const;
-const DIFFS     = [['easy','Easy'],['medium','Medium'],['hard','Hard'],['advanced','Advanced']] as const;
-const SKILLS    = ['Logic','Syntax','Debugging','Problem Solving','Data Structures','Algorithms','Robotics','Electronics','Mathematics','Science','Design Thinking','Presentation','Research','Collaboration'];
+// Structured assessment categories matching the learner profile grouping
+type Source   = 'Melisizwe' | 'School';
+type Subject  = 'Mathematics' | 'Science' | 'Coding' | 'Robotics' | 'Other';
+type Category = 'Baseline' | 'Term 1' | 'Term 2' | 'Term 3' | 'Term 4' | 'Application Mark' | 'Assignment';
+
+const SOURCES:     Source[]   = ['Melisizwe', 'School'];
+const SUBJECTS_NEW: Subject[] = ['Mathematics', 'Science', 'Coding', 'Robotics', 'Other'];
+const CATEGORIES: Category[]  = ['Baseline', 'Term 1', 'Term 2', 'Term 3', 'Term 4', 'Application Mark', 'Assignment'];
+
+// Map category → assessment_type allowed by DB constraint
+const CATEGORY_TO_TYPE: Record<Category, string> = {
+  'Baseline':         'other',
+  'Term 1':           'test',
+  'Term 2':           'test',
+  'Term 3':           'test',
+  'Term 4':           'test',
+  'Application Mark': 'quiz',
+  'Assignment':       'assignment',
+};
+// Map category → term number (null for non-term)
+const CATEGORY_TO_TERM: Record<Category, number|null> = {
+  'Baseline': null, 'Term 1': 1, 'Term 2': 2, 'Term 3': 3, 'Term 4': 4,
+  'Application Mark': null, 'Assignment': 2,
+};
+// Auto-fill date per category for current year
+const CATEGORY_TO_DATE = (cat: Category): string => {
+  const y = new Date().getFullYear();
+  const map: Record<Category, string> = {
+    'Baseline':         `${y}-02-10`,
+    'Term 1':           `${y}-04-10`,
+    'Term 2':           `${y}-06-30`,
+    'Term 3':           `${y}-09-12`,
+    'Term 4':           `${y}-11-20`,
+    'Application Mark': `${y}-01-01`,
+    'Assignment':       `${y}-06-30`,
+  };
+  return map[cat] ?? new Date().toISOString().slice(0,10);
+};
+
+// Build the notes label that matches the learner profile display
+const buildNotesLabel = (source: Source|'', subject: Subject|'', category: Category|''): string => {
+  if (!source || !subject || !category) return '';
+  if (category === 'Baseline')         return `${source} ${subject} Baseline`;
+  if (category === 'Application Mark') return `Application Mark — ${subject}`;
+  if (category === 'Assignment')       return `June ${subject} Assignment`;
+  return `${source} ${subject} — ${category}`;
+};
+
+const DIFFS  = [['easy','Easy'],['medium','Medium'],['hard','Hard'],['advanced','Advanced']] as const;
+const SKILLS = ['Logic','Syntax','Debugging','Problem Solving','Data Structures','Algorithms','Robotics','Electronics','Mathematics','Science','Design Thinking','Presentation','Research','Collaboration'];
 
 const GRADE_BAND = (p: number|null) => p===null?null : p>=80?'Distinction':p>=70?'Merit':p>=50?'Pass':'Needs Support';
 const scoreColor = (p: number|null) => p===null ? DS.textMuted as string : p>=80 ? 'var(--ds-success)' : p>=70 ? '#818CF8' : p>=50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
@@ -56,19 +102,34 @@ const thSt: React.CSSProperties = {
 };
 
 export default function BulkAssessmentsPage() {
-  const [programs,   setPrograms]   = useState<Program[]>([]);
-  const [programId,  setProgramId]  = useState('');
-  const [subject,    setSubject]    = useState('');
-  const [type,       setType]       = useState('test');
-  const [diff,       setDiff]       = useState('medium');
-  const [skills,     setSkills]     = useState<string[]>([]);
-  const [maxScore,   setMaxScore]   = useState('100');
-  const [date,       setDate]       = useState(new Date().toISOString().slice(0,10));
-  const [term,       setTerm]       = useState('');
-  const [rows,       setRows]       = useState<Row[]>([]);
-  const [loading,    setLoading]    = useState(false);
-  const [loadingLrn, setLoadingLrn] = useState(false);
-  const [saved,      setSaved]      = useState(false);
+  const [programs,    setPrograms]    = useState<Program[]>([]);
+  const [programId,   setProgramId]   = useState('');
+  // Structured selectors
+  const [source,      setSource]      = useState<Source|''>('');
+  const [subject,     setSubject]     = useState<Subject|''>('');
+  const [category,    setCategory]    = useState<Category|''>('');
+  // Advanced (collapsed by default)
+  const [showAdv,     setShowAdv]     = useState(false);
+  const [diff,        setDiff]        = useState('medium');
+  const [skills,      setSkills]      = useState<string[]>([]);
+  const [maxScore,    setMaxScore]    = useState('100');
+  const [date,        setDate]        = useState(new Date().toISOString().slice(0,10));
+  const [rows,        setRows]        = useState<Row[]>([]);
+  const [loading,     setLoading]     = useState(false);
+  const [loadingLrn,  setLoadingLrn]  = useState(false);
+  const [saved,       setSaved]       = useState(false);
+
+  // Auto-fill date when category changes
+  const handleCategorySelect = (cat: Category) => {
+    setCategory(cat);
+    setDate(CATEGORY_TO_DATE(cat));
+  };
+
+  // Derived
+  const notesLabel = buildNotesLabel(source, subject, category);
+  const assessType = category ? CATEGORY_TO_TYPE[category] : 'test';
+  const termNum    = category ? CATEGORY_TO_TERM[category] : null;
+  const isReady    = !!source && !!subject && !!category;
 
   // Grade tab state
   const [activeGrade,  setActiveGrade]  = useState<number|'all'>('all');
@@ -119,7 +180,7 @@ export default function BulkAssessmentsPage() {
   // Save the currently visible grade (or all)
   const handleSave = async () => {
     if (!programId) { toast.error('Select a programme'); return; }
-    if (!subject)   { toast.error('Select a subject');   return; }
+    if (!isReady)   { toast.error('Select source, subject and category'); return; }
     if (!filledVisible.length) { toast.error('Enter at least one score'); return; }
 
     setLoading(true);
@@ -127,22 +188,24 @@ export default function BulkAssessmentsPage() {
       let count = 0;
       for (const r of filledVisible) {
         const p = pct(r.score);
+        // Build grade label from learner grade for the notes suffix
+        const gradeYear = r.grade ? ` (Grade ${r.grade} (${new Date(date).getFullYear()}))` : '';
+        const fullNotes = notesLabel + gradeYear;
         const res = await fetch('/api/v1/assessments', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({
             learner_id:      r.learner_id,
             program_id:      programId,
             subject,
-            assessment_type: type,
+            assessment_type: assessType,
             difficulty:      diff,
             skill_tags:      skills.length > 0 ? skills : undefined,
             score:           Number(r.score),
             max_score:       Number(maxScore),
-            percentage:      p,
             grade_band:      GRADE_BAND(p),
             assessment_date: date,
-            term:            term ? Number(term) : undefined,
-            notes:           r.notes || undefined,
+            term:            termNum ?? undefined,
+            notes:           fullNotes,
           }),
         });
         if (res.ok) count++;
@@ -228,70 +291,129 @@ export default function BulkAssessmentsPage() {
       <div className="rounded-2xl p-5 space-y-5" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
         <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>Assessment Details</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label style={labelSt}>Programme <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
-            <select value={programId} onChange={e=>setProgramId(e.target.value)} style={selectSt}>
-              <option value="">Select programme…</option>
-              {programs.map(p => <option key={p.program_id} value={p.program_id}>{p.program_name}</option>)}
-            </select>
+        {/* Programme */}
+        <div>
+          <label style={labelSt}>Programme <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
+          <select value={programId} onChange={e=>setProgramId(e.target.value)} style={{ ...selectSt, maxWidth: 360 }}>
+            <option value="">Select programme…</option>
+            {programs.map(p => <option key={p.program_id} value={p.program_id}>{p.program_name}</option>)}
+          </select>
+        </div>
+
+        {/* Source toggle */}
+        <div>
+          <label style={labelSt}>Source <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
+          <div className="flex gap-2 flex-wrap">
+            {SOURCES.map(s => (
+              <button key={s} type="button" onClick={() => setSource(s)}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer"
+                style={source === s
+                  ? { background: DS.primary, borderColor: DS.primary, color: '#fff' }
+                  : { background: DS.surfaceHover as string, borderColor: DS.border, color: DS.textMid as string }}>
+                {s === 'Melisizwe' ? '🎓 Melisizwe' : '🏫 School'}
+              </button>
+            ))}
           </div>
-          <div>
-            <label style={labelSt}>Subject <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
-            <select value={subject} onChange={e=>setSubject(e.target.value)} style={selectSt}>
-              <option value="">Select subject…</option>
-              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+        </div>
+
+        {/* Subject toggle */}
+        <div>
+          <label style={labelSt}>Subject <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
+          <div className="flex gap-2 flex-wrap">
+            {SUBJECTS_NEW.map(s => (
+              <button key={s} type="button" onClick={() => setSubject(s)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer"
+                style={subject === s
+                  ? { background: '#7C3AED', borderColor: '#7C3AED', color: '#fff' }
+                  : { background: DS.surfaceHover as string, borderColor: DS.border, color: DS.textMid as string }}>
+                {s === 'Mathematics' ? '📐 Mathematics' : s === 'Science' ? '🔬 Science' : s === 'Coding' ? '💻 Coding' : s === 'Robotics' ? '🤖 Robotics' : '📄 Other'}
+              </button>
+            ))}
           </div>
-          <div>
-            <label style={labelSt}>Assessment Type</label>
-            <select value={type} onChange={e=>setType(e.target.value)} style={selectSt}>
-              {TYPES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+        </div>
+
+        {/* Category toggle */}
+        <div>
+          <label style={labelSt}>Category <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
+          <div className="flex gap-2 flex-wrap">
+            {CATEGORIES.map(cat => {
+              const isBaseline = cat === 'Baseline';
+              const isApp      = cat === 'Application Mark';
+              const isAssign   = cat === 'Assignment';
+              const accent = isBaseline ? '#F59E0B' : isApp ? '#EC4899' : isAssign ? '#10B981' : DS.primary;
+              return (
+                <button key={cat} type="button" onClick={() => handleCategorySelect(cat)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all cursor-pointer"
+                  style={category === cat
+                    ? { background: accent, borderColor: accent, color: '#fff' }
+                    : { background: DS.surfaceHover as string, borderColor: DS.border, color: DS.textMid as string }}>
+                  {cat}
+                </button>
+              );
+            })}
           </div>
+        </div>
+
+        {/* Preview label — shows exactly how it will appear on the learner profile */}
+        {notesLabel && (
+          <div className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{ background: DS.surfaceHover, border: `1px solid ${DS.primaryBorder}` }}>
+            <span className="text-[10px] font-bold uppercase tracking-wider shrink-0"
+              style={{ color: DS.textMuted }}>Will appear as</span>
+            <span className="text-sm font-semibold" style={{ color: DS.primary }}>{notesLabel}</span>
+          </div>
+        )}
+
+        {/* Date + Total Marks side by side */}
+        <div className="grid grid-cols-2 gap-4" style={{ maxWidth: 480 }}>
           <div>
-            <label style={labelSt}>Difficulty</label>
-            <select value={diff} onChange={e=>setDiff(e.target.value)} style={selectSt}>
-              {DIFFS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+            <label style={labelSt}>Date</label>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inputSt} />
           </div>
           <div>
             <label style={labelSt}>Total Marks</label>
             <input type="number" value={maxScore} onChange={e=>setMaxScore(e.target.value)}
               style={inputSt} min={1} max={1000} />
           </div>
-          <div>
-            <label style={labelSt}>Date</label>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inputSt} />
-          </div>
-          <div>
-            <label style={labelSt}>Term (optional)</label>
-            <select value={term} onChange={e=>setTerm(e.target.value)} style={selectSt}>
-              <option value="">—</option>
-              {[1,2,3,4].map(t => <option key={t} value={t}>Term {t}</option>)}
-            </select>
-          </div>
         </div>
 
-        {/* Skill tags */}
+        {/* Advanced (collapsible) */}
         <div>
-          <label style={labelSt}>Skills Assessed (select all that apply)</label>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {SKILLS.map(sk => (
-              <button key={sk} type="button" onClick={() => toggleSkill(sk)}
-                className="text-xs font-semibold px-2.5 py-1 rounded-full transition-all cursor-pointer"
-                style={skills.includes(sk)
-                  ? { background: DS.primary, color: '#fff', border: `1px solid ${DS.primary}` }
-                  : { background: DS.surfaceHover as string, color: DS.textMid as string, border: `1px solid ${DS.border}` }}>
-                {sk}
-              </button>
-            ))}
-          </div>
-          {skills.length > 0 && (
-            <button onClick={() => setSkills([])} className="text-xs flex items-center gap-1 mt-2 cursor-pointer"
-              style={{ color: DS.textMuted }}>
-              <X className="w-3 h-3" /> Clear skills
-            </button>
+          <button type="button" onClick={() => setShowAdv(v => !v)}
+            className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            style={{ color: DS.textMuted }}>
+            {showAdv ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            Advanced options
+          </button>
+          {showAdv && (
+            <div className="mt-4 space-y-4">
+              <div style={{ maxWidth: 240 }}>
+                <label style={labelSt}>Difficulty</label>
+                <select value={diff} onChange={e=>setDiff(e.target.value)} style={selectSt}>
+                  {DIFFS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelSt}>Skills Assessed</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {SKILLS.map(sk => (
+                    <button key={sk} type="button" onClick={() => toggleSkill(sk)}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-full transition-all cursor-pointer"
+                      style={skills.includes(sk)
+                        ? { background: DS.primary, color: '#fff', border: `1px solid ${DS.primary}` }
+                        : { background: DS.surfaceHover as string, color: DS.textMid as string, border: `1px solid ${DS.border}` }}>
+                      {sk}
+                    </button>
+                  ))}
+                </div>
+                {skills.length > 0 && (
+                  <button onClick={() => setSkills([])} className="text-xs flex items-center gap-1 mt-2 cursor-pointer"
+                    style={{ color: DS.textMuted }}>
+                    <X className="w-3 h-3" /> Clear
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
