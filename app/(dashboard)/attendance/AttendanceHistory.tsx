@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
-import { Search, Download, Loader2, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, Download, Loader2, ChevronLeft, ChevronRight, ArrowLeft, Pencil, X, Check } from 'lucide-react';
 
 interface Program { program_id: string; program_name: string }
 
@@ -91,8 +91,50 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
   const [sessions,  setSessions]  = useState<SessionSummary[]>([]);
   const [page,      setPage]      = useState(1);
   const [selected,  setSelected]  = useState<SessionSummary | null>(null);
+  const [editing,   setEditing]   = useState<string | null>(null); // attendance_id being edited
+  const [editStatus, setEditStatus] = useState<string>('');
+  const [editNotes,  setEditNotes]  = useState<string>('');
+  const [saving,    setSaving]    = useState(false);
 
   const PAGE_SIZE = 50;
+
+  const startEdit = (r: AttendanceRecord) => {
+    setEditing(r.attendance_id);
+    setEditStatus(r.status);
+    setEditNotes(r.notes || '');
+  };
+
+  const cancelEdit = () => { setEditing(null); };
+
+  const saveEdit = async (r: AttendanceRecord) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/v1/attendance/${r.attendance_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: editStatus, notes: editNotes || null }),
+      });
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error); }
+      // Update local records state so UI reflects change immediately
+      setRecords(prev => prev.map(rec =>
+        rec.attendance_id === r.attendance_id
+          ? { ...rec, status: editStatus, notes: editNotes || null }
+          : rec
+      ));
+      // Recompute session summary totals
+      setSessions(prev => prev.map(s => {
+        if (s.session_date !== r.session_date || s.program_name !== r.program_name) return s;
+        const updated = { ...s };
+        if (r.status in updated) (updated as any)[r.status]--;
+        if (editStatus in updated) (updated as any)[editStatus]++;
+        updated.rate = updated.total ? Math.round(updated.present / updated.total * 100) : 0;
+        return updated;
+      }));
+      setEditing(null);
+    } catch (e: any) {
+      alert(`Save failed: ${e.message}`);
+    } finally { setSaving(false); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -194,7 +236,7 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {['#', 'Learner', 'Code', 'School', 'Status', 'Notes'].map(h => (
+                  {['#', 'Learner', 'Code', 'School', 'Status', 'Notes', ''].map(h => (
                     <th key={h} style={thSt}>{h}</th>
                   ))}
                 </tr>
@@ -203,22 +245,69 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
                 {(['present', 'late', 'excused', 'absent'] as const).map(status => {
                   const group = byStatus(status);
                   if (!group.length) return null;
-                  return group.map((r, i) => (
-                    <tr key={r.attendance_id || `${status}-${i}`}
-                      style={{
-                        borderBottom: `1px solid ${DS.borderLight}`,
-                        background:   status === 'absent' ? 'var(--ds-danger-light)' : 'transparent',
-                      }}>
-                      <td className="px-4 py-3 text-xs font-mono" style={{ color: DS.textMuted }}>
-                        {sessionRecords.indexOf(r) + 1}
-                      </td>
-                      <td className="px-4 py-3 font-medium" style={{ color: DS.text }}>{r.learner_name}</td>
-                      <td className="px-4 py-3 font-mono text-xs" style={{ color: DS.textMuted }}>{r.learner_code}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: DS.textMid }}>{r.school_name}</td>
-                      <td className="px-4 py-3"><StatusPill status={r.status} /></td>
-                      <td className="px-4 py-3 text-xs" style={{ color: DS.textMuted }}>{r.notes || '—'}</td>
-                    </tr>
-                  ));
+                  return group.map((r, i) => {
+                    const isEditing = editing === r.attendance_id;
+                    return (
+                      <tr key={r.attendance_id || `${status}-${i}`}
+                        style={{
+                          borderBottom: `1px solid ${DS.borderLight}`,
+                          background: isEditing
+                            ? `rgba(${DS.primary},0.08)`
+                            : r.status === 'absent' ? 'var(--ds-danger-light)' : 'transparent',
+                        }}>
+                        <td className="px-4 py-3 text-xs font-mono" style={{ color: DS.textMuted }}>
+                          {sessionRecords.indexOf(r) + 1}
+                        </td>
+                        <td className="px-4 py-3 font-medium" style={{ color: DS.text }}>{r.learner_name}</td>
+                        <td className="px-4 py-3 font-mono text-xs" style={{ color: DS.textMuted }}>{r.learner_code}</td>
+                        <td className="px-4 py-3 text-xs" style={{ color: DS.textMid }}>{r.school_name}</td>
+                        <td className="px-4 py-3">
+                          {isEditing ? (
+                            <select value={editStatus} onChange={e => setEditStatus(e.target.value)}
+                              style={{ ...selectSt, width: 'auto', padding: '4px 8px', fontSize: '12px', colorScheme: 'dark' }}>
+                              {['present','absent','late','excused'].map(s => (
+                                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <StatusPill status={r.status} />
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: DS.textMuted }}>
+                          {isEditing ? (
+                            <input value={editNotes} onChange={e => setEditNotes(e.target.value)}
+                              placeholder="Add note…"
+                              style={{ ...inputSt, padding: '4px 8px', fontSize: '12px', width: '160px' }} />
+                          ) : (
+                            r.notes || '—'
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {isEditing ? (
+                            <div className="flex gap-1.5 items-center">
+                              <button onClick={() => saveEdit(r)} disabled={saving}
+                                title="Save"
+                                className="p-1.5 rounded-lg cursor-pointer transition-colors"
+                                style={{ background: 'var(--ds-success)', color: '#fff' }}>
+                                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                              </button>
+                              <button onClick={cancelEdit} title="Cancel"
+                                className="p-1.5 rounded-lg cursor-pointer transition-colors"
+                                style={{ background: DS.surfaceHover, color: DS.textMuted as string }}>
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => startEdit(r)} title="Edit attendance"
+                              className="p-1.5 rounded-lg cursor-pointer opacity-40 hover:opacity-100 transition-opacity"
+                              style={{ background: DS.surfaceHover }}>
+                              <Pencil className="w-3.5 h-3.5" style={{ color: DS.textMid as string }} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  });
                 })}
               </tbody>
             </table>
