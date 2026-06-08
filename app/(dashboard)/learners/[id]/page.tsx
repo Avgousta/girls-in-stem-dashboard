@@ -8,6 +8,7 @@ import {
   HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban,
 } from 'lucide-react';
 import Link from 'next/link';
+import AssessmentsClient from './AssessmentsClient';
 
 async function getLearnerProfile(id: string) {
   const supabase = await createClient();
@@ -78,189 +79,6 @@ const STAGE_CFG: Record<string, { color: string; bg: string }> = {
   marked:      { color: 'var(--ds-success)',      bg: 'var(--ds-success-light)'},
 };
 
-// ─── Assessment score chip ────────────────────────────────────────────────────
-function ScoreChip({ label, pct, band }: { label: string; pct: number | null; band?: string }) {
-  if (pct === null) return (
-    <div className="flex-1 rounded-xl p-3 text-center opacity-30"
-      style={{ background: DS.surfaceHover, border: `1px solid ${DS.border}` }}>
-      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: DS.textMuted }}>{label}</p>
-      <p className="text-xs" style={{ color: DS.textMuted }}>—</p>
-    </div>
-  );
-  const color = pct >= 80 ? '#818CF8' : pct >= 70 ? 'var(--ds-success)' : pct >= 50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
-  const bg    = pct >= 80 ? 'rgba(129,140,248,0.10)' : pct >= 70 ? 'var(--ds-success-light)' : pct >= 50 ? 'var(--ds-warn-light)' : 'var(--ds-danger-light)';
-  return (
-    <div className="flex-1 rounded-xl p-3 text-center" style={{ background: bg, border: `1px solid ${color}` }}>
-      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: DS.textMuted }}>{label}</p>
-      <p className="text-xl font-black tabular-nums" style={{ color }}>{Math.round(pct)}%</p>
-      {band && <p className="text-[9px] font-semibold mt-0.5 uppercase tracking-wide" style={{ color }}>{band}</p>}
-    </div>
-  );
-}
-
-// ─── Grouped assessments view ─────────────────────────────────────────────────
-function AssessmentsGrouped({ assessments }: { assessments: any[] }) {
-  // Extract grade label from notes e.g. "(Grade 10 (2025))" → "Grade 10 (2025)"
-  const gradeOf = (a: any): string => {
-    const m = (a.notes ?? '').match(/\(Grade (\d+) \((\d{4})\)\)/);
-    return m ? `Grade ${m[1]} (${m[2]})` : 'Other';
-  };
-  const termOf = (a: any): number | null => a.term ?? null;
-
-  // Build: gradeLabel → termNum → { mMaths, sMaths, mScience, sScience, app, assign }
-  type TermData = { mMaths: any; sMaths: any; mScience: any; sScience: any; app: any[]; assign: any[]; baseline: any[] };
-  const grouped: Record<string, Record<string, TermData>> = {};
-
-  const gradeOrder = ['Grade 9 (2024)', 'Grade 10 (2025)', 'Grade 11 (2026)', 'Other'];
-
-  for (const a of assessments) {
-    const grade = gradeOf(a);
-    const term  = String(termOf(a) ?? 'none');
-    if (!grouped[grade]) grouped[grade] = {};
-    if (!grouped[grade][term]) grouped[grade][term] = { mMaths: null, sMaths: null, mScience: null, sScience: null, app: [], assign: [], baseline: [] };
-    const td = grouped[grade][term];
-    const notes: string = a.notes ?? '';
-
-    if (a.assessment_type === 'other' && notes.toLowerCase().includes('baseline')) {
-      td.baseline.push(a);
-    } else if (a.assessment_type === 'assignment' || notes.toLowerCase().includes('assignment')) {
-      td.assign.push(a);
-    } else if (a.assessment_type === 'quiz' || notes.toLowerCase().includes('application mark')) {
-      td.app.push(a);
-    } else if (notes.startsWith('Melisizwe Maths')) {
-      td.mMaths = a;
-    } else if (notes.startsWith('School Maths')) {
-      td.sMaths = a;
-    } else if (notes.startsWith('Melisizwe Science')) {
-      td.mScience = a;
-    } else if (notes.startsWith('School Science')) {
-      td.sScience = a;
-    }
-  }
-
-  const TERM_LABELS: Record<string, string> = {
-    '1': 'Term 1', '2': 'Term 2', '3': 'Term 3', '4': 'Term 4', 'none': 'Other',
-  };
-
-  const grades = gradeOrder.filter(g => grouped[g]);
-
-  return (
-    <div className="space-y-6">
-      {grades.map(grade => {
-        const terms = grouped[grade];
-        // Show: baselines first (term none/1), then T1–T4, then assignments
-        const termKeys = Object.keys(terms).sort((a, b) => {
-          if (a === 'none') return -1;
-          if (b === 'none') return 1;
-          return Number(a) - Number(b);
-        });
-
-        // Collect all baseline records across terms
-        const allBaselines: any[] = termKeys.flatMap(t => terms[t].baseline);
-        // Collect all app marks
-        const allApp: any[] = termKeys.flatMap(t => terms[t].app);
-        // Collect all assignments
-        const allAssign: any[] = termKeys.flatMap(t => terms[t].assign);
-
-        return (
-          <div key={grade}>
-            {/* Grade heading */}
-            <div className="flex items-center gap-3 mb-3">
-              <h3 className="text-sm font-black uppercase tracking-wider" style={{ color: DS.primary }}>{grade}</h3>
-              <div className="flex-1 h-px" style={{ background: DS.border }} />
-            </div>
-
-            <div className="space-y-3">
-              {/* Baselines */}
-              {allBaselines.length > 0 && (
-                <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${DS.border}` }}>
-                  <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider"
-                    style={{ background: DS.surfaceHover, color: DS.textMuted, borderBottom: `1px solid ${DS.border}` }}>
-                    Baseline Assessments
-                  </div>
-                  <div className="p-3 flex gap-3 flex-wrap" style={{ background: DS.surface }}>
-                    {allBaselines.map((a: any, i: number) => {
-                      const shortLabel = (a.notes ?? '').replace(/ \(Grade.*$/, '').replace('Melisizwe ', 'M. ').replace('Science Baseline', 'Science');
-                      return <ScoreChip key={i} label={shortLabel} pct={a.percentage} band={a.grade_band} />;
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Application marks */}
-              {allApp.length > 0 && (
-                <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${DS.border}` }}>
-                  <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider"
-                    style={{ background: DS.surfaceHover, color: DS.textMuted, borderBottom: `1px solid ${DS.border}` }}>
-                    Application Marks
-                  </div>
-                  <div className="p-3 flex gap-3 flex-wrap" style={{ background: DS.surface }}>
-                    {allApp.map((a: any, i: number) => (
-                      <ScoreChip key={i} label={a.subject} pct={a.percentage} band={a.grade_band} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Terms T1–T4 */}
-              {termKeys.filter(t => t !== 'none' && (terms[t].mMaths || terms[t].sMaths || terms[t].mScience || terms[t].sScience)).map(t => {
-                const td = terms[t];
-                return (
-                  <div key={t} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${DS.border}` }}>
-                    <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider"
-                      style={{ background: DS.surfaceHover, color: DS.textMuted, borderBottom: `1px solid ${DS.border}` }}>
-                      {TERM_LABELS[t]}
-                    </div>
-                    <div className="p-3 space-y-2" style={{ background: DS.surface }}>
-                      {/* Maths row */}
-                      {(td.mMaths || td.sMaths) && (
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5"
-                            style={{ color: DS.textMuted }}>Mathematics</p>
-                          <div className="flex gap-2">
-                            <ScoreChip label="Melisizwe" pct={td.mMaths?.percentage ?? null} band={td.mMaths?.grade_band} />
-                            <ScoreChip label="School"    pct={td.sMaths?.percentage ?? null} band={td.sMaths?.grade_band} />
-                          </div>
-                        </div>
-                      )}
-                      {/* Science row */}
-                      {(td.mScience || td.sScience) && (
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5"
-                            style={{ color: DS.textMuted }}>Science</p>
-                          <div className="flex gap-2">
-                            <ScoreChip label="Melisizwe" pct={td.mScience?.percentage ?? null} band={td.mScience?.grade_band} />
-                            <ScoreChip label="School"    pct={td.sScience?.percentage ?? null} band={td.sScience?.grade_band} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Assignments */}
-              {allAssign.length > 0 && (
-                <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${DS.border}` }}>
-                  <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider"
-                    style={{ background: DS.surfaceHover, color: DS.textMuted, borderBottom: `1px solid ${DS.border}` }}>
-                    Assignments
-                  </div>
-                  <div className="p-3 flex gap-3 flex-wrap" style={{ background: DS.surface }}>
-                    {allAssign.map((a: any, i: number) => {
-                      const shortLabel = (a.notes ?? '').replace(/ \(Grade.*$/, '').replace('June ', '');
-                      return <ScoreChip key={i} label={shortLabel} pct={a.percentage} band={a.grade_band} />;
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default async function LearnerProfilePage({ params }: Props) {
   await requireAuth(['admin', 'instructor']);
@@ -384,10 +202,14 @@ export default async function LearnerProfilePage({ params }: Props) {
         </Section>
       )}
 
-      {/* Assessments — grouped by grade year → term */}
+      {/* Assessments — grouped by grade year → term, inline editable */}
       {assessments.length > 0 && (
         <Section title="Assessments" icon={BarChart3} iconColor={DS.primary} count={assessments.length}>
-          <AssessmentsGrouped assessments={assessments} />
+          <AssessmentsClient
+            assessments={assessments}
+            learnerId={learner.learner_id}
+            programId={programs[0]?.program_id ?? ''}
+          />
         </Section>
       )}
 
