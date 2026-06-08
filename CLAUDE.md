@@ -20,14 +20,15 @@ A full-stack STEM education management platform for South African schools. Built
 | Database | Supabase (PostgreSQL 17) |
 | Auth | Supabase Auth + RLS |
 | Email | Resend (`re_KTqUyFJn_...` — set on Vercel) |
-| Deployment | Vercel (CLI v54 — `vercel --prod` to deploy) |
+| Deployment | Vercel (CLI v54 — `npx vercel deploy --prod` to deploy) |
 
 ### Commands
 ```bash
 npm run dev        # http://localhost:3000
 npm run build
 npm run type-check # tsc --noEmit
-vercel --prod      # deploy to production
+npx vercel deploy --prod   # deploy to production (use npx, not vercel directly)
+vercel env pull .env.local # restore env vars locally
 ```
 
 ---
@@ -56,22 +57,22 @@ vercel --prod      # deploy to production
 
 ## Database — Tables
 
-All 23 tables live in the `public` schema. Key tables:
+All tables live in the `public` schema. Key tables:
 
 | Table | Purpose |
 |-------|---------|
 | `schools` | School registry |
 | `users` | Platform users (mirrors auth.users) |
-| `learners` | Learner records |
+| `learners` | Learner records (grade stored as int) |
 | `learner_profiles` | Extended learner info (1:1) |
 | `programs` | STEM programmes |
 | `program_enrollments` | Learner ↔ programme links |
 | `attendance` | Session attendance records |
-| `assessments` | Assessment scores (auto grade_band via trigger) |
+| `assessments` | Assessment scores — see schema notes below |
 | `projects` | Learner projects |
 | `project_feedback` | Instructor feedback on projects |
 | `mentorship_sessions` | Mentorship session logs |
-| `mentorship_goals` | Goals set with mentor (`progress` int 0–100 added) |
+| `mentorship_goals` | Goals set with mentor (`progress` int 0–100) |
 | `interventions` | At-risk learner flags |
 | `intervention_updates` | Progress notes on interventions |
 | `risk_scores` | Auto-calculated risk per learner |
@@ -79,21 +80,54 @@ All 23 tables live in the `public` schema. Key tables:
 | `sponsors` | Sponsor organisations |
 | `sponsor_learners` | Sponsor ↔ learner links |
 
+### assessments table — important constraints
+- `assessment_type` CHECK: `('quiz','test','project','practical','assignment','oral','other')`
+- `difficulty` CHECK: `('easy','medium','hard','advanced')` — never use `'standard'`
+- `percentage` is a **generated column** — never insert it, DB computes it from score/max_score
+- `grade_band` should be set manually: `'Distinction'|'Merit'|'Pass'|'Needs Support'`
+- `term` is `smallint` (1–4) or null for baselines/application marks
+
+### Active Girls in STEM programme IDs
+- `d39f75b7-4612-4a49-acaa-c00e0aa7db07` — **Girls in STEM (Mar 19, active with data)**
+- `346b2d9a-1fcf-4caa-8073-cdc5807110eb` — Girls in STEM (Mar 18, is_active=false, duplicate)
+
 ### Migrations applied
 | Version | Name |
 |---------|------|
 | 20260101000001 | 001_initial_schema |
 | 20260101000002 | 002_analytics_functions |
-| (manual) | add_progress_to_mentorship_goals — `progress int NOT NULL DEFAULT 0 CHECK (0–100)` |
+| (manual) | add_progress_to_mentorship_goals |
+
+---
+
+## Assessment Data — Naming Convention
+
+All imported/captured marks use a structured `notes` label so the learner profile and report group them correctly:
+
+| Pattern | Example |
+|---------|---------|
+| `Melisizwe Maths — Term N (Grade X (YYYY))` | `Melisizwe Maths — Term 2 (Grade 10 (2025))` |
+| `School Maths — Term N (Grade X (YYYY))` | `School Maths — Term 1 (Grade 9 (2024))` |
+| `Melisizwe Science — Term N (Grade X (YYYY))` | `Melisizwe Science — Term 3 (Grade 11 (2026))` |
+| `School Science — Term N (Grade X (YYYY))` | `School Science — Term 4 (Grade 10 (2025))` |
+| `Melisizwe Maths Baseline (Grade X (YYYY))` | Baseline, assessment_type=`other` |
+| `Application Mark — Mathematics (Grade X (YYYY))` | assessment_type=`quiz` |
+| `June Maths Assignment (Grade X (YYYY))` | assessment_type=`assignment`, term=2 |
+
+**Term → date mapping:**
+- Baseline → Feb 10 · Term 1 → Apr 10 · Term 2 → Jun 30 · Term 3 → Sep 12 · Term 4 → Nov 20
+
+**Import script:** `scripts/import_marks.py` — re-runs a clean import from the Sage mark sheet.
+Source files: `C:\Users\User\Downloads\Sage Girls in STEM - Mark Sheet.xlsx` and `GirlsSTEM_Learner_Matching_Report.xlsx`
+
+**Learner codes:** LRN001–LRN019 = Grade 10 cohort, LRN020–LRN046 = Grade 11 cohort, LRN047–LRN065 = previously unmatched learners now in DB.
 
 ---
 
 ## Design System
 
-All dashboard pages use DS tokens from `@/components/platform/tokens` and
-`@/components/platform/PlatformComponents`. Never use hardcoded Tailwind
-color classes (`bg-white`, `text-gray-*`, `border-gray-*`) in dashboard
-components — always use `DS.*` inline styles or CSS variables:
+All dashboard pages use DS tokens from `@/components/platform/tokens`.
+Never use hardcoded Tailwind color classes in dashboard components — always use `DS.*` inline styles or CSS variables:
 
 ```ts
 import { DS } from '@/components/platform/tokens';
@@ -119,7 +153,7 @@ All set and verified:
 | `CRON_SECRET` | ✅ Set — crons authenticated |
 
 No `.env.local` file exists locally — all vars live on Vercel only.
-Pull with `vercel env pull .env.local` to restore locally.
+Pull with `npx vercel env pull .env.local` to restore locally.
 
 ---
 
@@ -157,34 +191,55 @@ All crons require `Authorization: Bearer $CRON_SECRET` header (Vercel sends this
 | `/api/v1/risk/recalculate` | POST | Trigger calculate_risk_scores() |
 | `/api/v1/attendance/bulk` | POST | Bulk-save a session's attendance |
 | `/api/v1/attendance/history` | GET | Filtered attendance records |
+| `/api/v1/attendance/[id]` | PATCH | Edit single attendance record (status + notes) |
+| `/api/v1/assessments` | GET/POST | List / create assessment records |
+| `/api/v1/assessments/[id]` | GET/PATCH/DELETE | Fetch, edit score/date, or delete a record |
+| `/api/v1/reports/learner/[id]` | GET | HTML learner report (print-ready, opens in browser) |
 
-All API routes have `export const dynamic = 'force-dynamic'` (prevents static pre-render warnings).
+All API routes have `export const dynamic = 'force-dynamic'`.
 
 ---
 
-## Page Upgrade Status
+## Page & Feature Status
 
-### ✅ Complete (dark theme + features)
-| Page | Notes |
-|------|-------|
+### ✅ Complete
+| Page / Feature | Notes |
+|----------------|-------|
 | `/dashboard` | Alerts banner, Recharts area chart, quick actions |
-| `/interventions` | Ph1–3: dark theme, bulk actions, escalation, auto-flag, email |
-| `/mentorship` | Ph1–3: dark theme, filters, trend chart, goals, follow-up queue, cadence cron |
-| `/risk` | Ph1–3: dark theme, analytics panel, inline/bulk interventions, weekly digest |
-| `/reports` | Ph1–2: dark theme, charts, search filters, export previews |
+| `/interventions` | Dark theme, bulk actions, escalation, auto-flag, email |
+| `/mentorship` | Dark theme, filters, trend chart, goals, follow-up queue, cadence cron |
+| `/risk` | Dark theme, analytics panel, inline/bulk interventions, weekly digest |
+| `/reports` | Dark theme, charts, search filters, export previews |
 | `/learners` | Dark theme, DS badges, DS pagination |
-| `/learners/[id]` | Dark theme profile, mentorship sessions section added |
-| `/attendance` | Dark theme form + history, DS status/grade colours |
+| `/learners/[id]` | Grouped assessments by grade year → term (matrix), inline edit/add marks, always shown even for new learners |
+| `/attendance` | Dark theme form + history; inline edit of individual attendance records |
+| `/assessments/bulk` | Grade tabs; structured Source/Subject/Category picker matching learner profile labels; auto-fills date per term |
+| `/api/v1/reports/learner/[id]` | HTML report with Option A matrix table: Maths/Science × Melisizwe/School per term, trend arrows, subject avg footer |
 | `middleware.ts` | Security: `getUser()` (not `getSession()`), allowlist per role |
 
 ### ✅ All pages on dark theme (DS tokens) — including teacher + sponsor portals
 
-Additional pages upgraded (Jun 2026):
-- `programs/new`, `programs/[id]/edit` — form pages
-- `projects/new` — new project form with dark learner selector
-- `teacher/assessments` — marks capture table
-- `teacher/meetings` + `TeacherMeetingsClient` — scheduling UI
-- All `(sponsor)/*` pages — converted hardcoded hex to DS tokens
+---
+
+## Assessment UI Patterns
+
+### Learner profile (`/learners/[id]`)
+- `AssessmentsClient.tsx` — Client Component, handles grouping + inline edit/add
+- Chips show %, grade band, raw score; greyed-out + icon for missing marks
+- Clicking a chip opens `EditPanel` — PATCH existing or POST new
+- All 4 terms always rendered per grade year (empty = ready to fill)
+
+### Bulk capture (`/assessments/bulk`)
+- Source toggle (Melisizwe / School) + Subject toggle + Category toggle
+- Category auto-fills date and generates the correct `notes` label
+- "Will appear as" preview shows exact label before saving
+- Grade tabs (Grade 9/10/11/12) filter the learner table
+
+### Learner report (`/api/v1/reports/learner/[id]`)
+- Matrix table per grade year: rows = term, columns = M.Maths | S.Maths | M.Science | S.Science | Avg
+- Trend arrows on Avg column (↑ improving ↓ declining = stable vs previous term)
+- Subject Avg footer row with mini progress bars
+- Print-safe white background, opens directly in browser for Print/Save PDF
 
 ---
 
@@ -196,6 +251,7 @@ Additional pages upgraded (Jun 2026):
   ```
 - [ ] **Misplaced duplicate files** — `components/app/` and `components/components/` contain files in the wrong directory.
 - [ ] **`proxy.ts` at root** — unclear purpose, needs investigation.
+- [ ] **Vercel GitHub integration not linked** — deploys require `npx vercel deploy --prod` manually. To fix: Vercel → project Settings → Git → Connect Repository → `Avgousta/girls-in-stem-dashboard`.
 
 ---
 
