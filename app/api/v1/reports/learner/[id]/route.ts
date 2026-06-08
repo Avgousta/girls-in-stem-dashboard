@@ -557,17 +557,16 @@ export async function GET(_: NextRequest, { params }: Params) {
       </div>
     </div>` : ''}
 
-    <!-- Assessment Results — grouped by grade year → term -->
+    <!-- Assessment Results — Option A matrix table -->
     <div class="section">
       <div class="section-title">
         <span class="section-title-dot"></span>
-        Assessment Results
-        <span class="section-count">${ass.length} total</span>
+        Academic Performance
+        <span class="section-count">${ass.length} records</span>
       </div>
       ${(() => {
         if (!ass.length) return `<div style="background:#FAFAFA;border:1px solid #E2E8F0;border-radius:10px;padding:20px;text-align:center;color:#94A3B8;font-size:11px">No assessments recorded yet</div>`;
 
-        // Group by grade year
         const gradeOf = (a: any) => {
           const m = (a.notes ?? '').match(/\(Grade (\d+) \((\d{4})\)\)/);
           return m ? `Grade ${m[1]} (${m[2]})` : 'Other';
@@ -578,12 +577,12 @@ export async function GET(_: NextRequest, { params }: Params) {
           const grade = gradeOf(a);
           const term  = String(a.term ?? 'none');
           if (!grouped[grade]) grouped[grade] = {};
-          if (!grouped[grade][term]) grouped[grade][term] = { mMaths:null, sMaths:null, mScience:null, sScience:null, app:[], assign:[], baseline:[] };
+          if (!grouped[grade][term]) grouped[grade][term] = { mMaths:null,sMaths:null,mScience:null,sScience:null,app:[],assign:[],baseline:[] };
           const td = grouped[grade][term];
           const notes: string = a.notes ?? '';
-          if (a.assessment_type === 'other' && notes.toLowerCase().includes('baseline')) td.baseline.push(a);
-          else if (a.assessment_type === 'assignment' || notes.toLowerCase().includes('assignment')) td.assign.push(a);
-          else if (a.assessment_type === 'quiz' || notes.toLowerCase().includes('application mark')) td.app.push(a);
+          if (a.assessment_type==='other' && notes.toLowerCase().includes('baseline')) td.baseline.push(a);
+          else if (a.assessment_type==='assignment' || notes.toLowerCase().includes('assignment')) td.assign.push(a);
+          else if (a.assessment_type==='quiz' || notes.toLowerCase().includes('application mark')) td.app.push(a);
           else if (notes.startsWith('Melisizwe Maths'))  td.mMaths   = a;
           else if (notes.startsWith('School Maths'))      td.sMaths   = a;
           else if (notes.startsWith('Melisizwe Science')) td.mScience = a;
@@ -592,90 +591,178 @@ export async function GET(_: NextRequest, { params }: Params) {
 
         const GRADE_ORDER = ['Grade 9 (2024)', 'Grade 10 (2025)', 'Grade 11 (2026)', 'Other'];
         const grades = GRADE_ORDER.filter(g => grouped[g]);
-        const TERM_LABELS: Record<string, string> = { '1':'Term 1','2':'Term 2','3':'Term 3','4':'Term 4','none':'Other' };
 
-        const chip = (a: any, label: string) => {
-          const pct  = a ? Number(a.percentage ?? 0) : null;
-          const col  = pct === null ? '#94A3B8' : pct >= 80 ? '#7C3AED' : pct >= 70 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
-          const bg   = pct === null ? '#F8FAFC' : pct >= 80 ? '#F5F3FF' : pct >= 70 ? '#ECFDF5' : pct >= 50 ? '#FFFBEB' : '#FEF2F2';
-          const bdr  = pct === null ? '#E2E8F0' : col + '60';
-          return `<div style="flex:1;background:${bg};border:1px solid ${bdr};border-radius:10px;padding:10px 8px;text-align:center;min-width:80px">
-            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94A3B8;margin-bottom:4px">${label}</div>
-            ${pct !== null
-              ? `<div style="font-size:17px;font-weight:900;color:${col};line-height:1">${Math.round(pct)}%</div>
-                 <div style="font-size:8px;font-weight:700;color:${col};margin-top:2px;text-transform:uppercase">${a.grade_band ?? ''}</div>
-                 <div style="font-size:8px;color:#94A3B8;margin-top:1px">${a.score ?? ''}/${a.max_score ?? 100}</div>`
-              : `<div style="font-size:14px;color:#CBD5E1">—</div>`}
-          </div>`;
+        // Colour helpers
+        const col  = (p:number|null) => p===null?'#94A3B8':p>=80?'#7C3AED':p>=70?'#10B981':p>=50?'#F59E0B':'#EF4444';
+        const bg   = (p:number|null) => p===null?'transparent':p>=80?'#F5F3FF':p>=70?'#ECFDF5':p>=50?'#FFFBEB':'#FEF2F2';
+        const band = (p:number|null) => p===null?'—':p>=80?'Distinction':p>=70?'Merit':p>=50?'Pass':'Needs Support';
+
+        // Cell renderer
+        const cell = (a:any) => {
+          const p = a ? Math.round(Number(a.percentage??0)) : null;
+          return `<td style="text-align:center;padding:7px 6px;border-bottom:1px solid #F1F5F9;background:${bg(p)}">
+            ${p!==null
+              ? `<div style="font-size:13px;font-weight:900;color:${col(p)};line-height:1">${p}%</div>
+                 <div style="font-size:7.5px;color:${col(p)};margin-top:1px;font-weight:600">${band(p)}</div>
+                 <div style="font-size:7px;color:#94A3B8;margin-top:1px">${a.score??''}/${a.max_score??100}</div>`
+              : `<span style="color:#CBD5E1;font-size:11px">—</span>`}
+          </td>`;
+        };
+
+        // Row average (for trend)
+        const rowAvg = (...items: any[]) => {
+          const vals = items.filter(Boolean).map((a:any) => Number(a.percentage??0));
+          return vals.length ? Math.round(vals.reduce((s,v)=>s+v,0)/vals.length) : null;
+        };
+
+        // Trend arrow vs previous term avg
+        const trend = (curr:number|null, prev:number|null) => {
+          if (curr===null||prev===null) return '';
+          const diff = curr - prev;
+          if (diff > 3)  return `<span style="color:#10B981;font-size:9px;font-weight:700"> ↑${diff}%</span>`;
+          if (diff < -3) return `<span style="color:#EF4444;font-size:9px;font-weight:700"> ↓${Math.abs(diff)}%</span>`;
+          return `<span style="color:#F59E0B;font-size:9px;font-weight:600"> =${curr}%</span>`;
         };
 
         return grades.map(grade => {
           const terms = grouped[grade];
-          const termKeys = Object.keys(terms).sort((a,b) => a==='none'?-1:b==='none'?1:Number(a)-Number(b));
-          const allBaselines = termKeys.flatMap(t => terms[t].baseline);
-          const allApp       = termKeys.flatMap(t => terms[t].app);
-          const allAssign    = termKeys.flatMap(t => terms[t].assign);
-          const termDataKeys = termKeys.filter(t => t !== 'none');
+          const termKeys = ['1','2','3','4'].filter(t => terms[t] && (terms[t].mMaths||terms[t].sMaths||terms[t].mScience||terms[t].sScience));
+          const baselines = Object.values(terms).flatMap(t => t.baseline);
+          const appMarks  = Object.values(terms).flatMap(t => t.app);
+          const assigns   = Object.values(terms).flatMap(t => t.assign);
+
+          // Collect col averages for Subject Avg row
+          const colAvg = (key: 'mMaths'|'sMaths'|'mScience'|'sScience') => {
+            const vals = termKeys.map(t => terms[t]?.[key]).filter(Boolean).map((a:any)=>Number(a.percentage??0));
+            return vals.length ? Math.round(vals.reduce((s:number,v:number)=>s+v,0)/vals.length) : null;
+          };
+          const avgMM = colAvg('mMaths'), avgSM = colAvg('sMaths');
+          const avgMS = colAvg('mScience'), avgSS = colAvg('sScience');
+
+          let prevAvg: number|null = null;
 
           return `
-          <div style="margin-bottom:18px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-              <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#7C3AED">${grade}</span>
-              <div style="flex:1;height:1px;background:#E2E8F0"></div>
+          <div style="margin-bottom:22px;break-inside:avoid">
+            <!-- Grade heading -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#7C3AED;white-space:nowrap">${grade}</span>
+              <div style="flex:1;height:2px;background:linear-gradient(to right,#DDD6FE,#E2E8F0)"></div>
             </div>
 
-            ${allBaselines.length ? `
-            <div style="margin-bottom:10px">
-              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">Baseline Assessments</div>
-              <div style="display:flex;gap:8px;padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap">
-                ${allBaselines.map((a:any) => chip(a, (a.notes??'').replace(/ \(Grade.*$/,'').replace('Melisizwe ','M. '))).join('')}
-              </div>
-            </div>` : ''}
+            <!-- Matrix table -->
+            <div style="border-radius:10px;overflow:hidden;border:1px solid #E2E8F0">
+              <table style="width:100%;border-collapse:collapse;font-size:10.5px">
+                <thead>
+                  <tr style="background:#0F172A">
+                    <th style="padding:7px 10px;text-align:left;color:rgba(255,255,255,0.5);font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;width:90px"></th>
+                    <th colspan="2" style="padding:7px 10px;text-align:center;color:rgba(255,255,255,0.85);font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;border-right:1px solid rgba(255,255,255,0.1)">Mathematics</th>
+                    <th colspan="2" style="padding:7px 10px;text-align:center;color:rgba(255,255,255,0.85);font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;border-right:1px solid rgba(255,255,255,0.1)">Science</th>
+                    <th style="padding:7px 10px;text-align:center;color:rgba(255,255,255,0.5);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Avg</th>
+                  </tr>
+                  <tr style="background:#1E293B">
+                    <th style="padding:5px 10px;text-align:left;color:rgba(255,255,255,0.35);font-size:7.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em"></th>
+                    <th style="padding:5px 8px;text-align:center;color:rgba(255,255,255,0.55);font-size:7.5px;font-weight:600;text-transform:uppercase">Melisizwe</th>
+                    <th style="padding:5px 8px;text-align:center;color:rgba(255,255,255,0.55);font-size:7.5px;font-weight:600;text-transform:uppercase;border-right:1px solid rgba(255,255,255,0.08)">School</th>
+                    <th style="padding:5px 8px;text-align:center;color:rgba(255,255,255,0.55);font-size:7.5px;font-weight:600;text-transform:uppercase">Melisizwe</th>
+                    <th style="padding:5px 8px;text-align:center;color:rgba(255,255,255,0.55);font-size:7.5px;font-weight:600;text-transform:uppercase;border-right:1px solid rgba(255,255,255,0.08)">School</th>
+                    <th style="padding:5px 8px;text-align:center;color:rgba(255,255,255,0.35);font-size:7.5px;font-weight:600;text-transform:uppercase"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${baselines.length ? (() => {
+                    const mBase = baselines.find((a:any) => (a.notes??'').toLowerCase().includes('maths'));
+                    const sBase = baselines.find((a:any) => (a.notes??'').toLowerCase().includes('science'));
+                    return `<tr style="background:#FAFAFA">
+                      <td style="padding:7px 10px;font-size:9px;font-weight:700;color:#64748B;border-bottom:1px solid #F1F5F9;white-space:nowrap">Baseline</td>
+                      ${cell(mBase)}${cell(null)}${cell(sBase)}${cell(null)}
+                      <td style="padding:7px 6px;text-align:center;border-bottom:1px solid #F1F5F9;background:#FAFAFA">
+                        <span style="font-size:10px;font-weight:700;color:#94A3B8">${rowAvg(mBase,sBase)??'—'}${rowAvg(mBase,sBase)!==null?'%':''}</span>
+                      </td>
+                    </tr>`;
+                  })() : ''}
 
-            ${allApp.length ? `
-            <div style="margin-bottom:10px">
-              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">Application Marks</div>
-              <div style="display:flex;gap:8px;padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap">
-                ${allApp.map((a:any) => chip(a, a.subject)).join('')}
-              </div>
-            </div>` : ''}
+                  ${appMarks.length ? (() => {
+                    const mApp = appMarks.find((a:any) => a.subject==='Mathematics');
+                    const sApp = appMarks.find((a:any) => a.subject==='Science');
+                    return `<tr style="background:#FAFAFA">
+                      <td style="padding:7px 10px;font-size:9px;font-weight:700;color:#64748B;border-bottom:1px solid #F1F5F9;white-space:nowrap">Application</td>
+                      ${cell(mApp)}${cell(null)}${cell(sApp)}${cell(null)}
+                      <td style="padding:7px 6px;text-align:center;border-bottom:1px solid #F1F5F9;background:#FAFAFA">
+                        <span style="font-size:10px;font-weight:700;color:#94A3B8">${rowAvg(mApp,sApp)??'—'}${rowAvg(mApp,sApp)!==null?'%':''}</span>
+                      </td>
+                    </tr>`;
+                  })() : ''}
 
-            ${termDataKeys.map(t => {
-              const td = terms[t];
-              const hasMath = td.mMaths || td.sMaths;
-              const hasSci  = td.mScience || td.sScience;
-              if (!hasMath && !hasSci) return '';
-              return `
-              <div style="margin-bottom:10px;break-inside:avoid">
-                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">${TERM_LABELS[t]}</div>
-                <div style="padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px">
-                  ${hasMath ? `
-                  <div style="margin-bottom:8px">
-                    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#CBD5E1;margin-bottom:5px">Mathematics</div>
-                    <div style="display:flex;gap:8px">
-                      ${chip(td.mMaths, 'Melisizwe')}
-                      ${chip(td.sMaths, 'School')}
-                    </div>
-                  </div>` : ''}
-                  ${hasSci ? `
-                  <div>
-                    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#CBD5E1;margin-bottom:5px">Science</div>
-                    <div style="display:flex;gap:8px">
-                      ${chip(td.mScience, 'Melisizwe')}
-                      ${chip(td.sScience, 'School')}
-                    </div>
-                  </div>` : ''}
-                </div>
-              </div>`;
-            }).join('')}
+                  ${termKeys.map((t, idx) => {
+                    const td      = terms[t];
+                    const avg     = rowAvg(td.mMaths, td.sMaths, td.mScience, td.sScience);
+                    const trendHtml = trend(avg, prevAvg);
+                    prevAvg = avg;
+                    const isLast = idx === termKeys.length - 1;
+                    return `<tr>
+                      <td style="padding:7px 10px;font-size:9px;font-weight:700;color:#0F172A;border-bottom:1px solid #F1F5F9;white-space:nowrap">Term ${t}</td>
+                      ${cell(td.mMaths)}
+                      <td style="text-align:center;padding:7px 6px;border-bottom:1px solid #F1F5F9;background:${bg(td.sMaths?Math.round(Number(td.sMaths.percentage??0)):null)};border-right:1px solid #F1F5F9">
+                        ${td.sMaths ? `<div style="font-size:13px;font-weight:900;color:${col(Math.round(Number(td.sMaths.percentage??0)))};line-height:1">${Math.round(Number(td.sMaths.percentage??0))}%</div>
+                        <div style="font-size:7.5px;color:${col(Math.round(Number(td.sMaths.percentage??0)))};margin-top:1px;font-weight:600">${band(Math.round(Number(td.sMaths.percentage??0)))}</div>
+                        <div style="font-size:7px;color:#94A3B8;margin-top:1px">${td.sMaths.score??''}/${td.sMaths.max_score??100}</div>`
+                        : `<span style="color:#CBD5E1;font-size:11px">—</span>`}
+                      </td>
+                      ${cell(td.mScience)}
+                      <td style="text-align:center;padding:7px 6px;border-bottom:1px solid #F1F5F9;background:${bg(td.sScience?Math.round(Number(td.sScience.percentage??0)):null)};border-right:1px solid #F1F5F9">
+                        ${td.sScience ? `<div style="font-size:13px;font-weight:900;color:${col(Math.round(Number(td.sScience.percentage??0)))};line-height:1">${Math.round(Number(td.sScience.percentage??0))}%</div>
+                        <div style="font-size:7.5px;color:${col(Math.round(Number(td.sScience.percentage??0)))};margin-top:1px;font-weight:600">${band(Math.round(Number(td.sScience.percentage??0)))}</div>
+                        <div style="font-size:7px;color:#94A3B8;margin-top:1px">${td.sScience.score??''}/${td.sScience.max_score??100}</div>`
+                        : `<span style="color:#CBD5E1;font-size:11px">—</span>`}
+                      </td>
+                      <td style="text-align:center;padding:7px 6px;border-bottom:1px solid #F1F5F9">
+                        ${avg!==null ? `<div style="font-size:12px;font-weight:900;color:${col(avg)}">${avg}%</div>${trendHtml}` : '<span style="color:#CBD5E1">—</span>'}
+                      </td>
+                    </tr>`;
+                  }).join('')}
 
-            ${allAssign.length ? `
-            <div style="margin-bottom:10px">
-              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;padding:5px 10px">Assignments</div>
-              <div style="display:flex;gap:8px;padding:10px;background:#FAFAFA;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap">
-                ${allAssign.map((a:any) => chip(a, (a.notes??'').replace(/ \(Grade.*$/,'').replace('June ',''))).join('')}
+                  ${assigns.length ? (() => {
+                    const mAss = assigns.find((a:any) => a.subject==='Mathematics');
+                    const sAss = assigns.find((a:any) => a.subject==='Science');
+                    return `<tr style="background:#FAFAFA">
+                      <td style="padding:7px 10px;font-size:9px;font-weight:700;color:#64748B;border-bottom:1px solid #F1F5F9;white-space:nowrap">Assignment</td>
+                      ${cell(mAss)}${cell(null)}${cell(sAss)}${cell(null)}
+                      <td style="padding:7px 6px;text-align:center;border-bottom:1px solid #F1F5F9;background:#FAFAFA">
+                        <span style="font-size:10px;font-weight:700;color:#94A3B8">${rowAvg(mAss,sAss)??'—'}${rowAvg(mAss,sAss)!==null?'%':''}</span>
+                      </td>
+                    </tr>`;
+                  })() : ''}
+
+                  <!-- Subject average footer row -->
+                  <tr style="background:#F8FAFC;border-top:2px solid #E2E8F0">
+                    <td style="padding:8px 10px;font-size:9px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.05em">Subject Avg</td>
+                    ${[avgMM,avgSM,avgMS,avgSS].map(p => `
+                    <td style="text-align:center;padding:8px 6px">
+                      ${p!==null
+                        ? `<div style="font-size:13px;font-weight:900;color:${col(p)}">${p}%</div>
+                           <div style="height:3px;border-radius:2px;background:${col(p)};margin:3px auto 0;width:${Math.min(p,100)}%"></div>`
+                        : '<span style="color:#CBD5E1">—</span>'}
+                    </td>`).join('')}
+                    <td style="text-align:center;padding:8px 6px">
+                      ${(() => { const all=[avgMM,avgSM,avgMS,avgSS].filter(v=>v!==null) as number[]; return all.length ? `<div style="font-size:13px;font-weight:900;color:${col(Math.round(all.reduce((s,v)=>s+v,0)/all.length))}">${Math.round(all.reduce((s,v)=>s+v,0)/all.length)}%</div>` : '<span style="color:#CBD5E1">—</span>'; })()}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Legend -->
+            <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
+              ${[['#7C3AED','Distinction (80%+)'],['#10B981','Merit (70–79%)'],['#F59E0B','Pass (50–69%)'],['#EF4444','Needs Support (<50%)']].map(([c,l])=>
+                `<div style="display:flex;align-items:center;gap:4px;font-size:8px;color:#64748B">
+                  <div style="width:8px;height:8px;border-radius:2px;background:${c};flex-shrink:0"></div>${l}
+                </div>`).join('')}
+              <div style="display:flex;align-items:center;gap:4px;font-size:8px;color:#64748B">
+                <span style="color:#10B981;font-weight:700">↑</span> Improving &nbsp;
+                <span style="color:#EF4444;font-weight:700">↓</span> Declining &nbsp;
+                <span style="color:#F59E0B;font-weight:700">=</span> Stable (vs previous term)
               </div>
-            </div>` : ''}
+            </div>
           </div>`;
         }).join('');
       })()}
