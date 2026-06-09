@@ -30,7 +30,7 @@ export default async function StudentDashboard() {
     .eq('user_id', user.user_id)
     .single();
 
-  const programIds = ((learnerMeta as any)?.program_enrollments || []).map((e: any) => e.program_id);
+  const programIds = ((learnerMeta as unknown as { program_enrollments: Array<{ program_id: string }> } | null)?.program_enrollments || []).map(e => e.program_id);
 
   const { data: meetings } = programIds.length ? await supabase
     .from('online_meetings')
@@ -42,11 +42,12 @@ export default async function StudentDashboard() {
     .limit(2) : { data: [] };
 
   // Compute gamification via engine
-  const attendance  = (learner as any)?.attendance         || [];
-  const assessments = (learner as any)?.assessments        || [];
-  const projects    = (learner as any)?.projects           || [];
-  const mentorship  = (learner as any)?.mentorship_sessions|| [];
-  const profile     = (learner as any)?.learner_profiles;
+  const typedLearner = learner as unknown as LearnerData | null;
+  const attendance  = typedLearner?.attendance         || [];
+  const assessments = typedLearner?.assessments        || [];
+  const projects    = typedLearner?.projects           || [];
+  const mentorship  = (typedLearner as unknown as { mentorship_sessions?: Array<{ session_id: string }> } | null)?.mentorship_sessions || [];
+  const profile     = typedLearner?.learner_profiles;
 
   const streak      = calcStreak(attendance);
   const hasProfile  = !!(profile?.bio && profile?.aspiration);

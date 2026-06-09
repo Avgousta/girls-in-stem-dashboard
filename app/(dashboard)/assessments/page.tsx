@@ -4,6 +4,23 @@ import AssessmentsClient from './AssessmentsClient';
 import Link from 'next/link';
 import { BarChart3, Plus } from 'lucide-react';
 
+interface RawAss {
+  assessment_id: string; assessment_type: string | null; difficulty: string | null; skill_tags: string[] | null; term: number | null;
+  subject: string; score: number | null; max_score: number | null; percentage: number | null; grade_band: string | null;
+  assessment_date: string | null; notes: string | null; feedback_strengths: string | null; feedback_improvements: string | null;
+  feedback_actions: string | null; weighting: number | null; learner_id: string;
+  learners: { learner_id: string; learner_code: string; grade: number; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null } | null;
+  programs: { program_id: string; program_name: string; program_type: string } | null;
+  captured_user: { full_name: string } | null;
+}
+interface RawLearner {
+  learner_id: string; learner_code: string; grade: number;
+  learner_profiles: { first_name: string; last_name: string } | null;
+  schools: { school_name: string } | null;
+  assessments: Array<{ assessment_id: string; subject: string; percentage: number | null; grade_band: string | null; assessment_date: string | null; assessment_type: string; skill_tags: string[] | null }>;
+  risk_scores: { risk_level: string; avg_score: number; attendance_rate: number } | null;
+}
+
 async function getPageData() {
   const supabase = await createClient();
 
@@ -33,7 +50,7 @@ async function getPageData() {
     supabase.from('programs').select('program_id, program_name, program_type').eq('is_active', true).order('program_name'),
   ]);
 
-  const assessments = (assRes.data || []).map((a: any) => ({
+  const assessments = ((assRes.data || []) as unknown as RawAss[]).map(a => ({
     id:          a.assessment_id,
     type:        a.assessment_type || 'test',
     difficulty:  a.difficulty || 'medium',
@@ -44,7 +61,7 @@ async function getPageData() {
     max_score:   Number(a.max_score),
     pct:         Number(a.percentage),
     grade:       a.grade_band,
-    date:        a.assessment_date,
+    date:        a.assessment_date ?? '',
     notes:       a.notes || '',
     strengths:   a.feedback_strengths || '',
     improvements:a.feedback_improvements || '',
@@ -54,21 +71,21 @@ async function getPageData() {
     learner:     `${a.learners?.learner_profiles?.first_name ?? ''} ${a.learners?.learner_profiles?.last_name ?? ''}`.trim(),
     learner_code:a.learners?.learner_code ?? '',
     school:      a.learners?.schools?.school_name ?? '—',
-    grade_level: a.learners?.grade ?? '',
+    grade_level: a.learners?.grade ?? 0,
     programme:   a.programs?.program_name ?? '—',
     prog_id:     a.programs?.program_id ?? '',
     captured_by: a.captured_user?.full_name ?? '—',
   }));
 
   // Per-learner analysis
-  const learners = (learnersRes.data || []).map((l: any) => {
+  const learners = ((learnersRes.data || []) as unknown as RawLearner[]).map(l => {
     const lass = l.assessments || [];
-    const avgScore = lass.length ? Math.round(lass.reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / lass.length) : 0;
+    const avgScore = lass.length ? Math.round(lass.reduce((s, a) => s + Number(a.percentage || 0), 0) / lass.length) : 0;
     const trend    = lass.length >= 3
       ? (() => {
-          const sorted = [...lass].sort((a: any, b: any) => a.assessment_date.localeCompare(b.assessment_date));
-          const first3 = sorted.slice(0, 3).reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / 3;
-          const last3  = sorted.slice(-3).reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / 3;
+          const sorted = [...lass].sort((a, b) => (a.assessment_date ?? '').localeCompare(b.assessment_date ?? ''));
+          const first3 = sorted.slice(0, 3).reduce((s, a) => s + Number(a.percentage || 0), 0) / 3;
+          const last3  = sorted.slice(-3).reduce((s, a) => s + Number(a.percentage || 0), 0) / 3;
           if (last3 - first3 >= 5)  return 'up';
           if (first3 - last3 >= 5)  return 'down';
           return 'stable';
@@ -76,7 +93,7 @@ async function getPageData() {
       : 'stable';
     // Skill breakdown
     const skillMap: Record<string, number[]> = {};
-    lass.forEach((a: any) => {
+    lass.forEach(a => {
       (a.skill_tags || []).forEach((sk: string) => {
         if (!skillMap[sk]) skillMap[sk] = [];
         skillMap[sk].push(Number(a.percentage || 0));

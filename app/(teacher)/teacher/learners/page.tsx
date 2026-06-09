@@ -13,7 +13,7 @@ export default async function TeacherLearnersPage() {
     .eq('instructor_id', user.user_id)
     .eq('is_active', true);
 
-  const programIds = (programmes || []).map((p: any) => p.program_id);
+  const programIds = (programmes || []).map(p => p.program_id);
 
   const { data: enrollments } = programIds.length
     ? await supabase
@@ -32,18 +32,19 @@ export default async function TeacherLearnersPage() {
         .eq('status', 'active')
     : { data: [] };
 
-  const learners = (enrollments || []).map((e: any) => {
+  interface EnrolRow { learners: { learner_id: string; learner_code: string; grade: number; learner_profiles: { first_name: string; last_name: string; avatar_url?: string | null } | null; schools: { school_name: string } | null; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null; projects: Array<{ stage: string | null; completion_status: string }> } | null; programs: { program_name: string; program_type: string } | null }
+  const learners = ((enrollments || []) as unknown as EnrolRow[]).map(e => {
     const l        = e.learners;
     const risk     = l?.risk_scores?.risk_level || 'low';
     const att      = Math.floor(l?.risk_scores?.attendance_rate || 0);
     const score    = Math.round(l?.risk_scores?.avg_score || 0);
     const initials = `${l?.learner_profiles?.first_name?.[0]||''}${l?.learner_profiles?.last_name?.[0]||''}`.toUpperCase();
-    const doneProj = (l?.projects||[]).filter((p: any)=>['marked','completed'].includes(p.stage||p.completion_status||'')).length;
+    const doneProj = (l?.projects||[]).filter(p=>['marked','completed'].includes(p.stage||p.completion_status||'')).length;
     return { ...l, risk, att, score, initials, doneProj, programme: e.programs?.program_name, progType: e.programs?.program_type };
   }).filter(Boolean);
 
-  const highRisk  = learners.filter((l: any) => l.risk === 'high').length;
-  const onTrack   = learners.filter((l: any) => l.risk === 'low').length;
+  const highRisk  = learners.filter(l => l.risk === 'high').length;
+  const onTrack   = learners.filter(l => l.risk === 'low').length;
   const RISK_CFG  = { high:{color:DS.danger,bg:DS.dangerLight,dot:'#EF4444',label:'High Risk'}, medium:{color:DS.warn,bg:DS.warnLight,dot:'#F59E0B',label:'Monitoring'}, low:{color:DS.success,bg:DS.successLight,dot:'#10B981',label:'On Track'} };
 
   return (
@@ -73,7 +74,7 @@ export default async function TeacherLearnersPage() {
         {[
           { label: `${learners.length} Total`,  color: DS.primary,  bg: DS.primaryLight,  border: DS.primaryBorder },
           { label: `${onTrack} On Track`,        color: DS.success,  bg: DS.successLight,  border: '#A7F3D0' },
-          { label: `${learners.filter((l:any)=>l.risk==='medium').length} Monitoring`, color: DS.warn, bg: DS.warnLight, border: '#FDE68A' },
+          { label: `${learners.filter(l=>l.risk==='medium').length} Monitoring`, color: DS.warn, bg: DS.warnLight, border: '#FDE68A' },
           { label: `${highRisk} High Risk`,      color: DS.danger,   bg: DS.dangerLight,   border: '#FECACA' },
         ].map(({ label, color, bg, border }) => (
           <span key={label} className="text-xs font-bold px-3 py-1.5 rounded-full"
@@ -91,7 +92,7 @@ export default async function TeacherLearnersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {learners.map((l: any) => {
+          {learners.map(l => {
             const riskCfg = RISK_CFG[l.risk as keyof typeof RISK_CFG] || RISK_CFG.low;
             return (
               <Link key={l.learner_id} href={`/learners/${l.learner_id}`}

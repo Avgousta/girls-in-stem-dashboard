@@ -8,7 +8,7 @@ export default async function SponsorProgrammesPage() {
 
   const { data: links } = await supabase
     .from('sponsor_learners').select('learner_id').eq('sponsor_id', user.sponsor_id);
-  const ids = (links || []).map((l: any) => l.learner_id);
+  const ids = (links || []).map(l => l.learner_id);
 
   if (!ids.length) return (
     <div className="text-center py-20 rounded-2xl" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
@@ -22,11 +22,12 @@ export default async function SponsorProgrammesPage() {
     .in('learner_id', ids)
     .eq('status', 'active');
 
-  // Group by programme
-  const progMap: Record<string, { prog: any; learnerIds: Set<string> }> = {};
-  (enrollments || []).forEach((e: any) => {
+  interface ProgRow { program_id: string; program_name: string; program_type: string; description: string | null; is_active: boolean }
+  interface EnrolRow { learner_id: string; status: string; programs: ProgRow | null }
+  const progMap: Record<string, { prog: ProgRow; learnerIds: Set<string> }> = {};
+  ((enrollments || []) as unknown as EnrolRow[]).forEach(e => {
     const pid = e.programs?.program_id;
-    if (!pid) return;
+    if (!pid || !e.programs) return;
     if (!progMap[pid]) progMap[pid] = { prog: e.programs, learnerIds: new Set() };
     progMap[pid].learnerIds.add(e.learner_id);
   });
@@ -40,12 +41,12 @@ export default async function SponsorProgrammesPage() {
         supabase.from('assessments').select('percentage, grade_band').in('learner_id', lids).eq('program_id', pid),
         supabase.from('projects').select('stage, completion_status').in('learner_id', lids).eq('program_id', pid),
       ]);
-      const att      = attRes.data || [];
-      const ass      = assRes.data || [];
-      const proj     = projRes.data || [];
-      const attRate  = att.length ? Math.round(att.filter((a: any)=>a.status==='present').length/att.length*100) : 0;
-      const avgScore = ass.length ? Math.round(ass.reduce((s: number,a: any)=>s+Number(a.percentage||0),0)/ass.length) : 0;
-      const done     = proj.filter((p: any)=>['marked','completed'].includes(p.stage||p.completion_status||'')).length;
+      const att      = (attRes.data || []) as Array<{ status: string }>;
+      const ass      = (assRes.data || []) as Array<{ percentage: number | null; grade_band: string | null }>;
+      const proj     = (projRes.data || []) as Array<{ stage: string | null; completion_status: string }>;
+      const attRate  = att.length ? Math.round(att.filter(a=>a.status==='present').length/att.length*100) : 0;
+      const avgScore = ass.length ? Math.round(ass.reduce((s,a)=>s+Number(a.percentage||0),0)/ass.length) : 0;
+      const done     = proj.filter(p=>['marked','completed'].includes(p.stage||p.completion_status||'')).length;
       return { prog, learnerCount: lids.length, attRate, avgScore, done, assCount: ass.length, projCount: proj.length };
     })
   );

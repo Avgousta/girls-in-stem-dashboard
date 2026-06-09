@@ -8,7 +8,12 @@ import { fmt } from '@/utils';
 import Link from 'next/link';
 import { ArrowLeft, Users, CalendarCheck2, BarChart3, BookOpen } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
+import type { GradeBand } from '@/types';
 import EnrolmentManager from './EnrolmentManager';
+
+interface AttRow   { status: string; session_date: string }
+interface ScoreRow { grade_band: string | null; percentage: number | null }
+interface EnrolRow { enrollment_id: string; status: string; enrolled_at: string; learners: { learner_id: string; learner_code: string; grade: number; learner_profiles: { first_name: string; last_name: string } | null; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null } }
 
 async function getProgramDetail(id: string) {
   const supabase = await createClient();
@@ -39,13 +44,13 @@ async function getProgramStats(id: string) {
     supabase.from('assessments').select('grade_band, percentage').eq('program_id', id),
   ]);
 
-  const att    = attRes.data || [];
-  const scores = scoreRes.data || [];
+  const att    = (attRes.data || []) as unknown as AttRow[];
+  const scores = (scoreRes.data || []) as unknown as ScoreRow[];
 
   const attRate  = att.length
-    ? Math.round(att.filter((a: any) => a.status === 'present').length / att.length * 100) : 0;
+    ? Math.round(att.filter(a => a.status === 'present').length / att.length * 100) : 0;
   const avgScore = scores.length
-    ? Math.round(scores.reduce((s: number, a: any) => s + Number(a.percentage), 0) / scores.length) : 0;
+    ? Math.round(scores.reduce((s, a) => s + Number(a.percentage), 0) / scores.length) : 0;
 
   const weeks: Record<string, { present: number; total: number }> = {};
   for (const row of att) {
@@ -70,7 +75,7 @@ async function getProgramStats(id: string) {
     if (s.grade_band && counts[s.grade_band] !== undefined) counts[s.grade_band]++;
   }
   const scoreDist = Object.entries(counts).map(([grade_band, count]) => ({
-    grade_band: grade_band as any,
+    grade_band: grade_band as GradeBand,
     count,
     percentage: scores.length ? Math.round(count / scores.length * 100) : 0,
   }));
@@ -95,9 +100,9 @@ export default async function ProgramDetailPage({ params }: Props) {
   ]);
   if (!program) notFound();
 
-  const enrollments = program.program_enrollments || [];
-  const active      = enrollments.filter((e: any) => e.status === 'active');
-  const completed   = enrollments.filter((e: any) => e.status === 'completed');
+  const enrollments = (program.program_enrollments || []) as unknown as EnrolRow[];
+  const active      = enrollments.filter(e => e.status === 'active');
+  const completed   = enrollments.filter(e => e.status === 'completed');
   const typeColor   = TYPE_COLOR[program.program_type] || DS.primary;
 
   return (
@@ -127,8 +132,8 @@ export default async function ProgramDetailPage({ params }: Props) {
               </span>
             </p>
             <div className="flex flex-wrap gap-4 mt-3 text-sm" style={{ color: DS.textMuted }}>
-              {(program.users as any)?.full_name && <span>👤 {(program.users as any).full_name}</span>}
-              {(program.schools as any)?.school_name && <span>🏫 {(program.schools as any).school_name}</span>}
+              {(program.users as unknown as { full_name: string } | null)?.full_name && <span>👤 {(program.users as unknown as { full_name: string }).full_name}</span>}
+              {(program.schools as unknown as { school_name: string } | null)?.school_name && <span>🏫 {(program.schools as unknown as { school_name: string }).school_name}</span>}
               <span>📅 {fmt.date(program.start_date)}{program.end_date ? ` → ${fmt.date(program.end_date)}` : ''}</span>
               <span>👥 {active.length}/{program.max_capacity} enrolled</span>
             </div>
@@ -166,7 +171,7 @@ export default async function ProgramDetailPage({ params }: Props) {
       </div>
 
       {/* Enrolled learners — with add/remove */}
-      <EnrolmentManager programId={program.program_id} enrolments={active} />
+      <EnrolmentManager programId={program.program_id} enrolments={active as unknown as Parameters<typeof EnrolmentManager>[0]['enrolments']} />
     </div>
   );
 }
