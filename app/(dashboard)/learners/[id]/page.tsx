@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import AssessmentsClient from './AssessmentsClient';
+import DeleteLearnerButton from './DeleteLearnerButton';
 
 async function getLearnerProfile(id: string) {
   const supabase = await createClient();
@@ -169,6 +170,11 @@ export default async function LearnerProfilePage({ params }: Props) {
             <Link href={`/mentorship/new?learner=${learner.learner_id}`} className="btn-secondary text-xs">
               <HeartHandshake className="w-3.5 h-3.5" /> Mentor
             </Link>
+            <DeleteLearnerButton
+              learnerId={learner.learner_id}
+              learnerName={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim()}
+              learnerCode={learner.learner_code}
+            />
           </div>
         </div>
       </div>

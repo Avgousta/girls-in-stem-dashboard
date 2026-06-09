@@ -68,15 +68,35 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return ok(data);
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const { supabase, denied } = await requireApiAuth(['admin']);
   if (denied) return denied;
 
+  const id        = (await params).id;
+  const permanent = req.nextUrl.searchParams.get('permanent') === 'true';
+
+  if (permanent) {
+    // Hard delete — remove all related data then the learner record
+    await supabase.from('assessments')        .delete().eq('learner_id', id);
+    await supabase.from('attendance')         .delete().eq('learner_id', id);
+    await supabase.from('program_enrollments').delete().eq('learner_id', id);
+    await supabase.from('risk_scores')        .delete().eq('learner_id', id);
+    await supabase.from('interventions')      .delete().eq('learner_id', id);
+    await supabase.from('mentorship_sessions').delete().eq('learner_id', id);
+    await supabase.from('notifications')      .delete().eq('learner_id', id);
+    await supabase.from('sponsor_learners')   .delete().eq('learner_id', id);
+    await supabase.from('learner_profiles')   .delete().eq('learner_id', id);
+    const { error } = await supabase.from('learners').delete().eq('learner_id', id);
+    if (error) return err(error.message, 500);
+    return ok({ deleted: true, permanent: true });
+  }
+
+  // Soft delete — mark as withdrawn, keep all data
   const { error } = await supabase
     .from('learners')
     .update({ programme_status: 'withdrawn' })
-    .eq('learner_id', (await params).id);
+    .eq('learner_id', id);
 
   if (error) return err(error.message, 500);
-  return ok({ deleted: true });
+  return ok({ deleted: true, permanent: false });
 }
