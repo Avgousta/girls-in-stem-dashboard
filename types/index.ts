@@ -104,8 +104,8 @@ export interface Assessment {
   learner_id: string;
   program_id: string;
   subject: string;
-  score: number;
-  max_score: number;
+  score: number | null;
+  max_score: number | null;
   percentage: number;
   grade_band: GradeBand | null;
   assessment_date: string;

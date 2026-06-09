@@ -7,11 +7,11 @@ import { Pencil, Plus, X, Check, Trash2, Loader2 } from 'lucide-react';
 interface Assessment {
   assessment_id: string;
   subject: string;
-  score: number;
-  max_score: number;
-  percentage: number;
-  grade_band: string;
-  assessment_date: string;
+  score: number | null;
+  max_score: number | null;
+  percentage: number | null;
+  grade_band: string | null;
+  assessment_date: string | null;
   notes: string | null;
   term: number | null;
   assessment_type: string;
@@ -408,7 +408,7 @@ export default function AssessmentsClient({ assessments: initial, learnerId, pro
                   <div className="p-3 flex gap-3 flex-wrap" style={{ background: DS.surface }}>
                     {allApp.map((a, i) => (
                       <ScoreChip key={i} label={a.subject} assessment={a}
-                        slot={{ subject: a.subject, notesLabel: a.notes ?? '', term: null, assessType: 'quiz', date: a.assessment_date }}
+                        slot={{ subject: a.subject, notesLabel: a.notes ?? '', term: null, assessType: 'quiz', date: a.assessment_date ?? '' }}
                         learnerId={learnerId} programId={resolvedProgramId}
                         onSaved={handleSaved} onDeleted={handleDeleted} />
                     ))}
@@ -468,7 +468,7 @@ export default function AssessmentsClient({ assessments: initial, learnerId, pro
                     {allAssign.map((a, i) => {
                       const shortLabel = (a.notes ?? '').replace(/ \(Grade.*$/, '').replace('June ','');
                       return <ScoreChip key={i} label={shortLabel} assessment={a}
-                        slot={{ subject: a.subject, notesLabel: a.notes ?? '', term: 2, assessType: 'assignment', date: a.assessment_date }}
+                        slot={{ subject: a.subject, notesLabel: a.notes ?? '', term: 2, assessType: 'assignment', date: a.assessment_date ?? '' }}
                         learnerId={learnerId} programId={resolvedProgramId}
                         onSaved={handleSaved} onDeleted={handleDeleted} />;
                     })}

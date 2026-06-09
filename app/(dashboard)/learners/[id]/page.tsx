@@ -8,8 +8,14 @@ import {
   HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import AssessmentsClient from './AssessmentsClient';
 import DeleteLearnerButton from './DeleteLearnerButton';
+
+interface LearnerProject { project_id: string; project_name: string; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null; project_feedback: Array<{ feedback_id: string; body: string; is_private: boolean; created_at: string; users: { full_name: string; role: string } | null }> }
+interface LearnerMentorSession { session_id: string; session_date: string; duration_minutes: number | null; notes: string | null; next_steps: string | null; users: { full_name: string } | null }
+interface LearnerIntervention { intervention_id: string; reason: string; action_taken: string | null; follow_up_date: string | null; status: string; priority: string; created_at: string }
+interface LearnerProgEnroll { enrollment_id: string; status: string; program_id: string; programs: { program_name: string; program_type: string } | null }
 
 async function getLearnerProfile(id: string) {
   const supabase = await createClient();
@@ -38,7 +44,7 @@ interface Props { params: Promise<{ id: string }> }
 
 // ─── Small reusable bits ──────────────────────────────────────────────────────
 function Section({ title, icon: Icon, iconColor, count, children }: {
-  title: string; icon: any; iconColor: string; count?: number; children: React.ReactNode;
+  title: string; icon: LucideIcon; iconColor: string; count?: number; children: React.ReactNode;
 }) {
   return (
     <section>
@@ -89,15 +95,17 @@ export default async function LearnerProfilePage({ params }: Props) {
 
   const profile      = learner.learner_profiles;
   const risk         = learner.risk_scores;
-  const programs     = learner.program_enrollments || [];
-  const attendance   = learner.attendance          || [];
-  const assessments  = (learner.assessments || []).sort((a: any, b: any) => b.assessment_date?.localeCompare(a.assessment_date ?? '') ?? 0);
-  const mentorship   = learner.mentorship_sessions || [];
-  const interventions = learner.interventions      || [];
-  const projects     = (learner as any).projects   || [];
+  const programs      = (learner.program_enrollments || []) as unknown as LearnerProgEnroll[];
+  interface LearnerAttRow { attendance_id: string; status: string; session_date: string; programs: { program_name: string } | null }
+  interface LearnerAssRow { assessment_id: string; subject: string; score: number | null; max_score: number | null; percentage: number | null; grade_band: string | null; assessment_date: string | null; notes: string | null; term: number | null; assessment_type: string; programs: { program_name: string } | null }
+  const attendance    = (learner.attendance || []) as unknown as LearnerAttRow[];
+  const assessments   = ((learner.assessments || []) as unknown as LearnerAssRow[]).sort((a, b) => (b.assessment_date ?? '').localeCompare(a.assessment_date ?? ''));
+  const mentorship    = (learner.mentorship_sessions || []) as unknown as LearnerMentorSession[];
+  const interventions = (learner.interventions || []) as unknown as LearnerIntervention[];
+  const projects      = ((learner as unknown as { projects?: LearnerProject[] }).projects) || [];
 
   const attRate = attendance.length
-    ? Math.round(attendance.filter((a: any) => a.status === 'present').length / attendance.length * 100)
+    ? Math.round(attendance.filter(a => a.status === 'present').length / attendance.length * 100)
     : 0;
 
   const initials = `${profile?.first_name?.[0] ?? ''}${profile?.last_name?.[0] ?? ''}`;
@@ -147,7 +155,7 @@ export default async function LearnerProfilePage({ params }: Props) {
             </div>
             <p className="font-mono text-sm mt-1" style={{ color: DS.textMuted }}>{learner.learner_code}</p>
             <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm" style={{ color: DS.textMid }}>
-              {(learner.schools as any)?.school_name && <span>🏫 {(learner.schools as any).school_name}</span>}
+              {(learner.schools as unknown as { school_name: string } | null)?.school_name && <span>🏫 {(learner.schools as unknown as { school_name: string }).school_name}</span>}
               {learner.grade  && <span>📚 Grade {learner.grade}</span>}
               {learner.enrollment_date && <span>📅 Enrolled {fmt.date(learner.enrollment_date)}</span>}
               {profile?.email       && <span>✉ {profile.email}</span>}
@@ -191,7 +199,7 @@ export default async function LearnerProfilePage({ params }: Props) {
       {programs.length > 0 && (
         <Section title="Enrolled Programmes" icon={BookOpen} iconColor={DS.primary} count={programs.length}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {programs.map((e: any, i: number) => (
+            {programs.map((e, i) => (
               <div key={e.enrollment_id || i} className="rounded-xl p-4 flex items-center justify-between"
                 style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
                 <div>
@@ -222,7 +230,7 @@ export default async function LearnerProfilePage({ params }: Props) {
       {mentorship.length > 0 && (
         <Section title="Mentorship Sessions" icon={HeartHandshake} iconColor="#A78BFA" count={mentorship.length}>
           <div className="space-y-2">
-            {mentorship.slice(0, 5).map((s: any, i: number) => (
+            {mentorship.slice(0, 5).map((s, i) => (
               <div key={s.session_id || i} className="rounded-xl p-4"
                 style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -252,7 +260,7 @@ export default async function LearnerProfilePage({ params }: Props) {
       {interventions.length > 0 && (
         <Section title="Interventions" icon={AlertTriangle} iconColor="var(--ds-danger)" count={interventions.length}>
           <div className="space-y-2">
-            {interventions.map((intv: any, i: number) => {
+            {interventions.map((intv, i) => {
               const isCrit = intv.priority === 'critical' || intv.priority === 'high';
               return (
                 <div key={intv.intervention_id || i} className="rounded-xl p-4"
@@ -288,10 +296,10 @@ export default async function LearnerProfilePage({ params }: Props) {
       {projects.length > 0 && (
         <Section title="Projects" icon={FolderKanban} iconColor="#818CF8" count={projects.length}>
           <div className="space-y-3">
-            {projects.map((p: any, i: number) => {
+            {projects.map((p, i) => {
               const pct      = p.score != null ? Math.round((p.score / (p.max_score || 100)) * 100) : null;
               const stageCfg = STAGE_CFG[p.stage ?? 'planning'] ?? STAGE_CFG.planning;
-              const publicFeedback = (p.project_feedback || []).filter((f: any) => !f.is_private);
+              const publicFeedback = (p.project_feedback || []).filter(f => !f.is_private);
               return (
                 <div key={p.project_id || i} className="rounded-2xl p-4"
                   style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
