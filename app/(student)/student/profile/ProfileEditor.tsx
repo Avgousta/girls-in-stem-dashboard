@@ -79,9 +79,9 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
     finally { setSaving(false); }
   };
 
-  // All inputs: white bg, dark text — always readable regardless of theme
   const inputStyle: React.CSSProperties = {
-    background: '#ffffff', color: '#111827', border: '1.5px solid #e5e7eb',
+    background: theme.cardBg, color: theme.textPrimary,
+    border: `1.5px solid ${theme.cardBorder}`,
     borderRadius: 12, padding: '10px 14px', fontSize: 14,
     width: '100%', outline: 'none', lineHeight: 1.5,
   };
@@ -153,9 +153,9 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
             <button key={c} onClick={() => set('aspiration', c)}
               className="text-xs px-3 py-1.5 rounded-full font-semibold transition-all"
               style={{
-                background:  form.aspiration === c ? accentColor : '#ffffff',
-                color:       form.aspiration === c ? '#ffffff'   : '#374151',
-                border:      `1.5px solid ${form.aspiration === c ? accentColor : '#e5e7eb'}`,
+                background:  form.aspiration === c ? accentColor : theme.cardBg,
+                color:       form.aspiration === c ? '#ffffff'   : theme.textPrimary as string,
+                border:      `1.5px solid ${form.aspiration === c ? accentColor : theme.cardBorder}`,
               }}>
               {c}
             </button>
@@ -179,9 +179,9 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
               <button key={tag} onClick={() => toggleInterest(tag)}
                 className="text-xs px-3 py-2 rounded-full font-semibold transition-all"
                 style={{
-                  background: on ? accentColor  : '#ffffff',
-                  color:      on ? '#ffffff'    : '#374151',
-                  border:     `1.5px solid ${on ? accentColor : '#e5e7eb'}`,
+                  background: on ? accentColor  : theme.cardBg,
+                  color:      on ? '#ffffff'    : theme.textPrimary as string,
+                  border:     `1.5px solid ${on ? accentColor : theme.cardBorder}`,
                   transform:  on ? 'scale(1.05)': 'scale(1)',
                 }}>
                 {tag}
@@ -209,11 +209,11 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
           <div className="flex flex-wrap gap-2">
             {form.hobbies.map((h: string) => (
               <span key={h} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full font-semibold"
-                style={{ background: '#ffffff', color: '#374151', border: '1.5px solid #e5e7eb' }}>
+                style={{ background: theme.cardBg, color: theme.textPrimary as string, border: `1.5px solid ${theme.cardBorder}` }}>
                 {h}
                 <button onClick={() => removeHobby(h)}
                   className="w-4 h-4 rounded-full flex items-center justify-center opacity-60 hover:opacity-100"
-                  style={{ background: '#e5e7eb' }}>
+                  style={{ background: theme.cardBorder }}>
                   <X className="w-2.5 h-2.5 text-gray-600" />
                 </button>
               </span>
