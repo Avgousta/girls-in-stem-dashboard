@@ -83,7 +83,8 @@ export default async function ParentPage() {
         const attRate   = att.length ? Math.floor(att.filter((a: any) => a.status === 'present').length / att.length * 100) : 0;
         const avgScore  = ass.length ? Math.round(ass.reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / ass.length) : null;
         const initials  = `${profile?.first_name?.[0] ?? ''}${profile?.last_name?.[0] ?? ''}`.toUpperCase();
-        const riskColor = { high: 'var(--ds-danger)', medium: 'var(--ds-warn)', low: 'var(--ds-success)' }[risk?.risk_level ?? 'low'];
+        const riskColorMap: Record<string, string> = { high: 'var(--ds-danger)', medium: 'var(--ds-warn)', low: 'var(--ds-success)' };
+        const riskColor = riskColorMap[risk?.risk_level ?? 'low'] ?? 'var(--ds-success)';
 
         return (
           <div key={child.learner_id} className="rounded-2xl overflow-hidden"
