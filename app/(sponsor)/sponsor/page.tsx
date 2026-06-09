@@ -3,6 +3,26 @@ import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
 
+interface SponsorLearner {
+  learner_id: string;
+  learner_code: string;
+  grade: number;
+  programme_status: string;
+  enrollment_date: string;
+  learner_profiles: { first_name: string; last_name: string } | null;
+  schools: { school_name: string; district: string } | null;
+  risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null;
+  program_enrollments: Array<{
+    status: string;
+    programs: { program_name: string; program_type: string } | null;
+  }>;
+}
+
+interface AttRecord   { status: string; session_date: string }
+interface AssRecord   { percentage: number | null; grade_band: string | null; subject: string; assessment_date: string | null; program_id: string }
+interface ProjRecord  { completion_status: string; stage: string | null; score: number | null; max_score: number | null }
+interface IntervRecord { status: string; created_at: string }
+
 async function getSponsorData(sponsorId: string) {
   const supabase = await createClient();
 
@@ -11,7 +31,7 @@ async function getSponsorData(sponsorId: string) {
     supabase.from('sponsors').select('sponsor_name, contact_name, contact_email').eq('sponsor_id', sponsorId).single(),
   ]);
 
-  const learnerIds = (linksRes.data || []).map((l: any) => l.learner_id);
+  const learnerIds = (linksRes.data || []).map(l => l.learner_id);
   const sponsor    = sponsorRes.data;
 
   if (!learnerIds.length) return { sponsor, learnerIds: [], learners: [], att: [], ass: [], projects: [], interventions: [] };
@@ -37,11 +57,11 @@ async function getSponsorData(sponsorId: string) {
   return {
     sponsor,
     learnerIds,
-    learners:      learnersRes.data  || [],
-    att:           attRes.data       || [],
-    ass:           assRes.data       || [],
-    projects:      projRes.data      || [],
-    interventions: intRes.data       || [],
+    learners:      (learnersRes.data  || []) as unknown as SponsorLearner[],
+    att:           (attRes.data       || []) as AttRecord[],
+    ass:           (assRes.data       || []) as AssRecord[],
+    projects:      (projRes.data      || []) as ProjRecord[],
+    interventions: (intRes.data       || []) as IntervRecord[],
   };
 }
 
@@ -98,33 +118,33 @@ export default async function SponsorDashboard() {
   const user    = await requireAuth(['sponsor']);
   const { sponsor, learners, att, ass, projects, interventions, learnerIds } = await getSponsorData(user.sponsor_id!);
 
-  const sponsorName = (sponsor as any)?.sponsor_name || 'Sponsor';
+  const sponsorName = sponsor?.sponsor_name || 'Sponsor';
   const total   = learnerIds.length;
-  const active  = learners.filter((l: any) => l.programme_status === 'active').length;
+  const active  = learners.filter(l => l.programme_status === 'active').length;
 
-  const attRate  = att.length ? Math.round(att.filter((a: any) => a.status === 'present').length / att.length * 100) : 0;
-  const avgScore = ass.length ? Math.round(ass.reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / ass.length) : 0;
-  const completedProj = projects.filter((p: any) => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
-  const openInterv    = interventions.filter((i: any) => i.status !== 'resolved').length;
+  const attRate  = att.length ? Math.round(att.filter(a => a.status === 'present').length / att.length * 100) : 0;
+  const avgScore = ass.length ? Math.round(ass.reduce((s, a) => s + Number(a.percentage || 0), 0) / ass.length) : 0;
+  const completedProj = projects.filter(p => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
+  const openInterv    = interventions.filter(i => i.status !== 'resolved').length;
 
-  const highRisk = learners.filter((l: any) => l.risk_scores?.risk_level === 'high').length;
-  const onTrack  = learners.filter((l: any) => l.risk_scores?.risk_level === 'low').length;
+  const highRisk = learners.filter(l => l.risk_scores?.risk_level === 'high').length;
+  const onTrack  = learners.filter(l => l.risk_scores?.risk_level === 'low').length;
 
   // Grade distribution
   const gradeMap: Record<string, number> = {};
-  learners.forEach((l: any) => { const g = `Gr ${l.grade}`; gradeMap[g] = (gradeMap[g] || 0) + 1; });
+  learners.forEach(l => { const g = `Gr ${l.grade}`; gradeMap[g] = (gradeMap[g] || 0) + 1; });
 
   // School distribution
   const schoolMap: Record<string, number> = {};
-  learners.forEach((l: any) => {
+  learners.forEach(l => {
     const s = l.schools?.school_name || 'Unknown';
     schoolMap[s] = (schoolMap[s] || 0) + 1;
   });
 
   // Programme distribution
   const progMap: Record<string, { count: number; type: string }> = {};
-  learners.forEach((l: any) => {
-    (l.program_enrollments || []).forEach((e: any) => {
+  learners.forEach(l => {
+    (l.program_enrollments || []).forEach(e => {
       const n = e.programs?.program_name;
       if (n) { progMap[n] = { count: (progMap[n]?.count || 0) + 1, type: e.programs?.program_type || '' }; }
     });
@@ -132,10 +152,10 @@ export default async function SponsorDashboard() {
 
   // Grade band distribution from assessments
   const bands: Record<string, number> = { Distinction: 0, Merit: 0, Pass: 0, 'Needs Support': 0 };
-  ass.forEach((a: any) => { if (a.grade_band && bands[a.grade_band] !== undefined) bands[a.grade_band]++; });
+  ass.forEach(a => { if (a.grade_band && bands[a.grade_band] !== undefined) bands[a.grade_band]++; });
 
   // Recent assessments trend (last 8 data points)
-  const sortedAss = [...ass].sort((a: any, b: any) => (b.assessment_date || '').localeCompare(a.assessment_date || ''));
+  const sortedAss = [...ass].sort((a, b) => (b.assessment_date || '').localeCompare(a.assessment_date || ''));
   const recentAss = sortedAss.slice(0, 8);
 
   const now = new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -184,7 +204,7 @@ export default async function SponsorDashboard() {
           {
             label:   'Attendance Rate',
             value:   `${attRate}%`,
-            sub:     att.length > 0 ? `${att.filter((a:any)=>a.status==='present').length} sessions attended` : 'No data',
+            sub:     att.length > 0 ? `${att.filter(a=>a.status==='present').length} sessions attended` : 'No data',
             color:   attRate >= 75 ? '#10B981' : '#EF4444',
           },
           {
@@ -242,7 +262,7 @@ export default async function SponsorDashboard() {
             <div className="space-y-2">
               {[
                 { label: 'Low Risk — On Track',      count: onTrack,  color: DS.success },
-                { label: 'Medium Risk — Monitoring', count: learners.filter((l:any)=>l.risk_scores?.risk_level==='medium').length, color: DS.warn },
+                { label: 'Medium Risk — Monitoring', count: learners.filter(l=>l.risk_scores?.risk_level==='medium').length, color: DS.warn },
                 { label: 'High Risk — Needs Support', count: highRisk, color: DS.danger },
               ].map(({ label, count, color }) => (
                 <div key={label} className="flex items-center justify-between text-xs">
@@ -309,7 +329,7 @@ export default async function SponsorDashboard() {
             <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${DS.borderLight}` }}>
               <p className="text-xs font-semibold mb-3" style={{ color: DS.textMuted }}>RECENT SCORE TREND</p>
               <div className="flex items-end gap-1.5 h-12">
-                {[...recentAss].reverse().map((a: any, i: number) => {
+                {[...recentAss].reverse().map((a, i) => {
                   const pct = Number(a.percentage || 0);
                   const h   = Math.max(8, Math.round((pct / 100) * 48));
                   return (
