@@ -14,10 +14,12 @@ export default async function ApprovalsPage() {
     .eq('role', 'instructor')
     .order('created_at', { ascending: false });
 
-  const pending = (all || []).filter((u: any) => !u.is_active);
-  const active  = (all || []).filter((u: any) => u.is_active);
+  interface UserRow { user_id: string; full_name: string; email: string; created_at: string; is_active: boolean; schools: { school_name: string } | null }
+  const rows    = (all || []) as unknown as UserRow[];
+  const pending = rows.filter(u => !u.is_active);
+  const active  = rows.filter(u => u.is_active);
 
-  const mapUser = (u: any) => ({ ...u, school_name: u.schools?.school_name || '—' });
+  const mapUser = (u: UserRow) => ({ ...u, school_name: u.schools?.school_name || '—' });
 
   return (
     <div className="max-w-3xl space-y-6">

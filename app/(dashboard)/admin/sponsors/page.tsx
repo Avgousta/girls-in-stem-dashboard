@@ -31,17 +31,19 @@ export default async function AdminSponsorsPage() {
 
   // Build real count per sponsor from the links table
   const countMap: Record<string, number> = {};
-  (linksRes.data || []).forEach((lnk: any) => {
+  (linksRes.data || []).forEach(lnk => {
     countMap[lnk.sponsor_id] = (countMap[lnk.sponsor_id] || 0) + 1;
   });
 
-  const sponsors = (sponsorsRes.data || []).map((s: any) => ({
+  interface SponsorRow { sponsor_id: string; sponsor_name: string; users: Array<{ user_id: string; full_name: string; email: string; role: string }> }
+  const sponsors = ((sponsorsRes.data || []) as unknown as SponsorRow[]).map(s => ({
     ...s,
     learner_count: countMap[s.sponsor_id] || 0,
     users:         s.users || [],
   }));
 
-  const allLearners = (learnersRes.data || []).map((l: any) => ({
+  interface LearnerRow { learner_id: string; learner_code: string; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null }
+  const allLearners = ((learnersRes.data || []) as unknown as LearnerRow[]).map(l => ({
     learner_id:   l.learner_id,
     learner_code: l.learner_code,
     full_name:    `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),

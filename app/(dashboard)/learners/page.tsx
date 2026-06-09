@@ -20,15 +20,18 @@ async function getLearners() {
       .select('learner_id, sponsor_id, sponsors(sponsor_id, sponsor_name)'),
   ]);
 
+  interface SponsorLink { learner_id: string; sponsor_id: string; sponsors: { sponsor_id: string; sponsor_name: string } | null }
+  interface LearnerRow  { learner_id: string; learner_code: string; grade: number; enrollment_date: string; programme_status: string; learner_profiles: { first_name: string; last_name: string; email: string } | null; schools: { school_name: string } | null; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null; program_enrollments: Array<{ programs: { program_name: string } | null }> }
+
   const sponsorMap: Record<string, Array<{ sponsor_id: string; sponsor_name: string }>> = {};
-  (sponsorLinksRes.data || []).forEach((link: any) => {
+  ((sponsorLinksRes.data || []) as unknown as SponsorLink[]).forEach(link => {
     if (!sponsorMap[link.learner_id]) sponsorMap[link.learner_id] = [];
     if (link.sponsors) sponsorMap[link.learner_id].push({
       sponsor_id: link.sponsors.sponsor_id, sponsor_name: link.sponsors.sponsor_name,
     });
   });
 
-  return (learnerRes.data || []).map((l: any) => ({
+  return ((learnerRes.data || []) as unknown as LearnerRow[]).map(l => ({
     id:         l.learner_id,
     code:       l.learner_code,
     grade:      l.grade,
@@ -42,7 +45,7 @@ async function getLearners() {
     att:        Math.floor(l.risk_scores?.attendance_rate ?? 0),
     score:      Math.round(l.risk_scores?.avg_score       ?? 0),
     sponsors:   sponsorMap[l.learner_id] || [],
-    programmes: (l.program_enrollments || []).map((e: any) => e.programs?.program_name).filter(Boolean),
+    programmes: (l.program_enrollments || []).map(e => e.programs?.program_name).filter((n): n is string => !!n),
   }));
 }
 
