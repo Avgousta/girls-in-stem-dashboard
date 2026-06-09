@@ -74,9 +74,9 @@ export default async function StudentAttendancePage() {
       {/* Stats grid */}
       <div className="grid grid-cols-4 gap-2">
         {[
-          { label: 'Present', count: present, ...STATUS.present },
-          { label: 'Absent',  count: absent,  ...STATUS.absent },
-          { label: 'Late',    count: late,    ...STATUS.late },
+          { count: present, ...STATUS.present },
+          { count: absent,  ...STATUS.absent },
+          { count: late,    ...STATUS.late },
           { label: 'Total',   count: total,   color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', emoji: '📊' },
         ].map(({ label, count, color, bg, emoji }) => (
           <div key={label} className="rounded-2xl p-3 text-center"

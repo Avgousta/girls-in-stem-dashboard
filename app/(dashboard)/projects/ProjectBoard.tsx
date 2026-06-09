@@ -51,7 +51,7 @@ export default function ProjectBoard({ projects: initial, stages, isAdmin }: Pro
     return matchSearch && matchProg;
   });
 
-  const programmes = [...new Set(projects.map(p => p.programme))].sort();
+  const programmes = Array.from(new Set(projects.map(p => p.programme))).sort();
 
   const moveStage = async (projectId: string, newStage: string) => {
     setLoading(projectId);

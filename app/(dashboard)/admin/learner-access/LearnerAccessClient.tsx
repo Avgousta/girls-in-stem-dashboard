@@ -31,8 +31,8 @@ export default function LearnerAccessClient({ learners, baseUrl }: Props) {
   const [gradeF,     setGradeF]     = useState('');
   const [statusF,    setStatusF]    = useState<'all'|'registered'|'pending'>('all');
 
-  const schools = useMemo(() => [...new Set(learners.map(l => l.school))].sort(), [learners]);
-  const grades  = useMemo(() => [...new Set(learners.map(l => l.grade))].sort((a,b)=>a-b), [learners]);
+  const schools = useMemo(() => Array.from(new Set(learners.map(l => l.school))).sort(), [learners]);
+  const grades  = useMemo(() => Array.from(new Set(learners.map(l => l.grade))).sort((a,b)=>a-b), [learners]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();

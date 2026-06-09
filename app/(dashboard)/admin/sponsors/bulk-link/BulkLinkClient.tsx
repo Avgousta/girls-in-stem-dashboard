@@ -64,7 +64,7 @@ export default function BulkLinkClient({ sponsors, learners, existingLinks }: Pr
         if (!res.ok) throw new Error('Failed to remove');
         setLinks(prev => {
           const next = { ...prev };
-          next[learnerId] = new Set([...(next[learnerId] || [])].filter(id => id !== sponsorId));
+          next[learnerId] = new Set(Array.from(next[learnerId] || []).filter(id => id !== sponsorId));
           return next;
         });
       } else {

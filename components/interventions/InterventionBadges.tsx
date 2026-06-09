@@ -178,7 +178,7 @@ export function ActivityTimeline({ entries }: { entries: TEntry[] }) {
         <div key={i} className="flex gap-3">
           <div className="flex flex-col items-center shrink-0 pt-1">
             <div className="w-2.5 h-2.5 rounded-full ring-2"
-              style={{ background: e.color ?? DS.textMuted, ringColor: DS.bg }} />
+              style={{ background: e.color ?? DS.textMuted, outline: `2px solid ${DS.bg}` }} />
             {i < entries.length - 1 && (
               <div className="w-px flex-1 my-1 min-h-[16px]"
                 style={{ background: DS.borderLight }} />

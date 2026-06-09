@@ -74,7 +74,15 @@
       "PowerShell(py -m pip install supabase pandas openpyxl 2>&1)",
       "PowerShell(cd \"C:\\\\Users\\\\User\\\\girls-stem-dashboard\"; npx vercel deploy --prod 2>&1 | Where-Object { $_ -match 'Production|Aliased|Error|ready' } | Select-Object -Last 5)",
       "Bash(xargs grep -l \"console\\\\.\\\\\\(log\\\\|error\\\\|warn\\\\\\)\")",
-      "Bash(xargs grep -l \"Math.round.*attendance_rate\\\\|attendance_rate.*Math.round\")"
+      "Bash(xargs grep -l \"Math.round.*attendance_rate\\\\|attendance_rate.*Math.round\")",
+      "Bash(sed -n '65,70p' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/admin/sponsors/bulk-link/BulkLinkClient.tsx\")",
+      "Bash(sed -n '739,760p' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")",
+      "Bash(sed -n '35,40p' \"C:/Users/User/girls-stem-dashboard/app/\\(sponsor\\)/sponsor/programmes/page.tsx\")",
+      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.selectedIds\\\\]/Array.from\\(selectedIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/admin/sponsors/bulk-link/BulkLinkClient.tsx\")",
+      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.learnerIds\\\\]/Array.from\\(learnerIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/admin/sponsors/bulk-link/BulkLinkClient.tsx\")",
+      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.\\\\\\(next\\\\[learnerId\\\\] \\\\|\\\\| \\\\[\\\\]\\\\\\)\\\\]/Array.from\\(next[learnerId] || []\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/admin/sponsors/bulk-link/BulkLinkClient.tsx\")",
+      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.selectedIds\\\\]/Array.from\\(selectedIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")",
+      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.learnerIds\\\\]/Array.from\\(learnerIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(sponsor\\)/sponsor/programmes/page.tsx\")"
     ]
   }
 }

@@ -71,7 +71,7 @@ export default function RiskAlertCard({ risk, onIntervene }: Props) {
       {/* Flags */}
       {risk.risk_flags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {risk.risk_flags.map(flag => (
+          {risk.risk_flags.map((flag: string) => (
             <span key={flag} className={cn('badge text-[10px]', c.bg, c.text)}>
               {FLAG_LABELS[flag] || flag}
             </span>

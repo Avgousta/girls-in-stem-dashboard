@@ -34,7 +34,7 @@ export default async function SponsorProgrammesPage() {
   // Get assessment stats per programme
   const progList = await Promise.all(
     Object.entries(progMap).map(async ([pid, { prog, learnerIds }]) => {
-      const lids = [...learnerIds];
+      const lids = Array.from(learnerIds);
       const [attRes, assRes, projRes] = await Promise.all([
         supabase.from('attendance').select('status').in('learner_id', lids).eq('program_id', pid),
         supabase.from('assessments').select('percentage, grade_band').in('learner_id', lids).eq('program_id', pid),

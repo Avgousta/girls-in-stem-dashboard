@@ -738,7 +738,7 @@ export default function InterventionsClient({
     if (!window.confirm(`Mark ${selectedIds.size} intervention(s) as resolved?`)) return;
     setResolving(true);
     try {
-      await Promise.all([...selectedIds].map(id =>
+      await Promise.all(Array.from(selectedIds).map(id =>
         fetch(`/api/v1/interventions/${id}`, {
           method:'PATCH', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ status:'resolved' }),
@@ -754,7 +754,7 @@ export default function InterventionsClient({
   const bulkAssign = async (userId: string) => {
     const name = instructors.find((i: any) => i.user_id === userId)?.full_name ?? 'instructor';
     try {
-      await Promise.all([...selectedIds].map(id =>
+      await Promise.all(Array.from(selectedIds).map(id =>
         fetch(`/api/v1/interventions/${id}`, {
           method:'PATCH', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ assigned_to: userId }),

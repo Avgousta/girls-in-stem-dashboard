@@ -52,8 +52,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   instructor: ['learners:read','attendance:write','assessments:write','mentorship:write','interventions:write','programs:read'],
   learner:    ['own:read'],
   parent:     ['child:read'],
+  sponsor:    ['sponsored:read'],
 };
 
 export function getRoleDashboardPath(role: UserRole): string {
-  return { admin:'/dashboard', instructor:'/dashboard', learner:'/learner', parent:'/parent' }[role];
+  const paths: Record<UserRole, string> = {
+    admin: '/dashboard', instructor: '/dashboard',
+    learner: '/student', parent: '/parent', sponsor: '/sponsor',
+  };
+  return paths[role] ?? '/dashboard';
 }
