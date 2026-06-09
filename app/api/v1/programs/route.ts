@@ -84,7 +84,6 @@ export async function POST(req: NextRequest) {
   if (parsed.data.school_id)     insert.school_id     = parsed.data.school_id;
   if (parsed.data.description)   insert.description   = parsed.data.description;
 
-  console.log('Inserting program:', JSON.stringify(insert));
 
   const { data, error } = await supabase
     .from('programs')

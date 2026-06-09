@@ -1,6 +1,25 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// ─── Simple in-memory rate limiter for auth endpoints ────────────────────────
+// Limits login/register attempts to 10 per IP per minute.
+// Note: resets on serverless function cold start — sufficient to stop casual abuse.
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX      = 10;
+const RATE_LIMIT_WINDOW   = 60 * 1000; // 1 minute
+const RATE_LIMITED_PATHS  = ['/api/v1/auth/', '/auth/callback'];
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true; // allowed
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
 // ─── Public paths — no auth required ─────────────────────────────────────────
 const PUBLIC_PATHS = [
   '/',
@@ -54,6 +73,20 @@ export async function middleware(request: NextRequest) {
 
   // Always build a mutable response so we can refresh session cookies
   const response = NextResponse.next({ request: { headers: request.headers } });
+
+  // Rate limit auth API endpoints
+  const isRateLimited = RATE_LIMITED_PATHS.some(p => pathname.startsWith(p));
+  if (isRateLimited) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+            ?? request.headers.get('x-real-ip')
+            ?? 'unknown';
+    if (!checkRateLimit(ip)) {
+      return new NextResponse(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+      });
+    }
+  }
 
   const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

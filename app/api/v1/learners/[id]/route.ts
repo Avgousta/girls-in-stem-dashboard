@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
+import { auditLog } from '@/lib/audit';
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -69,14 +70,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const { supabase, denied } = await requireApiAuth(['admin']);
+  const { supabase, profile, denied } = await requireApiAuth(['admin']);
   if (denied) return denied;
 
   const id        = (await params).id;
   const permanent = req.nextUrl.searchParams.get('permanent') === 'true';
 
+  // Fetch learner name for audit label before deleting
+  const { data: lrn } = await supabase
+    .from('learners').select('learner_code, learner_profiles(first_name, last_name)')
+    .eq('learner_id', id).single();
+  const label = lrn
+    ? `${(lrn.learner_profiles as any)?.first_name} ${(lrn.learner_profiles as any)?.last_name} (${lrn.learner_code})`
+    : id;
+
   if (permanent) {
-    // Hard delete — remove all related data then the learner record
     await supabase.from('assessments')        .delete().eq('learner_id', id);
     await supabase.from('attendance')         .delete().eq('learner_id', id);
     await supabase.from('program_enrollments').delete().eq('learner_id', id);
@@ -88,15 +96,15 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     await supabase.from('learner_profiles')   .delete().eq('learner_id', id);
     const { error } = await supabase.from('learners').delete().eq('learner_id', id);
     if (error) return err(error.message, 500);
+    await auditLog({ actor_id: profile?.user_id, actor_email: profile?.email, actor_role: profile?.role,
+      action: 'learner.delete_permanent', entity_type: 'learner', entity_id: id, entity_label: label });
     return ok({ deleted: true, permanent: true });
   }
 
-  // Soft delete — mark as withdrawn, keep all data
   const { error } = await supabase
-    .from('learners')
-    .update({ programme_status: 'withdrawn' })
-    .eq('learner_id', id);
-
+    .from('learners').update({ programme_status: 'withdrawn' }).eq('learner_id', id);
   if (error) return err(error.message, 500);
+  await auditLog({ actor_id: profile?.user_id, actor_email: profile?.email, actor_role: profile?.role,
+    action: 'learner.withdraw', entity_type: 'learner', entity_id: id, entity_label: label });
   return ok({ deleted: true, permanent: false });
 }
