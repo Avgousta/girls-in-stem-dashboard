@@ -20,7 +20,7 @@ A full-stack STEM education management platform for South African schools. Built
 | Database | Supabase (PostgreSQL 17) |
 | Auth | Supabase Auth + RLS |
 | Email | Resend (`re_KTqUyFJn_...` — set on Vercel) |
-| Deployment | Vercel (CLI v54 — `npx vercel deploy --prod` to deploy) |
+| Deployment | Vercel (GitHub auto-deploy on push to `master`; fallback: `npx vercel deploy --prod`) |
 
 ### Commands
 ```bash
@@ -29,7 +29,8 @@ npm run build
 npm run type-check # tsc --noEmit
 npm run test       # Vitest unit tests (53 tests)
 npm run test:watch # Vitest in watch mode
-npx vercel deploy --prod   # deploy to production (use npx, not vercel directly)
+git push origin master     # auto-deploys to production via Vercel GitHub integration
+npx vercel deploy --prod   # manual deploy fallback
 vercel env pull .env.local # restore env vars locally
 ```
 
@@ -247,7 +248,7 @@ All API routes have `export const dynamic = 'force-dynamic'`.
 
 ## Known Gaps / TODO
 
-- [ ] **Vercel GitHub integration not linked** — deploys require `npx vercel deploy --prod` manually.
+- [x] **Vercel GitHub integration** — connected Jun 2026; `git push origin master` auto-deploys to production.
 - [x] **Misplaced duplicate files** — resolved; directories were empty.
 - [x] **`proxy.ts` at root** — deleted Jun 2026; was a stale duplicate of `middleware.ts`.
 
