@@ -28,8 +28,8 @@ export default function DeleteLearnerButton({ learnerId, learnerName, learnerCod
       if (!res.ok) throw new Error((await res.json()).error);
       router.push('/learners');
       router.refresh();
-    } catch (e: any) {
-      alert(`Failed: ${e.message}`);
+    } catch (e) {
+      alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
       setLoading(false);
     }
   };

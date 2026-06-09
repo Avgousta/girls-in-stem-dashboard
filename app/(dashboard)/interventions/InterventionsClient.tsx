@@ -30,16 +30,19 @@ interface Interv {
 }
 interface AtRisk { learner_id:string; learner:string; school:string; risk:string; att:number; score:number; open_interventions:number; has_critical:boolean }
 interface Stats   { open:number; inProgress:number; resolved:number; critical:number; overdue:number; resRate:number; avgDaysToResolve:number|null; typeDist:Record<string,number> }
-interface Props   { interventions:Interv[]; atRisk:AtRisk[]; stats:Stats; learners:any[]; instructors:any[]; currentUserId:string }
+interface LearnerOption   { learner_id: string; full_name: string; school: string }
+interface InstructorOption { user_id: string; full_name: string }
+interface Props   { interventions:Interv[]; atRisk:AtRisk[]; stats:Stats; learners:LearnerOption[]; instructors:InstructorOption[]; currentUserId:string }
 
 // ─── Trend chart tooltip ──────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }: any) {
+interface TooltipPayload { name: string; value: number; color?: string }
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipPayload[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl px-3 py-2 text-xs shadow-xl"
       style={{ background: DS.bg, border: `1px solid ${DS.border}` }}>
       <p className="font-bold mb-1" style={{ color: DS.textMid }}>{label}</p>
-      {payload.map((p: any) => (
+      {payload.map(p => (
         <p key={p.name} style={{ color: p.color }}>
           {p.name}: <strong>{p.value}</strong>
         </p>
@@ -100,7 +103,7 @@ function WorkloadPanel({ items, instructors, onFilter }: { items:Interv[]; instr
     const map: Record<string, { name: string; open: number; critical: number }> = {};
     items.filter(i => i.status !== 'resolved' && i.assigned_id).forEach(i => {
       if (!map[i.assigned_id!]) {
-        const instr = instructors.find((x: any) => x.user_id === i.assigned_id);
+        const instr = instructors.find(x => x.user_id === i.assigned_id);
         map[i.assigned_id!] = { name: instr?.full_name ?? 'Unknown', open: 0, critical: 0 };
       }
       map[i.assigned_id!].open++;
@@ -241,12 +244,12 @@ function EscalatePanel({
 }: {
   item: Interv;
   onClose: () => void;
-  onEscalated: (newPriority: string, update: any) => void;
+  onEscalated: (newPriority: string, update: { id: string; note: string; status_change: string | null; created: string; author: string }) => void;
 }) {
   const [reason,    setReason]    = useState('');
   const [escalating, setEscalating] = useState(false);
 
-  const currentIdx = PRIORITY_ORDER.indexOf(item.priority as any);
+  const currentIdx = PRIORITY_ORDER.indexOf(item.priority as typeof PRIORITY_ORDER[number]);
   const nextPriority = currentIdx < PRIORITY_ORDER.length - 1
     ? PRIORITY_ORDER[currentIdx + 1]
     : null;
@@ -269,8 +272,8 @@ function EscalatePanel({
       onEscalated(json.data.priority, json.data.update);
       toast.success(`Escalated to ${json.data.priority.toUpperCase()} priority`);
       onClose();
-    } catch (e: any) {
-      toast.error(e.message ?? 'Could not escalate');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e) ?? 'Could not escalate');
     } finally {
       setEscalating(false);
     }
@@ -373,7 +376,7 @@ function IntervCard({
   item, onUpdate, selected, onSelect,
 }: {
   item: Interv;
-  onUpdate: (id:string, d:any) => void;
+  onUpdate: (id:string, d:{ status: string; newNote?: Update }) => void;
   selected: boolean;
   onSelect: (id:string, checked:boolean) => void;
 }) {
@@ -431,7 +434,7 @@ function IntervCard({
 
       onUpdate(item.id, {
         status,
-        newNote: { note: finalNote, status_change: changed ? `${item.status} → ${status}` : null, created: new Date().toISOString(), author: 'You' },
+        newNote: { id: crypto.randomUUID(), note: finalNote, status_change: changed ? `${item.status} → ${status}` : null, created: new Date().toISOString(), author: 'You' },
       });
       setNote('');
       setResolution('');
@@ -685,7 +688,7 @@ function BulkBar({
         {showAssign && (
           <div className="absolute bottom-full mb-2 left-0 rounded-xl overflow-hidden shadow-xl w-48 z-10"
             style={{ background: DS.sidebar, border:`1px solid ${DS.border}` }}>
-            {instructors.map((i: any) => (
+            {instructors.map(i => (
               <button key={i.user_id}
                 onClick={() => { onAssign(i.user_id); setShowAssign(false); }}
                 className="w-full text-left px-3 py-2 text-xs font-medium transition-colors cursor-pointer"
@@ -725,7 +728,7 @@ export default function InterventionsClient({
   const [showTrend,   setShowTrend]   = useState(false);
   const [autoFlagging,setAutoFlagging]= useState(false);
 
-  const onUpdate = (id: string, data: any) =>
+  const onUpdate = (id: string, data: { status: string; newNote?: Update }) =>
     setItems(prev => prev.map(i =>
       i.id !== id ? i : { ...i, status: data.status, updates: data.newNote ? [...i.updates, data.newNote] : i.updates }
     ));
@@ -752,7 +755,7 @@ export default function InterventionsClient({
   };
 
   const bulkAssign = async (userId: string) => {
-    const name = instructors.find((i: any) => i.user_id === userId)?.full_name ?? 'instructor';
+    const name = instructors.find(i => i.user_id === userId)?.full_name ?? 'instructor';
     try {
       await Promise.all(Array.from(selectedIds).map(id =>
         fetch(`/api/v1/interventions/${id}`, {

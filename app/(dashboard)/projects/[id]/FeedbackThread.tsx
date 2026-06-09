@@ -40,7 +40,7 @@ export default function FeedbackThread({ projectId, feedback: initial, currentUs
       }]);
       setBody('');
       toast.success('Feedback posted');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(false); }
   };
 

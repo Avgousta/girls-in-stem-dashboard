@@ -64,7 +64,7 @@ export default function ProjectBoard({ projects: initial, stages, isAdmin }: Pro
       if (!res.ok) throw new Error('Failed to update stage');
       setProjects(prev => prev.map(p => p.id === projectId ? { ...p, stage: newStage } : p));
       toast.success(`Moved to ${stages.find(s => s.key === newStage)?.label}`);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(null); }
   };
 

@@ -62,8 +62,8 @@ export default function SponsorCell({ learnerId, currentSponsors: init, allSpons
       setSponsors(prev => [...prev, { sponsor_id: sponsor.sponsor_id, sponsor_name: sponsor.sponsor_name }]);
       setOpen(false);
       toast.success(`Linked to ${sponsor.sponsor_name}`);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(null);
     }
@@ -78,8 +78,8 @@ export default function SponsorCell({ learnerId, currentSponsors: init, allSpons
       if (!res.ok) throw new Error('Failed to remove');
       setSponsors(prev => prev.filter(s => s.sponsor_id !== sponsor.sponsor_id));
       toast.success(`Removed from ${sponsor.sponsor_name}`);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(null);
     }

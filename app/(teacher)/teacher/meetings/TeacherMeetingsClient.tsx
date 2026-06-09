@@ -85,7 +85,7 @@ export default function TeacherMeetingsClient({ meetings: initial, programs, ins
       setForm({ title:'', description:'', meeting_url:'', platform:'zoom', scheduled_at:'', duration_min:60, program_id:'' });
       setShowForm(false);
       toast.success('Meeting scheduled! Learners will be notified.');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(null); }
   };
 
@@ -97,7 +97,7 @@ export default function TeacherMeetingsClient({ meetings: initial, programs, ins
       if (!res.ok) throw new Error('Failed');
       setMeetings(prev => prev.filter(m => m.meeting_id !== meetingId));
       toast.success('Meeting cancelled');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(null); }
   };
 

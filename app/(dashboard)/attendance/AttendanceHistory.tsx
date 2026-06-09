@@ -131,8 +131,8 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
         return updated;
       }));
       setEditing(null);
-    } catch (e: any) {
-      alert(`Save failed: ${e.message}`);
+    } catch (e) {
+      alert(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { setSaving(false); }
   };
 

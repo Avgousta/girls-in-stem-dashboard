@@ -66,8 +66,8 @@ function LogInterventionButton({ risk, currentUserId }: { risk: RiskRow; current
       if (!res.ok) { const j = await res.json(); throw new Error(j.error); }
       setState('done');
       toast.success(`Intervention logged for ${risk.learner_name}`);
-    } catch (e: any) {
-      toast.error(e.message ?? 'Failed to log intervention');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e) ?? 'Failed to log intervention');
       setState('idle');
     }
   };

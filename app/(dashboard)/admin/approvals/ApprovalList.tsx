@@ -31,8 +31,8 @@ export default function ApprovalList({ users: initial, section }: Props) {
       if (!res.ok) throw new Error(json.error || 'Failed to approve');
       toast.success('Teacher approved — they can now sign in');
       setUsers(prev => prev.filter(u => u.user_id !== userId));
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to approve');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e) || 'Failed to approve');
     } finally {
       setLoading(null);
     }

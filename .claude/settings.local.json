@@ -84,7 +84,13 @@
       "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.selectedIds\\\\]/Array.from\\(selectedIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")",
       "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.learnerIds\\\\]/Array.from\\(learnerIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(sponsor\\)/sponsor/programmes/page.tsx\")",
       "Bash(mkdir -p \"C:/Users/User/girls-stem-dashboard/app/api/v1/schools/[id]\")",
-      "Bash(cat)"
+      "Bash(cat)",
+      "Bash(awk -F: '{print $1}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d[k] for k in ['scripts','devDependencies','dependencies'] if k in d}, indent=2\\)\\)\")",
+      "Bash(npm test *)",
+      "Bash(Get-PSDrive C)",
+      "Bash(Select-Object Used, Free)",
+      "Bash(wmic logicaldisk *)"
     ]
   }
 }

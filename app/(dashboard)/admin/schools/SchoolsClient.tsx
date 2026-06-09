@@ -103,8 +103,8 @@ export default function SchoolsClient({ schools: initial }: { schools: SchoolRow
         toast.success('School updated');
       }
       closeModal();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally { setSaving(false); }
   };
 

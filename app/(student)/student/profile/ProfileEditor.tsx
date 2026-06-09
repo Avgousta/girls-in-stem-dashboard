@@ -75,7 +75,7 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
       });
       if (!res.ok) throw new Error('Failed to save');
       toast.success('Profile saved! 🎉');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setSaving(false); }
   };
 

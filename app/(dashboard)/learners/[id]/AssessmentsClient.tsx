@@ -121,8 +121,8 @@ function EditPanel({ assessment, slot, learnerId, programId, onClose, onSaved, o
         onSaved(created.data ?? created);
       }
       onClose();
-    } catch (e: any) {
-      alert(`Save failed: ${e.message}`);
+    } catch (e) {
+      alert(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { setSaving(false); }
   };
 
@@ -134,8 +134,8 @@ function EditPanel({ assessment, slot, learnerId, programId, onClose, onSaved, o
       if (!res.ok) throw new Error((await res.json()).error);
       onDeleted(assessment.assessment_id);
       onClose();
-    } catch (e: any) {
-      alert(`Delete failed: ${e.message}`);
+    } catch (e) {
+      alert(`Delete failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { setDeleting(false); }
   };
 

@@ -79,7 +79,7 @@ export default function BulkLinkClient({ sponsors, learners, existingLinks }: Pr
           return next;
         });
       }
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(null); }
   };
 

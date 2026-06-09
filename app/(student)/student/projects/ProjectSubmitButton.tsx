@@ -25,8 +25,8 @@ export default function ProjectSubmitButton({
       toast.success('Project submitted! Your teacher will be notified.');
       setOpen(false);
       window.location.reload();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }

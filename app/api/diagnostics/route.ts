@@ -36,8 +36,8 @@ export async function GET() {
       } else {
         checks['supabase_connection'] = { ok: true, message: 'Connected to Supabase successfully' };
       }
-    } catch (e: any) {
-      checks['supabase_connection'] = { ok: false, message: `Connection failed: ${e.message}` };
+    } catch (e) {
+      checks['supabase_connection'] = { ok: false, message: `Connection failed: ${e instanceof Error ? e.message : String(e)}` };
     }
   } else {
     checks['supabase_connection'] = { ok: false, message: 'Skipped — fix env vars first' };

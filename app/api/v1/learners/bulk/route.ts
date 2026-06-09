@@ -99,9 +99,9 @@ export async function POST(req: NextRequest) {
       });
 
       results.created++;
-    } catch (e: any) {
+    } catch (e) {
       results.failed++;
-      results.errors.push(`Row ${i + 1}: ${e.message}`);
+      results.errors.push(`Row ${i + 1}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 

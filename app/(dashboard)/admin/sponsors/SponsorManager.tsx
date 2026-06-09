@@ -4,9 +4,10 @@ import { toast } from 'sonner';
 import { Plus, Users, Loader2, Award, X, Key, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
-interface Sponsor { sponsor_id: string; sponsor_name: string; learner_count: number; users: any[] }
+interface SponsorUser { user_id: string; full_name: string; email: string; role: string }
+interface Sponsor { sponsor_id: string; sponsor_name: string; learner_count: number; users: SponsorUser[] }
 interface Learner  { learner_id: string; learner_code: string; full_name: string; school_name: string }
-interface Props    { sponsors: Sponsor[]; allLearners: Learner[]; sponsorUsers: any[] }
+interface Props    { sponsors: Sponsor[]; allLearners: Learner[]; sponsorUsers: SponsorUser[] }
 
 function sponsorColor(name: string) {
   const palettes = [
@@ -66,7 +67,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
       setSponsors(prev => [...prev, { ...json.data, learner_count: 0, users: [] }]);
       setNewName(''); setNewContact(''); setNewEmail(''); setShowNew(false);
       toast.success(`${newName} added`);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'An error occurred'); }
     finally { setLoading(null); }
   };
 
@@ -87,10 +88,10 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
       setLoginDone(loginEmail.trim());
       setSponsors(prev => prev.map(s =>
         s.sponsor_id === loginModal.sponsorId
-          ? { ...s, users: [...s.users, { full_name: loginName, email: loginEmail }] }
+          ? { ...s, users: [...s.users, { user_id: json.data?.user_id ?? '', full_name: loginName, email: loginEmail, role: 'sponsor' }] }
           : s
       ));
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'An error occurred'); }
     finally { setLoading(null); }
   };
 
@@ -117,7 +118,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
         s.sponsor_id === linkModal.sponsorId ? { ...s, learner_count: s.learner_count + 1 } : s
       ));
       toast.success('Learner linked');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'An error occurred'); }
     finally { setLoading(null); }
   };
 
@@ -135,7 +136,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
         s.sponsor_id === linkModal.sponsorId ? { ...s, learner_count: Math.max(0, s.learner_count - 1) } : s
       ));
       toast.success('Learner unlinked');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'An error occurred'); }
     finally { setLoading(null); }
   };
 
@@ -225,7 +226,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
                     </p>
                     {sponsor.users?.length > 0 ? (
                       <div className="space-y-2">
-                        {sponsor.users.map((u: any, i: number) => (
+                        {sponsor.users.map((u, i) => (
                           <div key={u.user_id || i}
                             className="flex items-center gap-2 rounded-xl px-3 py-2"
                             style={{ background: DS.surfaceHover }}>

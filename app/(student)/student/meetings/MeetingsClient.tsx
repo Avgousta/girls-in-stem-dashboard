@@ -68,8 +68,8 @@ function RatingModal({ meeting, onClose, onSave }: {
       if (!res.ok) throw new Error('Failed to save rating');
       onSave(rating, comment);
       toast.success('Rating saved! Thanks for the feedback 🙌');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }

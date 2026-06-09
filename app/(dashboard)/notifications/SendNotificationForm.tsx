@@ -64,8 +64,8 @@ export default function SendNotificationForm({ programs }: { programs: Program[]
       if (!res.ok) throw new Error(json.error);
       toast.success(`Notification sent to ${json.data?.recipients ?? 0} recipient(s)`);
       setTitle(''); setBody(''); setOpen(false);
-    } catch (e: any) {
-      toast.error(e.message ?? 'Failed to send notification');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e) ?? 'Failed to send notification');
     } finally {
       setLoading(false);
     }

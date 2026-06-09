@@ -46,7 +46,7 @@ export default function ProjectActions({ project, stages, isAdmin }: Props) {
       if (!res.ok) throw new Error('Failed to update');
       toast.success('Project updated');
       router.refresh();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoad(false); }
   };
 
@@ -65,7 +65,7 @@ export default function ProjectActions({ project, stages, isAdmin }: Props) {
       if (!res.ok) throw new Error('Failed');
       toast.success(`Moved to ${nextStage.label}`);
       router.refresh();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setLoad(false); }
   };
 

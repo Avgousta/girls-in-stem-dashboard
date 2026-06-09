@@ -130,7 +130,7 @@ export default function BulkImportClient({ schools, programs }: Props) {
       setResult(json.data);
       if (json.data.created > 0) { toast.success(`✓ ${json.data.created} learners imported successfully`); setRows([]); setPasteText(''); }
       if (json.data.failed  > 0) toast.error(`${json.data.failed} rows failed — see details below`);
-    } catch (e: any) { toast.error(e.message || 'Import failed'); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : String(e) || 'Import failed'); }
     finally { setImporting(false); }
   }
 
