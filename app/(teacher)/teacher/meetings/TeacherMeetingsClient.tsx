@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Loader2, Plus, Video, ExternalLink, Trash2, Clock, Calendar, X, Link2 } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
-interface Meeting {
+export interface Meeting {
   meeting_id: string; title: string; description: string | null;
   meeting_url: string; platform: string; scheduled_at: string;
   duration_min: number; is_cancelled: boolean; created_at: string;

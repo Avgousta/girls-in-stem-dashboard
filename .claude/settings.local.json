@@ -112,7 +112,11 @@
       "Bash(sed -i 's/\\(learnersRes.data || \\\\[\\\\]\\).map\\(\\(l: any\\) =>/\\(learnersRes.data || []\\).map\\(\\(l\\)=>/' \"app/\\(dashboard\\)/admin/sponsors/bulk-link/page.tsx\")",
       "Bash(sed -i 's/\\(existingLinksRes.data || \\\\[\\\\]\\).forEach\\(\\(lnk: any\\) =>/\\(existingLinksRes.data || []\\).forEach\\(\\(lnk\\) =>/' \"app/\\(dashboard\\)/admin/sponsors/bulk-link/page.tsx\")",
       "Bash(sed -i 's/.map\\(\\(s: any\\) => \\({ school_id: s.school_id, school_name: s.school_name }\\)\\)/.map\\(\\(s: { school_id: string; school_name: string }\\) => \\({ school_id: s.school_id, school_name: s.school_name }\\)\\)/' \"app/\\(auth\\)/register/page.tsx\")",
-      "Bash(sed -i 's/\\(users || \\\\[\\\\]\\).map\\(\\(u: any\\) => \\({/\\(users || []\\).map\\(\\(u: { user_id: string; email: string; full_name: string; role: string; is_active: boolean; created_at: string; last_login: string | null; schools: { school_name: string } | null }\\) => \\({/' \"app/\\(dashboard\\)/admin/users/page.tsx\")"
+      "Bash(sed -i 's/\\(users || \\\\[\\\\]\\).map\\(\\(u: any\\) => \\({/\\(users || []\\).map\\(\\(u: { user_id: string; email: string; full_name: string; role: string; is_active: boolean; created_at: string; last_login: string | null; schools: { school_name: string } | null }\\) => \\({/' \"app/\\(dashboard\\)/admin/users/page.tsx\")",
+      "Bash(sed -i 's/const p = \\(data as any\\).learner_profiles/const p = \\(data as unknown as { learner_profiles: Record<string, unknown> }\\).learner_profiles/' \"app/api/v1/auth/lookup-learner/route.ts\")",
+      "Bash(sed -i 's/supabase: null as any/supabase: null as unknown as ReturnType<typeof import\\('\\\\''@\\\\/lib\\\\/supabase\\\\/server'\\\\''\\)['\\\\''createClient'\\\\'']> extends Promise<infer T> ? T : never/' \"app/api/helpers.ts\")",
+      "Bash(sed -i 's/\\(learnersRes.data || \\\\[\\\\]\\).map\\(\\(l: any\\) =>/\\(learnersRes.data || []\\).map\\(\\(l\\)=>/' \"app/\\(dashboard\\)/projects/new/page.tsx\")",
+      "Bash(sed -i \"s/style={{ '--tw-divide-color': DS.borderLight } as any}/style={{ '--tw-divide-color': DS.borderLight } as React.CSSProperties}/\" \"app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")"
     ]
   }
 }

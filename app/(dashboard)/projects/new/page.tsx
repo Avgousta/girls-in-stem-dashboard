@@ -22,7 +22,8 @@ export default async function NewProjectPage() {
       .order('program_name'),
   ]);
 
-  const learners = (learnersRes.data || []).map((l: any) => ({
+  interface LRow { learner_id: string; learner_code: string; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null }
+  const learners = ((learnersRes.data || []) as unknown as LRow[]).map(l => ({
     learner_id:   l.learner_id,
     learner_code: l.learner_code,
     full_name:    `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),

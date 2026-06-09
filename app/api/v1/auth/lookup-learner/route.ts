@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   if (!data) return NextResponse.json({ found: false });
 
-  const p = (data as any).learner_profiles;
+  const p = (data as unknown as { learner_profiles: Record<string, unknown> }).learner_profiles;
   return NextResponse.json({
     found:              true,
     full_name:          p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : '',

@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import TeacherMeetingsClient from './TeacherMeetingsClient';
+import TeacherMeetingsClient, { type Meeting as TeacherMeeting } from './TeacherMeetingsClient';
 import { Video } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
@@ -38,10 +38,10 @@ export default async function TeacherMeetingsPage() {
         </p>
       </div>
       <TeacherMeetingsClient
-        meetings={((meetingsRes.data || []) as any[]).map((m: any) => ({
+        meetings={((meetingsRes.data || []) as unknown as Array<Record<string, unknown>>).map(m => ({
           ...m,
           programs: Array.isArray(m.programs) ? m.programs[0] ?? null : m.programs ?? null,
-        }))}
+        })) as unknown as TeacherMeeting[]}
         programs={programsRes.data || []}
         instructorId={user.user_id}
       />

@@ -39,7 +39,7 @@ export async function requireApiAuth(roles?: UserRole[]) {
 
   } catch (e) {
     console.error('requireApiAuth error:', e);
-    return { user: null, profile: null, supabase: null as any, denied: err('Server error', 500) };
+    return { user: null, profile: null, supabase: null as unknown as ReturnType<typeof import('@/lib/supabase/server')['createClient']> extends Promise<infer T> ? T : never, denied: err('Server error', 500) };
   }
 }
 

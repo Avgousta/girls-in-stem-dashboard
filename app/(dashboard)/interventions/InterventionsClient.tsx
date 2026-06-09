@@ -98,7 +98,7 @@ function TrendChart({ items }: { items: Interv[] }) {
 }
 
 // ─── Workload Panel ───────────────────────────────────────────────────────────
-function WorkloadPanel({ items, instructors, onFilter }: { items:Interv[]; instructors:any[]; onFilter:(id:string)=>void }) {
+function WorkloadPanel({ items, instructors, onFilter }: { items:Interv[]; instructors:InstructorOption[]; onFilter:(id:string)=>void }) {
   const workload = useMemo(() => {
     const map: Record<string, { name: string; open: number; critical: number }> = {};
     items.filter(i => i.status !== 'resolved' && i.assigned_id).forEach(i => {
@@ -573,7 +573,7 @@ function IntervCard({
           {/* Detail panel */}
           {(item.status !== 'resolved' || activeTab === 'detail') && (
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
-              style={{ '--tw-divide-color': DS.borderLight } as any}>
+              style={{ '--tw-divide-color': DS.borderLight } as React.CSSProperties}>
               {/* Left */}
               <div className="p-5 space-y-4">
                 {[
