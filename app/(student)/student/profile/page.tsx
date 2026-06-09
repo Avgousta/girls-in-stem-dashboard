@@ -7,13 +7,15 @@ export default async function StudentProfilePage() {
   const user     = await requireAuth(['learner']);
   const supabase = await createClient();
 
-  const { data: learner } = await supabase
+  const { data: rawLearner } = await supabase
     .from('learners')
     .select('learner_id, learner_code, grade, learner_profiles(*), schools(school_name)')
     .eq('user_id', user.user_id)
     .single();
 
-  const profile = (learner as any)?.learner_profiles || {};
+  interface ProfileLearner { learner_id: string; learner_code: string; grade: number; learner_profiles: Record<string, unknown>; schools: { school_name: string } | null }
+  const learner = rawLearner as unknown as ProfileLearner | null;
+  const profile = learner?.learner_profiles || {};
 
   return (
     <div className="space-y-5 pt-2 pb-4">
@@ -27,10 +29,10 @@ export default async function StudentProfilePage() {
       </div>
       <ThemePicker />
       <ProfileEditor
-        learnerId={(learner as any)?.learner_id}
-        learnerCode={(learner as any)?.learner_code}
-        grade={(learner as any)?.grade}
-        schoolName={(learner as any)?.schools?.school_name}
+        learnerId={learner?.learner_id ?? ''}
+        learnerCode={learner?.learner_code ?? ''}
+        grade={learner?.grade ?? 0}
+        schoolName={learner?.schools?.school_name ?? ''}
         profile={profile}
       />
     </div>

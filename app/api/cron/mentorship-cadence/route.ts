@@ -40,17 +40,22 @@ export async function GET(req: NextRequest) {
   const { data: admins } = await supabase
     .from('users').select('user_id').eq('role', 'admin');
 
-  const adminIds: string[] = (admins ?? []).map((a: any) => a.user_id);
+  const adminIds: string[] = (admins ?? []).map(a => a.user_id);
+
+  interface CadenceSession { session_id: string; session_date: string; mentor_id: string; mentor: { user_id: string; full_name: string } | null }
+  interface CadenceRow { risk_level: string; learners: { learner_id: string; learner_profiles: { first_name: string; last_name: string } | null; mentorship_sessions: CadenceSession[] } | null }
+  const rows = (riskRows ?? []) as unknown as CadenceRow[];
 
   let notified = 0;
   const stale: string[] = [];
 
-  for (const row of riskRows ?? []) {
-    const learner  = (row as any).learners;
-    const sessions = (learner.mentorship_sessions ?? []) as any[];
+  for (const row of rows) {
+    const learner  = row.learners;
+    if (!learner) continue;
+    const sessions = learner.mentorship_sessions ?? [];
 
-    const lastSession = sessions
-      .sort((a: any, b: any) => b.session_date.localeCompare(a.session_date))[0] ?? null;
+    const lastSession = [...sessions]
+      .sort((a, b) => b.session_date.localeCompare(a.session_date))[0] ?? null;
 
     const isStale = !lastSession || lastSession.session_date < cutoff;
     if (!isStale) continue;

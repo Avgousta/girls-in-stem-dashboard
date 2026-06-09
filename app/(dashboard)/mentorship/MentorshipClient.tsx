@@ -39,19 +39,23 @@ interface MentorStat {
   id:string; name:string; sessions:number; learners:number;
   positiveRate:number; avgMood:number|null; topType:string|null;
 }
+interface MentorshipStats { total:number; thisMonth:number; posOut:number; needsFollowUp:number; activeGoals:number; doneGoals:number; overdueGoals:number; avgMood:number|null }
+interface LearnerOption { learner_id:string; full_name:string; interests:string[]; aspiration:string|null; school:string; risk:string; prog_types:string[] }
+interface MentorOption  { user_id:string; full_name:string; role:string }
 interface Props {
   sessions:Session[]; goals:Goal[]; atRisk:AtRisk[]; mentorStats:MentorStat[];
-  stats:any; learners:any[]; mentors:any[]; currentUserId:string;
+  stats:MentorshipStats; learners:LearnerOption[]; mentors:MentorOption[]; currentUserId:string;
 }
 
 // ─── Chart tooltip ────────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }: any) {
+interface TooltipPayload { name: string; value: number; color?: string; fill?: string }
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipPayload[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl px-3 py-2 text-xs shadow-xl"
       style={{ background: DS.bg, border: `1px solid ${DS.border}` }}>
       <p className="font-bold mb-1" style={{ color: DS.textMid }}>{label}</p>
-      {payload.map((p: any) => p.value != null && (
+      {payload.map(p => p.value != null && (
         <p key={p.name} style={{ color: p.color }}>
           {p.name}: <strong>{p.name === 'Mood' ? `${p.value}/5` : p.value}</strong>
         </p>
@@ -333,7 +337,7 @@ function GoalCard({ goal, onComplete }: { goal: Goal; onComplete: (id: string) =
 function AddGoalPanel({
   learners, mentors, currentUserId, onAdded, onClose,
 }: {
-  learners: any[]; mentors: any[]; currentUserId: string;
+  learners: LearnerOption[]; mentors: MentorOption[]; currentUserId: string;
   onAdded: (goal: Goal) => void; onClose: () => void;
 }) {
   const [form, setForm] = useState({
@@ -404,7 +408,7 @@ function AddGoalPanel({
           </label>
           <select value={form.learner_id} onChange={e => set('learner_id', e.target.value)} style={inputStyle}>
             <option value="">Select learner…</option>
-            {learners.map((l: any) => (
+            {learners.map(l => (
               <option key={l.learner_id} value={l.learner_id}>{l.full_name} — {l.school}</option>
             ))}
           </select>
@@ -444,7 +448,7 @@ function AddGoalPanel({
             Assigned Mentor
           </label>
           <select value={form.mentor_id} onChange={e => set('mentor_id', e.target.value)} style={inputStyle}>
-            {mentors.map((m: any) => (
+            {mentors.map(m => (
               <option key={m.user_id} value={m.user_id}>{m.full_name}</option>
             ))}
           </select>
@@ -655,7 +659,7 @@ export default function MentorshipClient({
               </div>
               <select value={mentorF} onChange={e => setMentorF(e.target.value)} style={selectStyle}>
                 <option value="">All mentors</option>
-                {mentors.map((m: any) => (
+                {mentors.map(m => (
                   <option key={m.user_id} value={m.user_id}>{m.full_name}</option>
                 ))}
               </select>

@@ -35,9 +35,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     .single();
 
   if (fetchErr || !intervention) return err('Intervention not found', 404);
-  if ((intervention as any).status === 'resolved') return err('Cannot escalate a resolved intervention');
+  interface InterventionRow { intervention_id: string; priority: string; status: string; learners: { learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null } | null; assigned_user: { user_id: string; full_name: string; email: string } | null; flagged_user: { user_id: string; full_name: string; email: string } | null }
+  const intv = intervention as unknown as InterventionRow;
+  if (intv.status === 'resolved') return err('Cannot escalate a resolved intervention');
 
-  const currentPriority = (intervention as any).priority as Priority;
+  const currentPriority = intv.priority as Priority;
   const currentIdx      = PRIORITY_ORDER.indexOf(currentPriority);
   if (currentIdx >= PRIORITY_ORDER.length - 1) return err('Already at maximum priority (critical)');
 
@@ -64,8 +66,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (updateResult.error) return err(updateResult.error.message, 500);
 
   // Fire notifications (non-blocking)
-  const assignee   = (intervention as any).assigned_user;
-  const learner    = (intervention as any).learners;
+  const assignee   = intv.assigned_user;
+  const learner    = intv.learners;
   const learnerName = `${learner?.learner_profiles?.first_name ?? ''} ${learner?.learner_profiles?.last_name ?? ''}`.trim();
   const school      = learner?.schools?.school_name ?? '';
 

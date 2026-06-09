@@ -37,20 +37,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 
-  const high   = (riskRows ?? []).filter((r: any) => r.risk_level === 'high').length;
-  const medium = (riskRows ?? []).filter((r: any) => r.risk_level === 'medium').length;
+  interface RiskRow { risk_level: string; learners: { schools: { school_name: string } | null } | null }
+  const rows = (riskRows ?? []) as unknown as RiskRow[];
+  const high   = rows.filter(r => r.risk_level === 'high').length;
+  const medium = rows.filter(r => r.risk_level === 'medium').length;
 
   // School breakdown
   const schoolMap: Record<string, { school: string; high: number; medium: number }> = {};
-  for (const r of riskRows ?? []) {
-    const name = (r as any).learners?.schools?.school_name ?? 'Unknown';
+  for (const r of rows) {
+    const name = r.learners?.schools?.school_name ?? 'Unknown';
     if (!schoolMap[name]) schoolMap[name] = { school: name, high: 0, medium: 0 };
-    schoolMap[name][(r as any).risk_level as 'high' | 'medium']++;
+    schoolMap[name][r.risk_level as 'high' | 'medium']++;
   }
 
   await emailRiskDigest({
-    adminEmails:  admins.map((a: any) => a.email),
-    adminUserIds: admins.map((a: any) => a.user_id),
+    adminEmails:  (admins).map(a => a.email),
+    adminUserIds: (admins).map(a => a.user_id),
     high,
     medium,
     bySchool: Object.values(schoolMap),

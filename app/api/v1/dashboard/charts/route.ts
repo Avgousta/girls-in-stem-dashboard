@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
-import type { AttendanceTrend, ScoreDistribution, SchoolComparison } from '@/types';
+import type { AttendanceTrend, ScoreDistribution, SchoolComparison, GradeBand } from '@/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export async function GET() {
   const { supabase, denied } = await requireApiAuth(['admin', 'instructor']);
@@ -16,7 +17,7 @@ export async function GET() {
   return ok({ attTrend, scoreDist, schoolComp });
 }
 
-async function getAttendanceTrend(supabase: any): Promise<AttendanceTrend[]> {
+async function getAttendanceTrend(supabase: SupabaseClient): Promise<AttendanceTrend[]> {
   const { data } = await supabase
     .from('attendance')
     .select('session_date, status')
@@ -47,7 +48,7 @@ async function getAttendanceTrend(supabase: any): Promise<AttendanceTrend[]> {
     }));
 }
 
-async function getScoreDistribution(supabase: any): Promise<ScoreDistribution[]> {
+async function getScoreDistribution(supabase: SupabaseClient): Promise<ScoreDistribution[]> {
   const { data } = await supabase
     .from('assessments')
     .select('grade_band');
@@ -63,13 +64,13 @@ async function getScoreDistribution(supabase: any): Promise<ScoreDistribution[]>
 
   const total = data.length;
   return Object.entries(counts).map(([grade_band, count]) => ({
-    grade_band: grade_band as any,
+    grade_band: grade_band as GradeBand,
     count,
     percentage: total ? Math.round((count / total) * 100) : 0,
   }));
 }
 
-async function getSchoolComparison(supabase: any): Promise<SchoolComparison[]> {
+async function getSchoolComparison(supabase: SupabaseClient): Promise<SchoolComparison[]> {
   const { data: schools } = await supabase
     .from('schools')
     .select('school_id, school_name')
@@ -90,8 +91,8 @@ async function getSchoolComparison(supabase: any): Promise<SchoolComparison[]> {
     results.push({
       school_name:    school.school_name,
       learner_count:  learnerCount || 0,
-      avg_attendance: att.length ? Math.round(att.filter((a: any) => a.status === 'present').length / att.length * 100) : 0,
-      avg_score:      scores.length ? Math.round(scores.reduce((s: number, a: any) => s + Number(a.percentage), 0) / scores.length) : 0,
+      avg_attendance: att.length ? Math.round(att.filter((a: { status: string }) => a.status === 'present').length / att.length * 100) : 0,
+      avg_score:      scores.length ? Math.round(scores.reduce((s: number, a: { percentage: number | null }) => s + Number(a.percentage), 0) / scores.length) : 0,
     });
   }
 
