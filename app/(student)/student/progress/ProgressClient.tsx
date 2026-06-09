@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { useTheme } from '../../StudentThemeProvider';
 
-interface Assessment { assessment_id:string; subject:string; assessment_type:string; difficulty:string; skill_tags:string[]|null; score:number; max_score:number; percentage:number; grade_band:string|null; assessment_date:string; term:number|null; notes:string|null; feedback_strengths:string|null; feedback_improvements:string|null; feedback_actions:string|null; programs:any }
-interface Props { assessments:Assessment[]; attendance:any[] }
+interface Assessment { assessment_id:string; subject:string; assessment_type:string; difficulty:string|null; skill_tags:string[]|null; score:number|null; max_score:number|null; percentage:number|null; grade_band:string|null; assessment_date:string|null; term:number|null; notes:string|null; feedback_strengths:string|null; feedback_improvements:string|null; feedback_actions:string|null; programs:{ program_name:string }|null }
+interface AttendanceRow { status: string; session_date: string; programs: { program_name: string } | null }
+interface Props { assessments:Assessment[]; attendance:AttendanceRow[] }
 
 function scoreColor(v: number) { return v>=80?'#2DD4A0':v>=70?'#60A5FA':v>=50?'#FCD34D':'#F87171'; }
 
@@ -59,7 +60,7 @@ export default function ProgressClient({ assessments, attendance }: Props) {
   assessments.forEach(a => { if (a.grade_band && bands[a.grade_band]!==undefined) bands[a.grade_band]++; });
 
   // Trend sparkline
-  const trendData = [...assessments].sort((a,b)=>a.assessment_date.localeCompare(b.assessment_date)).slice(-12).map(a=>Number(a.percentage||0));
+  const trendData = [...assessments].sort((a,b)=>(a.assessment_date??'').localeCompare(b.assessment_date??'')).slice(-12).map(a=>Number(a.percentage||0));
 
   // Skill breakdown
   const skillMap: Record<string,number[]> = {};
@@ -245,7 +246,7 @@ export default function ProgressClient({ assessments, attendance }: Props) {
                       <div>
                         <p className="text-sm font-bold" style={{ color:theme.textPrimary }}>{a.subject}</p>
                         <p className="text-xs mt-0.5" style={{ color:theme.textMuted }}>
-                          {new Date(a.assessment_date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'})}
+                          {a.assessment_date ? new Date(a.assessment_date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—'}
                           {a.grade_band && ` · ${a.grade_band}`}
                           {hasFeedback && ` · 💬 Feedback`}
                         </p>

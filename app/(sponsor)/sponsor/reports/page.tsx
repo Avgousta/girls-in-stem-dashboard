@@ -9,7 +9,7 @@ export default async function SponsorReportsPage() {
 
   const { data: links } = await supabase
     .from('sponsor_learners').select('learner_id').eq('sponsor_id', user.sponsor_id);
-  const ids = (links || []).map((l: any) => l.learner_id);
+  const ids = (links || []).map(l => l.learner_id);
 
   const { data: sponsor } = await supabase
     .from('sponsors').select('sponsor_name').eq('sponsor_id', user.sponsor_id).single();
@@ -35,13 +35,15 @@ export default async function SponsorReportsPage() {
       .in('learner_id', ids),
   ]);
 
+  // Supabase's SDK infers joins as arrays; cast through unknown to our typed props
+  type ClientProps = Parameters<typeof SponsorReportsClient>[0];
   return (
     <SponsorReportsClient
-      sponsorName={(sponsor as any)?.sponsor_name || 'Sponsor'}
-      assessments={assRes.data || []}
-      attendance={attRes.data || []}
-      projects={projRes.data || []}
-      learners={learnersRes.data || []}
+      sponsorName={(sponsor as unknown as { sponsor_name: string } | null)?.sponsor_name || 'Sponsor'}
+      assessments={(assRes.data || []) as unknown as ClientProps['assessments']}
+      attendance={(attRes.data || []) as unknown as ClientProps['attendance']}
+      projects={(projRes.data || []) as unknown as ClientProps['projects']}
+      learners={(learnersRes.data || []) as unknown as ClientProps['learners']}
     />
   );
 }

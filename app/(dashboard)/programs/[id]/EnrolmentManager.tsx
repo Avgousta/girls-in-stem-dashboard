@@ -18,6 +18,8 @@ interface Enrolment {
   };
 }
 
+interface SearchLearner { learner_id: string; learner_code: string; grade: number; full_name: string; school_name: string }
+
 interface Props {
   programId: string;
   enrolments: Enrolment[];
@@ -30,7 +32,7 @@ export default function EnrolmentManager({ programId, enrolments: initial }: Pro
   // Add learner
   const [showAdd,    setShowAdd]    = useState(false);
   const [search,     setSearch]     = useState('');
-  const [results,    setResults]    = useState<any[]>([]);
+  const [results,    setResults]    = useState<SearchLearner[]>([]);
   const [searching,  setSearching]  = useState(false);
   const [enrolling,  setEnrolling]  = useState<string | null>(null);
 
@@ -49,8 +51,8 @@ export default function EnrolmentManager({ programId, enrolments: initial }: Pro
       if (!res.ok) throw new Error((await res.json()).error);
       setEnrolments(prev => prev.filter(x => x.enrollment_id !== e.enrollment_id));
       toast.success('Learner removed from programme');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally { setRemoving(null); }
   };
 
@@ -67,7 +69,7 @@ export default function EnrolmentManager({ programId, enrolments: initial }: Pro
   };
 
   // ── Enrol learner ─────────────────────────────────────────────────────────
-  const handleEnrol = async (learner: any) => {
+  const handleEnrol = async (learner: SearchLearner) => {
     setEnrolling(learner.learner_id);
     try {
       const res = await fetch('/api/v1/enrollments', {
@@ -79,8 +81,8 @@ export default function EnrolmentManager({ programId, enrolments: initial }: Pro
       toast.success(`${learner.full_name} enrolled`);
       setSearch(''); setResults([]); setShowAdd(false);
       router.refresh(); // reload server component data
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally { setEnrolling(null); }
   };
 
@@ -137,7 +139,7 @@ export default function EnrolmentManager({ programId, enrolments: initial }: Pro
           {results.length > 0 && (
             <div className="rounded-xl overflow-hidden"
               style={{ border: `1px solid ${DS.border}` }}>
-              {results.map((l: any) => {
+              {results.map(l => {
                 const alreadyIn = enrolled.has(l.learner_id);
                 return (
                   <div key={l.learner_id}

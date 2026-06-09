@@ -90,7 +90,8 @@
       "Bash(npm test *)",
       "Bash(Get-PSDrive C)",
       "Bash(Select-Object Used, Free)",
-      "Bash(wmic logicaldisk *)"
+      "Bash(wmic logicaldisk *)",
+      "Bash(cd \"C:\\\\Users\\\\User\\\\girls-stem-dashboard\" && sed -i 's/catch \\(err: any\\)/catch \\(err\\)/g' \"app/\\(dashboard\\)/programs/[id]/EnrolmentManager.tsx\" && echo \"Done\")"
     ]
   }
 }

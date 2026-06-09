@@ -37,15 +37,16 @@ export async function POST(req: NextRequest, { params }: Params) {
       .eq('project_id', id)
       .single();
 
-    const learnerUserId = (proj as any)?.learners?.user_id;
+    const typedProj = proj as unknown as { project_name: string; learner_id: string; learners: { user_id: string } | null } | null;
+    const learnerUserId = typedProj?.learners?.user_id;
     if (learnerUserId) {
       try {
         await supabase.from('notifications').insert({
           user_id:    learnerUserId,
-          learner_id: (proj as any)?.learner_id,
+          learner_id: typedProj?.learner_id,
           type:       'project_feedback',
           title:      `New feedback on your project`,
-          body:       `Your instructor left feedback on "${(proj as any)?.project_name}".`,
+          body:       `Your instructor left feedback on "${typedProj?.project_name}".`,
         });
       } catch (_) {}
     }

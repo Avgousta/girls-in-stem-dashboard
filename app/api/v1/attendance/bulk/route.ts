@@ -57,15 +57,17 @@ export async function POST(req: NextRequest) {
     const { data: prog } = await supabase
       .from('programs').select('program_name').eq('program_id', program_id).single();
 
-    for (const l of (learners || [])) {
-      const name = `${(l as any).learner_profiles?.first_name} ${(l as any).learner_profiles?.last_name}`;
+    interface AbsLearner { learner_id: string; parent_id: string | null; learner_profiles: { first_name: string; last_name: string } | null }
+    const typedProg = prog as unknown as { program_name: string } | null;
+    for (const l of ((learners || []) as unknown as AbsLearner[])) {
+      const name = `${l.learner_profiles?.first_name} ${l.learner_profiles?.last_name}`;
       try {
         await supabase.from('notifications').insert({
-          user_id:    (l as any).parent_id,
+          user_id:    l.parent_id,
           learner_id: l.learner_id,
           type:       'absence',
           title:      `${name} was marked absent`,
-          body:       `${name} was absent from ${(prog as any)?.program_name || 'a session'} on ${session_date}.`,
+          body:       `${name} was absent from ${typedProg?.program_name || 'a session'} on ${session_date}.`,
         });
       } catch (_) {}
     }

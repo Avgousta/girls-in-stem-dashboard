@@ -20,9 +20,14 @@ export default async function StudentProgressPage() {
     .eq('user_id', user.user_id)
     .single();
 
-  const assessments = ((learner as any)?.assessments || [])
-    .sort((a: any, b: any) => (a.assessment_date||'').localeCompare(b.assessment_date||''));
-  const attendance  = (learner as any)?.attendance || [];
+  interface ProgressLearner {
+    assessments: Array<{ assessment_id: string; subject: string; assessment_type: string; difficulty: string | null; skill_tags: string[] | null; score: number | null; max_score: number | null; percentage: number | null; grade_band: string | null; assessment_date: string | null; term: number | null; notes: string | null; feedback_strengths: string | null; feedback_improvements: string | null; feedback_actions: string | null; programs: { program_name: string } | null }>;
+    attendance: Array<{ status: string; session_date: string; programs: { program_name: string } | null }>;
+  }
+  const typed      = learner as unknown as ProgressLearner | null;
+  const assessments = [...(typed?.assessments || [])]
+    .sort((a, b) => (a.assessment_date||'').localeCompare(b.assessment_date||''));
+  const attendance  = typed?.attendance || [];
 
   return <ProgressClient assessments={assessments} attendance={attendance} />;
 }

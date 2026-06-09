@@ -39,17 +39,20 @@ export async function POST(_req: NextRequest) {
 
   if (riskErr) return err(riskErr.message, 500);
 
-  const toFlag = (riskRows ?? []).filter((r: any) => {
+  interface AutoFlagRow { learner_id: string; risk_level: string; attendance_rate: number; avg_score: number; risk_flags: string[] | null; learners: { learner_id: string; interventions: Array<{ intervention_id: string; status: string }> } | null }
+  const rows = (riskRows ?? []) as unknown as AutoFlagRow[];
+
+  const toFlag = rows.filter(r => {
     const openCount = (r.learners?.interventions ?? [])
-      .filter((i: any) => i.status !== 'resolved').length;
+      .filter(i => i.status !== 'resolved').length;
     return openCount === 0;
   });
 
   if (toFlag.length === 0) {
-    return ok({ created: 0, skipped: (riskRows ?? []).length, message: 'All at-risk learners already have open interventions.' });
+    return ok({ created: 0, skipped: rows.length, message: 'All at-risk learners already have open interventions.' });
   }
 
-  const inserts = toFlag.map((r: any) => {
+  const inserts = toFlag.map(r => {
     const flags   = r.risk_flags ?? [];
     const att     = Math.round(r.attendance_rate ?? 0);
     const score   = Math.round(r.avg_score ?? 0);

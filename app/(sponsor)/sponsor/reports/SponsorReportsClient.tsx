@@ -2,12 +2,17 @@
 import { DS } from '@/components/platform/tokens';
 import { useState } from 'react';
 
+interface AssRow  { assessment_id?: string; assessment_date: string | null; subject: string; percentage: number | null; grade_band: string | null; programs: { program_name: string } | null }
+interface AttRow2 { status: string; session_date: string }
+interface ProjRow { project_id?: string; project_name: string; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date?: string | null; programs: { program_name: string } | null }
+interface LrnRow  { learner_id: string; learner_code: string; grade?: number; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null }
+
 interface Props {
   sponsorName: string;
-  assessments: any[];
-  attendance:  any[];
-  projects:    any[];
-  learners:    any[];
+  assessments: AssRow[];
+  attendance:  AttRow2[];
+  projects:    ProjRow[];
+  learners:    LrnRow[];
 }
 
 function downloadCSV(rows: string[][], filename: string) {
@@ -49,17 +54,17 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
        l.learner_code,
        `${l.learner_profiles?.first_name||''} ${l.learner_profiles?.last_name||''}`,
        l.schools?.school_name||'',
-       l.grade,
+       String(l.grade ?? ''),
        l.risk_scores?.risk_level||'',
-       l.risk_scores?.attendance_rate||0,
-       l.risk_scores?.avg_score||0,
+       String(l.risk_scores?.attendance_rate||0),
+       String(l.risk_scores?.avg_score||0),
      ])],
     `${sponsorName}_learners.csv`
   );
 
   const exportAssessments = () => downloadCSV(
     [['Date','Subject','Score %','Grade Band','Programme'],
-     ...assessments.map(a=>[a.assessment_date||'',a.subject||'',a.percentage||'',a.grade_band||'',(a.programs as any)?.program_name||''])],
+     ...assessments.map(a=>[a.assessment_date||'',a.subject||'',String(a.percentage||0),a.grade_band||'',a.programs?.program_name||''])],
     `${sponsorName}_assessments.csv`
   );
 
@@ -238,7 +243,7 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{(a.programs as any)?.program_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{a.programs?.program_name || '—'}</td>
                   </tr>
                 );
               })}
@@ -337,7 +342,7 @@ export default function SponsorReportsClient({ sponsorName, assessments, attenda
                       style={{ color: pct !== null ? scoreColor(pct) : '#94A3B8' }}>
                       {pct !== null ? `${pct}%` : '—'}
                     </td>
-                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{(p.programs as any)?.program_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: DS.textMuted }}>{p.programs?.program_name || '—'}</td>
                   </tr>
                 );
               })}
