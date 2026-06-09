@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DS } from '@/components/platform/tokens';
 import { Trash2, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface Props {
   learnerId: string;
@@ -15,6 +16,7 @@ export default function DeleteLearnerButton({ learnerId, learnerName, learnerCod
   const [open,    setOpen]    = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirm, setConfirm] = useState('');
+  useEscapeKey(() => { setOpen(false); setConfirm(''); }, open);
 
   const handleDelete = async (permanent: boolean) => {
     setLoading(true);

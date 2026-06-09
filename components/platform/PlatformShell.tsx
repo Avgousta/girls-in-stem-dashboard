@@ -167,6 +167,9 @@ export default function PlatformShell({
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: DS.bg, fontFamily: "'Plus Jakarta Sans','DM Sans',sans-serif" }}>
 
+      {/* Skip to main content — visible on keyboard focus */}
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 md:hidden"
@@ -258,7 +261,8 @@ export default function PlatformShell({
         )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto px-6 py-6">
+        <main id="main-content" className="flex-1 overflow-y-auto px-6 py-6"
+          tabIndex={-1} aria-label="Main content">
           {children}
         </main>
       </div>

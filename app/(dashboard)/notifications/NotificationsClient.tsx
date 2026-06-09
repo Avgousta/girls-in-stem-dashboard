@@ -240,7 +240,7 @@ export default function NotificationsClient({ notifications: initial }: { notifi
                   {/* Delete */}
                   <button
                     onClick={e => deleteOne(n.notification_id, e)}
-                    title="Delete notification"
+                    title="Delete notification" aria-label="Delete notification"
                     className="p-1.5 rounded-lg cursor-pointer transition-colors"
                     style={{ background: 'var(--ds-danger-light)', color: 'var(--ds-danger)' }}>
                     <Trash2 className="w-3.5 h-3.5" />

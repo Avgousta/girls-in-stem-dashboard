@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { FileText, Users, CalendarCheck2, BarChart3, FolderKanban, TrendingUp, Award } from 'lucide-react';
 import ReportsClient from './ReportsClient';
 import { KPICard } from '@/components/interventions/InterventionBadges';
+import Link from 'next/link';
+import { DS } from '@/components/platform/tokens';
 
 async function getReportData() {
   const supabase = await createClient();
@@ -140,6 +142,18 @@ export default async function ReportsPage() {
           Platform-wide data overview — exportable
         </p>
       </div>
+
+      {/* Quick link to bulk report export */}
+      <Link href="/reports/bulk"
+        className="flex items-center gap-3 rounded-2xl p-4 transition-colors"
+        style={{ background: DS.primaryLight, border: `1px solid ${DS.primaryBorder}` }}>
+        <FileText className="w-5 h-5 shrink-0" style={{ color: DS.primary }} />
+        <div className="flex-1">
+          <p className="text-sm font-semibold" style={{ color: DS.text }}>Bulk Learner Report Export</p>
+          <p className="text-xs" style={{ color: DS.textMuted }}>Select learners and open printable report cards in new tabs</p>
+        </div>
+        <span className="text-xs font-semibold" style={{ color: DS.primary }}>Open →</span>
+      </Link>
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">

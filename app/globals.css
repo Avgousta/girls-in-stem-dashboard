@@ -256,6 +256,51 @@
 
   /* Badge */
   .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+
+  /* ── Accessibility: visible focus rings for keyboard navigation ─────────── */
+  /* Remove outline suppression — provide a visible custom ring instead */
+  :focus-visible {
+    outline: 2px solid rgba(124,58,237,0.8) !important;
+    outline-offset: 2px !important;
+    border-radius: 6px;
+  }
+  /* Inputs keep their own ring */
+  .form-input:focus-visible,
+  .form-select:focus-visible {
+    outline: none !important;
+  }
+
+  /* Skip to main content link — hidden until focused */
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    z-index: 9999;
+    padding: 8px 16px;
+    background: var(--ds-primary, #7C3AED);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: top 0.15s;
+  }
+  .skip-link:focus {
+    top: 8px;
+  }
+
+  /* Screen-reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }
 
 /* ── Landing page hover utilities (unchanged) ──────────────────────────────── */

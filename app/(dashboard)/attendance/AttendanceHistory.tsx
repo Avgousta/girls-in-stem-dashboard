@@ -286,19 +286,19 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
                           {isEditing ? (
                             <div className="flex gap-1.5 items-center">
                               <button onClick={() => saveEdit(r)} disabled={saving}
-                                title="Save"
+                                title="Save" aria-label="Save"
                                 className="p-1.5 rounded-lg cursor-pointer transition-colors"
                                 style={{ background: 'var(--ds-success)', color: '#fff' }}>
                                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                               </button>
-                              <button onClick={cancelEdit} title="Cancel"
+                              <button onClick={cancelEdit} title="Cancel" aria-label="Cancel"
                                 className="p-1.5 rounded-lg cursor-pointer transition-colors"
                                 style={{ background: DS.surfaceHover, color: DS.textMuted as string }}>
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ) : (
-                            <button onClick={() => startEdit(r)} title="Edit attendance"
+                            <button onClick={() => startEdit(r)} title="Edit attendance" aria-label="Edit attendance"
                               className="p-1.5 rounded-lg cursor-pointer opacity-40 hover:opacity-100 transition-opacity"
                               style={{ background: DS.surfaceHover }}>
                               <Pencil className="w-3.5 h-3.5" style={{ color: DS.textMid as string }} />
@@ -365,7 +365,7 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Loading…' : 'Apply'}
             </button>
-            <button onClick={exportCSV} title="Export CSV" className="btn-secondary px-3">
+            <button onClick={exportCSV} title="Export CSV" aria-label="Export CSV" className="btn-secondary px-3">
               <Download className="w-4 h-4" />
             </button>
           </div>

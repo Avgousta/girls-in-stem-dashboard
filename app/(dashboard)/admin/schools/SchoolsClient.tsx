@@ -164,7 +164,7 @@ export default function SchoolsClient({ schools: initial }: { schools: SchoolRow
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => openEdit(s)} title="Edit school"
+                    <button onClick={() => openEdit(s)} title="Edit school" aria-label="Edit school"
                       className="p-1.5 rounded-lg cursor-pointer opacity-40 hover:opacity-100 transition-opacity"
                       style={{ background: DS.surfaceHover }}>
                       <Pencil className="w-3.5 h-3.5" style={{ color: DS.textMid }} />
