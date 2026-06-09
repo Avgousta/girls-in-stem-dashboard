@@ -4,6 +4,50 @@ import MentorshipClient from './MentorshipClient';
 import Link from 'next/link';
 import { HeartHandshake, Plus } from 'lucide-react';
 
+interface RawProfile   { first_name: string; last_name: string; interests?: string[]; aspiration?: string | null }
+interface RawSchool    { school_name: string }
+interface RawRisk      { risk_level: string; attendance_rate: number; avg_score: number }
+interface RawMentor    { user_id: string; full_name: string }
+interface RawProgEnroll { programs: { program_name: string; program_type: string } | null }
+interface RawIntervention { intervention_id: string; status: string; priority: string }
+interface RawMentorSession { session_id: string; session_date: string }
+
+interface RawSession {
+  session_id: string; session_date: string; duration_minutes: number | null;
+  session_type: string | null; notes: string | null; next_steps: string | null;
+  goals_discussed: string | null; learner_mood: number | null; outcome: string | null;
+  learner_id: string;
+  learners: { learner_id: string; learner_code: string; learner_profiles: RawProfile | null; schools: RawSchool | null; risk_scores: RawRisk | null } | null;
+  mentor: RawMentor | null;
+}
+
+interface RawGoal {
+  goal_id: string; title: string; description: string | null; target_date: string | null;
+  status: string; progress: number | null; created_at: string; learner_id: string;
+  learners: { learner_profiles: RawProfile | null; schools: RawSchool | null } | null;
+  mentor: RawMentor | null;
+}
+
+interface RawAtRisk {
+  risk_level: string; attendance_rate: number; avg_score: number;
+  learners: {
+    learner_id: string; learner_code: string;
+    learner_profiles: RawProfile | null;
+    schools: RawSchool | null;
+    program_enrollments: RawProgEnroll[];
+    mentorship_sessions: RawMentorSession[];
+    interventions: RawIntervention[];
+  } | null;
+}
+
+interface RawActiveLearner {
+  learner_id: string; learner_code: string;
+  learner_profiles: { first_name: string; last_name: string; interests?: string[]; aspiration?: string | null } | null;
+  schools: RawSchool | null;
+  program_enrollments: RawProgEnroll[];
+  risk_scores: RawRisk | null;
+}
+
 async function getPageData() {
   const supabase = await createClient();
 
@@ -51,7 +95,7 @@ async function getPageData() {
       .in('role', ['admin','instructor']).order('full_name'),
   ]);
 
-  const sessions = (sessionsRes.data || []).map((s: any) => ({
+  const sessions = ((sessionsRes.data || []) as unknown as RawSession[]).map(s => ({
     id:         s.session_id,
     date:       s.session_date,
     duration:   s.duration_minutes,
@@ -67,11 +111,11 @@ async function getPageData() {
     risk:       s.learners?.risk_scores?.risk_level ?? 'low',
     att:        Math.floor(s.learners?.risk_scores?.attendance_rate ?? 0),
     score:      Math.round(s.learners?.risk_scores?.avg_score ?? 0),
-    mentor:     (s.mentor as any)?.full_name ?? '—',
-    mentor_id:  (s.mentor as any)?.user_id,
+    mentor:     s.mentor?.full_name ?? '—',
+    mentor_id:  s.mentor?.user_id ?? '',
   }));
 
-  const goals = (goalsRes.data || []).map((g: any) => ({
+  const goals = ((goalsRes.data || []) as unknown as RawGoal[]).map(g => ({
     id:        g.goal_id,
     title:     g.title,
     desc:      g.description || '',
@@ -81,17 +125,17 @@ async function getPageData() {
     learner_id:g.learner_id,
     learner:   `${g.learners?.learner_profiles?.first_name ?? ''} ${g.learners?.learner_profiles?.last_name ?? ''}`.trim(),
     school:    g.learners?.schools?.school_name ?? '',
-    mentor:    (g.mentor as any)?.full_name ?? '—',
-    mentor_id: (g.mentor as any)?.user_id,
+    mentor:    g.mentor?.full_name ?? '—',
+    mentor_id: g.mentor?.user_id ?? '',
     created:   g.created_at,
   }));
 
-  const atRisk = (atRiskRes.data || []).map((r: any) => {
-    const l = r.learners;
+  const atRisk = ((atRiskRes.data || []) as unknown as RawAtRisk[]).map(r => {
+    const l = r.learners!;
     const lastSession = (l.mentorship_sessions || [])
-      .sort((a: any, b: any) => b.session_date.localeCompare(a.session_date))[0];
-    const openInterv = (l.interventions || []).filter((i: any) => i.status !== 'resolved');
-    const progTypes  = (l.program_enrollments || []).map((e: any) => e.programs?.program_type).filter(Boolean);
+      .sort((a, b) => b.session_date.localeCompare(a.session_date))[0];
+    const openInterv = (l.interventions || []).filter(i => i.status !== 'resolved');
+    const progTypes  = (l.program_enrollments || []).map(e => e.programs?.program_type).filter((t): t is string => !!t);
     return {
       learner_id:      l.learner_id,
       learner:         `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
@@ -104,9 +148,9 @@ async function getPageData() {
       sessions_count:  (l.mentorship_sessions || []).length,
       last_session:    lastSession?.session_date ?? null,
       open_interv:     openInterv.length,
-      critical_interv: openInterv.some((i: any) => i.priority === 'critical' || i.priority === 'high'),
+      critical_interv: openInterv.some(i => i.priority === 'critical' || i.priority === 'high'),
     };
-  }).sort((a: any, b: any) => {
+  }).sort((a, b) => {
     // Critical+intervention first, then no sessions, then by score
     if (a.critical_interv && !b.critical_interv) return -1;
     if (!a.critical_interv && b.critical_interv) return 1;
@@ -121,6 +165,7 @@ async function getPageData() {
     outcomes:string[]; moods:number[]; sessionTypes:Record<string,number>;
   }> = {};
   sessions.forEach(s => {
+    if (!s.mentor_id) return;
     if (!mentorMap[s.mentor_id]) mentorMap[s.mentor_id] = {
       name:s.mentor, sessions:0, learners:new Set(), outcomes:[], moods:[], sessionTypes:{},
     };
@@ -156,14 +201,14 @@ async function getPageData() {
 
   return {
     sessions, goals, atRisk, mentorStats,
-    learners: (learnersRes.data || []).map((l: any) => ({
+    learners: ((learnersRes.data || []) as unknown as RawActiveLearner[]).map(l => ({
       learner_id:  l.learner_id,
       full_name:   `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
       interests:   l.learner_profiles?.interests ?? [],
       aspiration:  l.learner_profiles?.aspiration ?? null,
       school:      l.schools?.school_name ?? '',
       risk:        l.risk_scores?.risk_level ?? 'low',
-      prog_types:  (l.program_enrollments || []).map((e: any) => e.programs?.program_type).filter(Boolean),
+      prog_types:  (l.program_enrollments || []).map(e => e.programs?.program_type).filter((t): t is string => !!t),
     })),
     mentors: mentorsRes.data || [],
     stats: { total:sessions.length, thisMonth, posOut, needsFollowUp, activeGoals, doneGoals, overdueGoals, avgMood },

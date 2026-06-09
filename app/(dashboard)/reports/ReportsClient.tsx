@@ -2,12 +2,13 @@
 import { useState, useMemo } from 'react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Cell,
+  ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import {
   Download, School, Users, BarChart3, FolderKanban, Award,
   TrendingUp, LayoutDashboard, Search, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,17 +18,23 @@ interface ProgrammeRow { name: string; type: string; learners: number; att: numb
 interface SponsorRow   { name: string; count: number }
 interface BandRow      { band: string; count: number }
 
+interface RawLearner      { programme_status: string; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null; learner_code: string; grade: number | null; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null }
+interface RawAttendance   { status: string; session_date: string }
+interface RawAssessment   { percentage: number | null; grade_band: string | null; subject: string; assessment_date: string | null; programs: { program_name: string } | null }
+interface RawProject      { project_name: string | null; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null }
+interface RawIntervention { learner_id: string; status: string; created_at: string }
+
 interface Props {
   schoolBreakdown:    SchoolRow[];
   gradeBreakdown:     GradeRow[];
   programmeBreakdown: ProgrammeRow[];
   sponsorBreakdown:   SponsorRow[];
   scoreDist:          BandRow[];
-  rawLearners:        any[];
-  rawAttendance:      any[];
-  rawAssessments:     any[];
-  rawProjects:        any[];
-  rawInterventions:   any[];
+  rawLearners:        RawLearner[];
+  rawAttendance:      RawAttendance[];
+  rawAssessments:     RawAssessment[];
+  rawProjects:        RawProject[];
+  rawInterventions:   RawIntervention[];
 }
 
 type Tab = 'overview' | 'schools' | 'grades' | 'programmes' | 'sponsors' | 'export';
@@ -45,13 +52,15 @@ function metricColor(val: number, threshold = 75) {
 }
 
 // ─── Chart tooltip ─────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }: any) {
+interface TooltipPayloadItem { name: string; value: number; color?: string; fill?: string }
+interface ChartTooltipProps  { active?: boolean; payload?: TooltipPayloadItem[]; label?: string }
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl px-3 py-2 text-xs shadow-xl"
       style={{ background: DS.bg, border: `1px solid ${DS.border}` }}>
       <p className="font-bold mb-1" style={{ color: DS.textMid }}>{label}</p>
-      {payload.map((p: any) => (
+      {payload.map(p => (
         <p key={p.name} style={{ color: p.color ?? p.fill }}>
           {p.name}: <strong>{p.value}{p.name?.includes('%') || p.name?.includes('Rate') || p.name?.includes('Score') ? '%' : ''}</strong>
         </p>
@@ -129,7 +138,7 @@ function DRow({ cells, highlight }: { cells: React.ReactNode[]; highlight?: bool
 }
 
 // ─── Attendance trend (variable period) ───────────────────────────────────
-function AttendanceTrend({ rawAttendance }: { rawAttendance: any[] }) {
+function AttendanceTrend({ rawAttendance }: { rawAttendance: RawAttendance[] }) {
   const [weeks, setWeeks] = useState<4 | 8 | 12>(8);
 
   const data = useMemo(() => Array.from({ length: weeks }, (_, i) => {
@@ -138,7 +147,7 @@ function AttendanceTrend({ rawAttendance }: { rawAttendance: any[] }) {
     const start = new Date(end); start.setDate(start.getDate() - 6);
     const label = `${start.getMonth() + 1}/${start.getDate()}`;
     const week  = rawAttendance.filter(a => {
-      const d = new Date(a.session_date); return d >= start && d <= end;
+      const d = new Date(a.session_date as string); return d >= start && d <= end;
     });
     const rate  = week.length
       ? Math.round(week.filter(a => a.status === 'present').length / week.length * 100)
@@ -211,7 +220,7 @@ function ScoreDistribution({ scoreDist }: { scoreDist: BandRow[] }) {
 }
 
 // ─── Cohort health summary ─────────────────────────────────────────────────
-function CohortHealth({ rawLearners, rawInterventions }: { rawLearners: any[]; rawInterventions: any[] }) {
+function CohortHealth({ rawLearners, rawInterventions }: { rawLearners: RawLearner[]; rawInterventions: RawIntervention[] }) {
   const active   = rawLearners.filter(l => l.programme_status === 'active').length;
   const highRisk = rawLearners.filter(l => l.risk_scores?.risk_level === 'high').length;
   const medRisk  = rawLearners.filter(l => l.risk_scores?.risk_level === 'medium').length;
@@ -441,7 +450,7 @@ export default function ReportsClient({
   const [progQ,      setProgQ]      = useState('');
   const [exportView, setExportView] = useState<'learners' | 'assessments' | null>(null);
 
-  const tabs: Array<{ key: Tab; label: string; icon: any }> = [
+  const tabs: Array<{ key: Tab; label: string; icon: LucideIcon }> = [
     { key: 'overview',    label: 'Overview',    icon: LayoutDashboard },
     { key: 'schools',     label: 'Schools',     icon: School          },
     { key: 'grades',      label: 'Grades',      icon: Users           },
@@ -468,7 +477,7 @@ export default function ReportsClient({
 
   const exportLearners = () => downloadCSV(
     [['Code','First Name','Last Name','School','Grade','Status','Att %','Avg Score %','Risk'],
-     ...rawLearners.map((l: any) => [
+     ...rawLearners.map(l => [
        l.learner_code || '', l.learner_profiles?.first_name || '', l.learner_profiles?.last_name || '',
        l.schools?.school_name || '', String(l.grade ?? ''), l.programme_status,
        String(Math.floor(l.risk_scores?.attendance_rate || 0)),
@@ -479,25 +488,25 @@ export default function ReportsClient({
 
   const exportAssessments = () => downloadCSV(
     [['Date','Subject','Score %','Grade Band','Programme'],
-     ...rawAssessments.map((a: any) => [
+     ...rawAssessments.map(a => [
        a.assessment_date || '', a.subject || '',
        String(a.percentage || 0), a.grade_band || '',
-       (a.programs as any)?.program_name || '',
+       a.programs?.program_name || '',
      ])],
     'report_assessments.csv');
 
   const exportProjects = () => downloadCSV(
     [['Project','Stage','Status','Score','Max Score','Due Date','Programme'],
-     ...rawProjects.map((p: any) => [
+     ...rawProjects.map(p => [
        p.project_name || '', p.stage || '', p.completion_status || '',
        String(p.score ?? ''), String(p.max_score ?? ''), p.due_date || '',
-       (p.programs as any)?.program_name || '',
+       p.programs?.program_name || '',
      ])],
     'report_projects.csv');
 
   const exportInterventions = () => downloadCSV(
     [['Learner ID','Status','Created'],
-     ...rawInterventions.map((i: any) => [
+     ...rawInterventions.map(i => [
        i.learner_id, i.status, i.created_at?.slice(0, 10) || '',
      ])],
     'report_interventions.csv');
@@ -512,7 +521,7 @@ export default function ReportsClient({
     [programmeBreakdown, progQ]);
 
   // ── Preview rows ────────────────────────────────────────────────────────
-  const learnerPreviewRows: string[][] = rawLearners.map((l: any) => [
+  const learnerPreviewRows: string[][] = rawLearners.map(l => [
     l.learner_code || '—',
     `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim() || '—',
     l.schools?.school_name || '—',
@@ -523,12 +532,12 @@ export default function ReportsClient({
     l.risk_scores?.risk_level || 'low',
   ]);
 
-  const assessmentPreviewRows: string[][] = rawAssessments.map((a: any) => [
+  const assessmentPreviewRows: string[][] = rawAssessments.map(a => [
     a.assessment_date?.slice(0, 10) || '—',
     a.subject || '—',
     `${a.percentage ?? 0}%`,
     a.grade_band || '—',
-    (a.programs as any)?.program_name || '—',
+    a.programs?.program_name || '—',
   ]);
 
   return (
@@ -658,8 +667,8 @@ export default function ReportsClient({
             </div>
           ) : (
             <DTable headers={['Sponsor', 'Learners Sponsored', 'Share']}>
-              {sponsorBreakdown.map((s: any, i: number) => {
-                const total = sponsorBreakdown.reduce((sum: number, x: any) => sum + x.count, 0);
+              {sponsorBreakdown.map((s, i) => {
+                const total = sponsorBreakdown.reduce((sum, x) => sum + x.count, 0);
                 const pct   = total ? Math.round(s.count / total * 100) : 0;
                 return (
                   <DRow key={i} cells={[

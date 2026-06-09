@@ -6,6 +6,25 @@ import { KPICard } from '@/components/interventions/InterventionBadges';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
 
+// ── Typed shapes for Supabase query results ────────────────────────────────────
+interface RawLearner {
+  learner_id: string;
+  learner_code: string;
+  grade: number | null;
+  programme_status: string;
+  enrollment_date: string;
+  learner_profiles: { first_name: string; last_name: string } | null;
+  schools: { school_name: string } | null;
+  risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null;
+  program_enrollments: Array<{ programs: { program_name: string; program_type: string } | null }>;
+}
+interface RawAttendance  { learner_id: string; status: string; session_date: string; program_id: string; programs: { program_name: string } | null }
+interface RawAssessment  { learner_id: string; subject: string; percentage: number | null; grade_band: string | null; assessment_date: string | null; program_id: string | null; programs: { program_name: string } | null }
+interface RawProject     { learner_id: string; project_name: string | null; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null }
+interface RawIntervention { learner_id: string; status: string; created_at: string }
+interface RawSponsor     { sponsor_id: string; sponsor_name: string; sponsor_learners: Array<{ learner_id: string }> | null }
+interface RawProgram     { program_id: string; program_name: string; program_type: string }
+
 async function getReportData() {
   const supabase = await createClient();
 
@@ -31,14 +50,14 @@ async function getReportData() {
   ]);
 
   return {
-    learners:      learnersRes.data      || [],
-    schools:       schoolsRes.data       || [],
-    programs:      programsRes.data      || [],
-    attendance:    attendanceRes.data    || [],
-    assessments:   assessmentsRes.data   || [],
-    projects:      projectsRes.data      || [],
-    interventions: interventionsRes.data || [],
-    sponsors:      sponsorsRes.data      || [],
+    learners:      (learnersRes.data      || []) as unknown as RawLearner[],
+    schools:       schoolsRes.data        || [],
+    programs:      (programsRes.data      || []) as unknown as RawProgram[],
+    attendance:    (attendanceRes.data    || []) as unknown as RawAttendance[],
+    assessments:   (assessmentsRes.data   || []) as unknown as RawAssessment[],
+    projects:      (projectsRes.data      || []) as unknown as RawProject[],
+    interventions: (interventionsRes.data || []) as unknown as RawIntervention[],
+    sponsors:      (sponsorsRes.data      || []) as unknown as RawSponsor[],
   };
 }
 
@@ -48,21 +67,21 @@ export default async function ReportsPage() {
 
   // ── KPI aggregates ──────────────────────────────────────────────────────────
   const totalLearners  = data.learners.length;
-  const activeLearners = data.learners.filter((l: any) => l.programme_status === 'active').length;
+  const activeLearners = data.learners.filter(l => l.programme_status === 'active').length;
   const totalAtt       = data.attendance.length;
-  const presentAtt     = data.attendance.filter((a: any) => a.status === 'present').length;
+  const presentAtt     = data.attendance.filter(a => a.status === 'present').length;
   const overallAttRate = totalAtt ? Math.round(presentAtt / totalAtt * 100) : 0;
   const totalAss       = data.assessments.length;
   const avgScore       = totalAss
-    ? Math.round(data.assessments.reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / totalAss)
+    ? Math.round(data.assessments.reduce((s, a) => s + Number(a.percentage || 0), 0) / totalAss)
     : 0;
-  const completedProj  = data.projects.filter((p: any) => p.completion_status === 'completed').length;
-  const highRisk       = data.learners.filter((l: any) => l.risk_scores?.risk_level === 'high').length;
-  const openInterv     = data.interventions.filter((i: any) => i.status === 'open').length;
+  const completedProj  = data.projects.filter(p => p.completion_status === 'completed').length;
+  const highRisk       = data.learners.filter(l => l.risk_scores?.risk_level === 'high').length;
+  const openInterv     = data.interventions.filter(i => i.status === 'open').length;
 
   // ── School breakdown ────────────────────────────────────────────────────────
   const schoolMap: Record<string, { name: string; count: number; att: number; score: number }> = {};
-  data.learners.forEach((l: any) => {
+  data.learners.forEach(l => {
     const name = l.schools?.school_name || 'Unknown';
     if (!schoolMap[name]) schoolMap[name] = { name, count: 0, att: 0, score: 0 };
     schoolMap[name].count++;
@@ -79,7 +98,7 @@ export default async function ReportsPage() {
 
   // ── Grade breakdown ─────────────────────────────────────────────────────────
   const gradeMap: Record<number, { count: number; att: number; score: number }> = {};
-  data.learners.forEach((l: any) => {
+  data.learners.forEach(l => {
     const g = l.grade;
     if (g == null) return;
     if (!gradeMap[g]) gradeMap[g] = { count: 0, att: 0, score: 0 };
@@ -100,10 +119,10 @@ export default async function ReportsPage() {
 
   // ── Programme breakdown ─────────────────────────────────────────────────────
   const progMap: Record<string, { name: string; type: string; learners: number; att: number; assCount: number; avgScore: number }> = {};
-  data.programs.forEach((p: any) => {
+  data.programs.forEach(p => {
     progMap[p.program_id] = { name: p.program_name, type: p.program_type, learners: 0, att: 0, assCount: 0, avgScore: 0 };
   });
-  data.assessments.forEach((a: any) => {
+  data.assessments.forEach(a => {
     if (a.program_id && progMap[a.program_id]) {
       progMap[a.program_id].assCount++;
       progMap[a.program_id].avgScore += Number(a.percentage || 0);
@@ -115,16 +134,16 @@ export default async function ReportsPage() {
   })).sort((a, b) => b.learners - a.learners);
 
   // ── Sponsor breakdown ───────────────────────────────────────────────────────
-  const sponsorBreakdown = (data.sponsors || []).map((s: any) => ({
+  const sponsorBreakdown = data.sponsors.map(s => ({
     name:  s.sponsor_name,
     count: s.sponsor_learners?.length || 0,
-  })).filter((s: any) => s.count > 0).sort((a: any, b: any) => b.count - a.count);
+  })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
 
   // ── Score distribution by grade band ───────────────────────────────────────
   const bandMap: Record<string, number> = {
     Distinction: 0, Merit: 0, Pass: 0, 'Needs Support': 0,
   };
-  data.assessments.forEach((a: any) => {
+  data.assessments.forEach(a => {
     if (a.grade_band && bandMap[a.grade_band] !== undefined) bandMap[a.grade_band]++;
   });
   const scoreDist = Object.entries(bandMap).map(([band, count]) => ({ band, count }));

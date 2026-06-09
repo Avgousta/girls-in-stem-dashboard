@@ -4,6 +4,19 @@ import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
 import { CalendarCheck2, BarChart3, FolderKanban, Bell, FileText, AlertTriangle } from 'lucide-react';
 
+interface ChildLearner {
+  learner_id: string; learner_code: string; grade: number; programme_status: string;
+  learner_profiles: { first_name: string; last_name: string; email: string | null } | null;
+  schools: { school_name: string } | null;
+  risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null;
+  program_enrollments: Array<{ programs: { program_name: string; program_type: string } | null }>;
+  attendance: Array<{ status: string; session_date: string }>;
+  assessments: Array<{ subject: string; percentage: number | null; grade_band: string | null; assessment_date: string; score: number | null; max_score: number | null; notes: string | null }>;
+  projects: Array<{ project_name: string; stage: string | null; completion_status: string; score: number | null; max_score: number | null }>;
+  interventions: Array<{ reason: string; status: string; created_at: string }>;
+}
+interface Notification { notification_id: string; title: string; body: string; type: string; created_at: string }
+
 export default async function ParentPage() {
   const user     = await requireAuth(['parent']);
   const supabase = await createClient();
@@ -31,8 +44,8 @@ export default async function ParentPage() {
     .order('created_at', { ascending: false })
     .limit(5);
 
-  const kids  = children || [];
-  const notifs = notifications || [];
+  const kids   = (children || []) as unknown as ChildLearner[];
+  const notifs = (notifications || []) as unknown as Notification[];
 
   const scoreColor = (v: number) =>
     v >= 80 ? '#818CF8' : v >= 70 ? 'var(--ds-success)' : v >= 50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
@@ -73,15 +86,15 @@ export default async function ParentPage() {
             Contact the programme administrator to link your child.
           </p>
         </div>
-      ) : kids.map((child: any) => {
+      ) : kids.map(child => {
         const profile   = child.learner_profiles;
         const risk      = child.risk_scores;
         const att       = child.attendance || [];
-        const ass       = (child.assessments || []).sort((a: any, b: any) => b.assessment_date?.localeCompare(a.assessment_date));
+        const ass       = [...(child.assessments || [])].sort((a, b) => b.assessment_date?.localeCompare(a.assessment_date));
         const projects  = child.projects || [];
         const progs     = child.program_enrollments || [];
-        const attRate   = att.length ? Math.floor(att.filter((a: any) => a.status === 'present').length / att.length * 100) : 0;
-        const avgScore  = ass.length ? Math.round(ass.reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / ass.length) : null;
+        const attRate   = att.length ? Math.floor(att.filter(a => a.status === 'present').length / att.length * 100) : 0;
+        const avgScore  = ass.length ? Math.round(ass.reduce((s, a) => s + Number(a.percentage || 0), 0) / ass.length) : null;
         const initials  = `${profile?.first_name?.[0] ?? ''}${profile?.last_name?.[0] ?? ''}`.toUpperCase();
         const riskColorMap: Record<string, string> = { high: 'var(--ds-danger)', medium: 'var(--ds-warn)', low: 'var(--ds-success)' };
         const riskColor = riskColorMap[risk?.risk_level ?? 'low'] ?? 'var(--ds-success)';
@@ -103,7 +116,7 @@ export default async function ParentPage() {
                     {profile?.first_name} {profile?.last_name}
                   </h2>
                   <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                    {child.learner_code} · Grade {child.grade} · {(child.schools as any)?.school_name}
+                    {child.learner_code} · Grade {child.grade} · {child.schools?.school_name}
                   </p>
                   {risk && (
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full mt-1.5 inline-block"
@@ -127,7 +140,7 @@ export default async function ParentPage() {
                 {[
                   { label: 'Attendance',      value: `${attRate}%`,           color: attRate >= 75 ? 'var(--ds-success)' : 'var(--ds-danger)',  icon: CalendarCheck2, warn: attRate < 75 },
                   { label: 'Avg Score',       value: avgScore !== null ? `${avgScore}%` : '—', color: avgScore !== null ? scoreColor(avgScore) : DS.textMuted as string, icon: BarChart3,       warn: avgScore !== null && avgScore < 50 },
-                  { label: 'Active Projects', value: projects.filter((p: any) => !['marked','completed'].includes(p.stage||'')).length, color: DS.primary as string, icon: FolderKanban, warn: false },
+                  { label: 'Active Projects', value: projects.filter(p => !['marked','completed'].includes(p.stage||'')).length, color: DS.primary as string, icon: FolderKanban, warn: false },
                   { label: 'Programmes',      value: progs.length,            color: DS.primary as string, icon: FolderKanban, warn: false },
                 ].map(({ label, value, color, icon: Icon, warn }) => (
                   <div key={label} className="rounded-xl p-4 text-center"
@@ -145,7 +158,7 @@ export default async function ParentPage() {
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: DS.textMuted }}>Programmes</h3>
                   <div className="flex flex-wrap gap-2">
-                    {progs.map((e: any, i: number) => (
+                    {progs.map((e, i) => (
                       <span key={i} className="text-xs font-medium px-3 py-1.5 rounded-full"
                         style={{ background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }}>
                         {e.programs?.program_name}
@@ -171,7 +184,7 @@ export default async function ParentPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {ass.slice(0, 5).map((a: any, i: number) => (
+                        {ass.slice(0, 5).map((a, i) => (
                           <tr key={i} style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
                             <td className="px-3 py-2 text-xs" style={{ color: DS.textMuted }}>{fmt.date(a.assessment_date)}</td>
                             <td className="px-3 py-2 font-medium text-xs" style={{ color: DS.text }}>{a.subject}</td>
@@ -206,9 +219,9 @@ export default async function ParentPage() {
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
                     {[...att]
-                      .sort((a: any, b: any) => b.session_date?.localeCompare(a.session_date))
+                      .sort((a, b) => b.session_date?.localeCompare(a.session_date))
                       .slice(0, 12)
-                      .map((a: any, i: number) => {
+                      .map((a, i) => {
                         const cfg: Record<string, { color: string; bg: string }> = {
                           present: { color: 'var(--ds-success)', bg: 'var(--ds-success-light)' },
                           absent:  { color: 'var(--ds-danger)',  bg: 'var(--ds-danger-light)'  },
@@ -228,7 +241,7 @@ export default async function ParentPage() {
               )}
 
               {/* Open interventions warning */}
-              {child.interventions?.filter((i: any) => i.status !== 'resolved').length > 0 && (
+              {child.interventions?.filter(i => i.status !== 'resolved').length > 0 && (
                 <div className="rounded-xl p-4 flex items-start gap-3"
                   style={{ background: 'var(--ds-warn-light)', border: '1px solid var(--ds-warn)' }}>
                   <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--ds-warn)' }} />
@@ -252,7 +265,7 @@ export default async function ParentPage() {
           <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: DS.text }}>
             <Bell className="w-4 h-4" style={{ color: 'var(--ds-warn)' }} /> New Notifications
           </h3>
-          {notifs.map((n: any) => (
+          {notifs.map(n => (
             <div key={n.notification_id} className="flex items-start gap-3 p-3 rounded-xl"
               style={{ background: DS.surfaceHover, border: `1px solid ${DS.border}` }}>
               <span className="text-xl shrink-0">

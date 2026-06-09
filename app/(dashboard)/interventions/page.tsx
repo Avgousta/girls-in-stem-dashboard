@@ -4,6 +4,23 @@ import InterventionsClient from './InterventionsClient';
 import Link from 'next/link';
 import { AlertTriangle, Plus } from 'lucide-react';
 
+interface RawUpdate { update_id: string; note: string; status_change: string | null; created_at: string; author: { full_name: string } | null }
+interface RawIntervention {
+  intervention_id: string; intervention_type: string | null; priority: string; reason: string;
+  action_plan: string | null; action_taken: string | null; follow_up_date: string | null;
+  due_date: string | null; status: string; created_at: string; resolved_at: string | null;
+  learner_id: string;
+  learners: { learner_id: string; learner_code: string; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null } | null;
+  flagged_by_user: { full_name: string } | null;
+  assigned_user: { full_name: string; user_id: string } | null;
+  intervention_updates: RawUpdate[];
+}
+interface RawAtRiskRow {
+  risk_level: string; attendance_rate: number; avg_score: number;
+  learners: { learner_id: string; learner_code: string; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null; interventions: Array<{ intervention_id: string; status: string; priority: string }> } | null;
+}
+interface RawActiveLearner { learner_id: string; learner_code: string; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null }
+
 async function getPageData() {
   const supabase = await createClient();
 
@@ -48,7 +65,7 @@ async function getPageData() {
       .select('user_id, full_name').in('role', ['admin', 'instructor']).order('full_name'),
   ]);
 
-  const interventions = (intervRes.data || []).map((i: any) => ({
+  const interventions = ((intervRes.data || []) as unknown as RawIntervention[]).map(i => ({
     id:           i.intervention_id,
     type:         i.intervention_type || 'academic',
     priority:     i.priority || 'medium',
@@ -70,17 +87,17 @@ async function getPageData() {
     assigned_to:  i.assigned_user?.full_name  ?? null,
     assigned_id:  i.assigned_user?.user_id    ?? null,
     updates: (i.intervention_updates || [])
-      .map((u: any) => ({
+      .map(u => ({
         id: u.update_id, note: u.note, status_change: u.status_change,
         created: u.created_at, author: u.author?.full_name ?? '—',
       }))
-      .sort((a: any, b: any) => a.created.localeCompare(b.created)),
+      .sort((a, b) => a.created.localeCompare(b.created)),
   }));
 
-  const atRisk = (atRiskRes.data || []).map((r: any) => {
-    const l        = r.learners;
-    const openI    = (l.interventions || []).filter((i: any) => i.status !== 'resolved');
-    const critI    = openI.find((i: any) => i.priority === 'critical' || i.priority === 'high');
+  const atRisk = ((atRiskRes.data || []) as unknown as RawAtRiskRow[]).map(r => {
+    const l        = r.learners!;
+    const openI    = (l.interventions || []).filter(i => i.status !== 'resolved');
+    const critI    = openI.find(i => i.priority === 'critical' || i.priority === 'high');
     return {
       learner_id:            l.learner_id,
       learner:               `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
@@ -91,7 +108,7 @@ async function getPageData() {
       open_interventions:    openI.length,
       has_critical:          !!critI,
     };
-  }).sort((a: any, b: any) => {
+  }).sort((a, b) => {
     const order = { high: 0, medium: 1 };
     return (order[a.risk as keyof typeof order] ?? 2) - (order[b.risk as keyof typeof order] ?? 2);
   });
@@ -120,7 +137,7 @@ async function getPageData() {
   return {
     interventions, atRisk,
     stats: { open, inProgress, resolved, critical, overdue, resRate, avgDaysToResolve, typeDist },
-    learners: (learnersRes.data || []).map((l: any) => ({
+    learners: ((learnersRes.data || []) as unknown as RawActiveLearner[]).map(l => ({
       learner_id: l.learner_id,
       full_name:  `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
       school:     l.schools?.school_name ?? '',

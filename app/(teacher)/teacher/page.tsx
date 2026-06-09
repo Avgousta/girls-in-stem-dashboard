@@ -1,8 +1,20 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { DS, PageHeader, Card, CardHeader, ProgressBar, scoreColor, MetricStrip, StatusBadge, KPICard } from '@/components/platform/PlatformComponents';
+import { DS, PageHeader, Card, CardHeader, scoreColor, MetricStrip, KPICard } from '@/components/platform/PlatformComponents';
 import { fmt } from '@/utils';
+
+interface RawLearnerEnroll {
+  learner_id: string; learner_code: string; grade: number;
+  risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null;
+  learner_profiles: { first_name: string; last_name: string } | null;
+  schools: { school_name: string } | null;
+}
+interface RawAttRecord { status: string; session_date: string }
+interface RawAssRecord { percentage: number | null; grade_band: string | null; subject: string; assessment_date: string | null }
+interface RawProjRecord { stage: string | null; completion_status: string; learner_id: string }
+interface RawMeeting { meeting_id: string; title: string; scheduled_at: string; platform: string; duration_min: number; meeting_url?: string; programs: { program_name: string } | null }
+interface RawProgram { program_id: string; program_name: string; program_type: string; program_enrollments: Array<{ count: number }> }
 
 async function getTeacherData(userId: string) {
   const supabase = await createClient();
@@ -13,7 +25,7 @@ async function getTeacherData(userId: string) {
     .eq('instructor_id', userId)
     .eq('is_active', true);
 
-  const programIds = (programmes || []).map((p: any) => p.program_id);
+  const programIds = ((programmes || []) as unknown as RawProgram[]).map(p => p.program_id);
   const fallback   = ['00000000-0000-0000-0000-000000000000'];
 
   const [learnersRes, attRes, assRes, projRes, intervRes, meetingsRes] = await Promise.all([
@@ -54,26 +66,26 @@ async function getTeacherData(userId: string) {
       .limit(3),
   ]);
 
-  const learners = (learnersRes.data || []).map((e: any) => e.learners).filter(Boolean);
-  const att      = attRes.data  || [];
-  const ass      = assRes.data  || [];
-  const proj     = projRes.data || [];
+  const learners = ((learnersRes.data || []) as unknown as Array<{ learners: RawLearnerEnroll }>).map(e => e.learners).filter(Boolean);
+  const att      = (attRes.data  || []) as unknown as RawAttRecord[];
+  const ass      = (assRes.data  || []) as unknown as RawAssRecord[];
+  const proj     = (projRes.data || []) as unknown as RawProjRecord[];
 
-  const attRate  = att.length ? Math.round(att.filter((a: any) => a.status==='present').length/att.length*100) : 0;
-  const avgScore = ass.length ? Math.round(ass.reduce((s: number,a: any)=>s+Number(a.percentage||0),0)/ass.length) : 0;
-  const highRisk = learners.filter((l: any) => l.risk_scores?.risk_level === 'high').length;
-  const doneProj = proj.filter((p: any) => ['marked','completed'].includes(p.stage||p.completion_status||'')).length;
+  const attRate  = att.length ? Math.round(att.filter(a => a.status==='present').length/att.length*100) : 0;
+  const avgScore = ass.length ? Math.round(ass.reduce((s,a)=>s+Number(a.percentage||0),0)/ass.length) : 0;
+  const highRisk = learners.filter(l => l.risk_scores?.risk_level === 'high').length;
+  const doneProj = proj.filter(p => ['marked','completed'].includes(p.stage||p.completion_status||'')).length;
 
   // Recent assessments
   const recentAss = ass.slice(0, 6);
 
   // Today's session
   const today    = new Date().toISOString().slice(0,10);
-  const todayAtt = att.filter((a: any) => a.session_date === today);
-  const todayPct = todayAtt.length ? Math.round(todayAtt.filter((a: any)=>a.status==='present').length/todayAtt.length*100) : null;
+  const todayAtt = att.filter(a => a.session_date === today);
+  const todayPct = todayAtt.length ? Math.round(todayAtt.filter(a=>a.status==='present').length/todayAtt.length*100) : null;
 
   return {
-    programmes: programmes || [],
+    programmes: (programmes || []) as unknown as RawProgram[],
     learners,
     attRate, avgScore, highRisk, doneProj,
     openInterv: intervRes.data?.length || 0,
@@ -151,7 +163,7 @@ export default async function TeacherDashboard() {
                     Schedule one →
                   </Link>
                 </div>
-              ) : d.meetings.map((m: any) => {
+              ) : ((d.meetings as unknown as RawMeeting[]) || []).map(m => {
                 const start = new Date(m.scheduled_at);
                 const isToday = start.toISOString().slice(0,10) === new Date().toISOString().slice(0,10);
                 const PLAT: Record<string,string> = { zoom:'🎥', meet:'🟢', teams:'💼', other:'🔗' };
@@ -200,7 +212,7 @@ export default async function TeacherDashboard() {
                 <div className="text-center py-6 text-xs" style={{ color: DS.textMuted }}>
                   No assessments recorded yet
                 </div>
-              ) : d.recentAss.map((a: any, i: number) => {
+              ) : (d.recentAss as unknown as RawAssRecord[]).map((a, i) => {
                 const pct = Number(a.percentage || 0);
                 const c   = scoreColor(pct);
                 const bandBg: Record<string,string> = {
@@ -241,7 +253,7 @@ export default async function TeacherDashboard() {
           <Card>
             <CardHeader title="Needs Attention" sub={`${d.highRisk} high-risk learners`} />
             <div className="p-4 space-y-2">
-              {d.learners.filter((l: any) => l.risk_scores?.risk_level === 'high').slice(0, 4).map((l: any, i: number) => (
+              {d.learners.filter(l => l.risk_scores?.risk_level === 'high').slice(0, 4).map((l, i) => (
                 <div key={i} className="flex items-center justify-between px-3 py-2.5 rounded-xl"
                   style={{ background: DS.dangerLight, border: `1px solid #FECACA` }}>
                   <div className="flex items-center gap-2">
@@ -311,8 +323,8 @@ export default async function TeacherDashboard() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {d.programmes.map((prog: any) => {
-              const enrolled = (prog.program_enrollments?.[0] as any)?.count || 0;
+            {d.programmes.map(prog => {
+              const enrolled = prog.program_enrollments?.[0]?.count || 0;
               const ICONS: Record<string,string> = { STEM:'🔬',Coding:'💻',Robotics:'🤖','After-School':'📚',Hybrid:'🌐',Mathematics:'📐',Science:'🧪' };
               return (
                 <Card key={prog.program_id}>
