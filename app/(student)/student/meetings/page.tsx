@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import MeetingsClient from './MeetingsClient';
+import MeetingsClient, { type Meeting } from './MeetingsClient';
 
 export default async function StudentMeetingsPage() {
   const user     = await requireAuth(['learner']);
@@ -12,8 +12,10 @@ export default async function StudentMeetingsPage() {
     .eq('user_id', user.user_id)
     .single();
 
-  const programIds = ((learner as any)?.program_enrollments || []).map((e: any) => e.program_id);
-  const learnerId  = (learner as any)?.learner_id;
+  interface MeetingLearner { learner_id: string; program_enrollments: Array<{ program_id: string }> }
+  const typedLearner = learner as unknown as MeetingLearner | null;
+  const programIds = (typedLearner?.program_enrollments || []).map(e => e.program_id);
+  const learnerId  = typedLearner?.learner_id;
 
   // Fetch meetings for their programmes (upcoming + recent past)
   const { data: meetings } = programIds.length
@@ -40,11 +42,11 @@ export default async function StudentMeetingsPage() {
         <p className="text-white/40 text-sm mt-0.5">Join live · Rate your experience</p>
       </div>
       <MeetingsClient
-        meetings={(meetings || []).map((m: any) => ({
-          ...m,
-          myRating: m.meeting_ratings?.find((r: any) => r.learner_id === learnerId) || null,
-        }))}
-        learnerId={learnerId}
+        meetings={(meetings || []).map(m => ({
+          ...(m as object),
+          myRating: (m as { meeting_ratings?: Array<{ learner_id: string; rating: number; comment: string | null }> }).meeting_ratings?.find(r => r.learner_id === learnerId) || null,
+        })) as unknown as Meeting[]}
+        learnerId={learnerId ?? ''}
       />
     </div>
   );

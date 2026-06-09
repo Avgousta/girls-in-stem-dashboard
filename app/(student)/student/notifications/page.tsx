@@ -16,7 +16,7 @@ export default async function StudentNotificationsPage() {
 
   const { data: learner } = await supabase
     .from('learners').select('learner_id').eq('user_id', user.user_id).single();
-  const learnerId = (learner as any)?.learner_id;
+  const learnerId = (learner as { learner_id: string } | null)?.learner_id;
 
   const notifications: Array<{type:string;title:string;body:string;time:string;color:string;icon:string}> = [];
 
@@ -28,14 +28,14 @@ export default async function StudentNotificationsPage() {
       .order('assessment_date', { ascending: false })
       .limit(3);
 
-    (assessments || []).forEach((a: any) => {
+    ((assessments || []) as Array<{ subject: string; percentage: number | null; grade_band: string | null; assessment_date: string | null }>).forEach(a => {
       const pct = Number(a.percentage || 0);
       notifications.push({
         type: 'assessment', icon: '📝',
         color: pct >= 70 ? '#2DD4A0' : pct >= 50 ? '#FCD34D' : '#F87171',
         title: `Assessment result: ${a.subject}`,
         body:  `You scored ${pct}% — ${a.grade_band || 'result recorded'}`,
-        time:  a.assessment_date,
+        time:  a.assessment_date ?? '',
       });
     });
 
@@ -46,7 +46,7 @@ export default async function StudentNotificationsPage() {
       .order('created_at', { ascending: false })
       .limit(2);
 
-    (interventions || []).forEach((i: any) => {
+    ((interventions || []) as Array<{ reason: string; status: string; created_at: string }>).forEach(i => {
       notifications.push({
         type: 'intervention', icon: '⚠️',
         color: '#F87171',
@@ -63,7 +63,7 @@ export default async function StudentNotificationsPage() {
       .order('session_date', { ascending: false })
       .limit(2);
 
-    (sessions || []).forEach((s: any) => {
+    ((sessions || []) as Array<{ session_date: string; next_steps: string | null }>).forEach(s => {
       notifications.push({
         type: 'mentorship', icon: '💬',
         color: '#818CF8',

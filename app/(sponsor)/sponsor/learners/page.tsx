@@ -21,7 +21,7 @@ export default async function SponsorLearnersPage() {
 
   const { data: links } = await supabase
     .from('sponsor_learners').select('learner_id').eq('sponsor_id', user.sponsor_id);
-  const ids = (links || []).map((l: any) => l.learner_id);
+  const ids = (links || []).map(l => l.learner_id);
 
   const { data: learners } = ids.length ? await supabase
     .from('learners')
@@ -37,13 +37,14 @@ export default async function SponsorLearnersPage() {
     .in('learner_id', ids)
     .order('learner_code') : { data: [] };
 
-  const list = (learners || []).map((l: any) => {
+  interface SponsorLearnerRow { learner_id: string; learner_code: string; grade: number; programme_status: string; enrollment_date: string; learner_profiles: { first_name: string; last_name: string; avatar_url?: string | null } | null; schools: { school_name: string; district: string } | null; risk_scores: { risk_level: string; attendance_rate: number; avg_score: number } | null; program_enrollments: Array<{ programs: { program_name: string; program_type: string } | null }>; assessments: Array<{ percentage: number | null; grade_band: string | null }>; projects: Array<{ completion_status: string; stage: string | null }> }
+  const list = ((learners || []) as unknown as SponsorLearnerRow[]).map(l => {
     const att       = Math.floor(l.risk_scores?.attendance_rate || 0);
     const score     = Math.round(l.risk_scores?.avg_score || 0);
     const risk      = (l.risk_scores?.risk_level || 'low') as keyof typeof RISK_CONFIG;
-    const progs     = (l.program_enrollments || []).map((e: any) => e.programs?.program_name).filter(Boolean);
+    const progs     = (l.program_enrollments || []).map(e => e.programs?.program_name).filter((n): n is string => !!n);
     const progType  = (l.program_enrollments || [])[0]?.programs?.program_type || 'STEM';
-    const doneProj  = (l.projects || []).filter((p: any) => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
+    const doneProj  = (l.projects || []).filter(p => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
     const totalAss  = (l.assessments || []).length;
     const initials  = `${l.learner_profiles?.first_name?.[0] || ''}${l.learner_profiles?.last_name?.[0] || ''}`.toUpperCase();
     return {

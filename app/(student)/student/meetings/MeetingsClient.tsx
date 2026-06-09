@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, ExternalLink } from 'lucide-react';
 
-interface Meeting {
+export interface Meeting {
   meeting_id:   string;
   title:        string;
   description:  string | null;
