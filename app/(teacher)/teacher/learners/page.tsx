@@ -35,7 +35,7 @@ export default async function TeacherLearnersPage() {
   const learners = (enrollments || []).map((e: any) => {
     const l        = e.learners;
     const risk     = l?.risk_scores?.risk_level || 'low';
-    const att      = Math.round(l?.risk_scores?.attendance_rate || 0);
+    const att      = Math.floor(l?.risk_scores?.attendance_rate || 0);
     const score    = Math.round(l?.risk_scores?.avg_score || 0);
     const initials = `${l?.learner_profiles?.first_name?.[0]||''}${l?.learner_profiles?.last_name?.[0]||''}`.toUpperCase();
     const doneProj = (l?.projects||[]).filter((p: any)=>['marked','completed'].includes(p.stage||p.completion_status||'')).length;

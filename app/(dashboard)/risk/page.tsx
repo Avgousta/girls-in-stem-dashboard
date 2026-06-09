@@ -25,7 +25,7 @@ async function getRiskData() {
   const risks = (data || []).map((r: any) => ({
     score_id:        r.score_id,
     risk_level:      r.risk_level as 'high' | 'medium' | 'low',
-    attendance_rate: Math.round(r.attendance_rate ?? 0),
+    attendance_rate: Math.floor(r.attendance_rate ?? 0),
     avg_score:       Math.round(r.avg_score ?? 0),
     risk_flags:      r.risk_flags ?? [],
     last_calculated: r.last_calculated,

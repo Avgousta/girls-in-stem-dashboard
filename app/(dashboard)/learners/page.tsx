@@ -39,7 +39,7 @@ async function getLearners() {
     email:      l.learner_profiles?.email      ?? '',
     school:     l.schools?.school_name         ?? '—',
     risk:       l.risk_scores?.risk_level      ?? 'low',
-    att:        Math.round(l.risk_scores?.attendance_rate ?? 0),
+    att:        Math.floor(l.risk_scores?.attendance_rate ?? 0),
     score:      Math.round(l.risk_scores?.avg_score       ?? 0),
     sponsors:   sponsorMap[l.learner_id] || [],
     programmes: (l.program_enrollments || []).map((e: any) => e.programs?.program_name).filter(Boolean),

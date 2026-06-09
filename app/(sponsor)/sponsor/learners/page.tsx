@@ -38,7 +38,7 @@ export default async function SponsorLearnersPage() {
     .order('learner_code') : { data: [] };
 
   const list = (learners || []).map((l: any) => {
-    const att       = Math.round(l.risk_scores?.attendance_rate || 0);
+    const att       = Math.floor(l.risk_scores?.attendance_rate || 0);
     const score     = Math.round(l.risk_scores?.avg_score || 0);
     const risk      = (l.risk_scores?.risk_level || 'low') as keyof typeof RISK_CONFIG;
     const progs     = (l.program_enrollments || []).map((e: any) => e.programs?.program_name).filter(Boolean);

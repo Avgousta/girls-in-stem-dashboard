@@ -55,7 +55,26 @@
       "Bash(git commit -m 'Fix: remove event handlers from Server Components *)",
       "Bash(git commit -m 'Redesign: learner report card — premium dark brand theme *)",
       "Bash(xargs grep -l \"learner\\\\|student\")",
-      "Bash(git commit -m 'Feature: learner self-registration with pre-filled code links *)"
+      "Bash(git commit -m 'Feature: learner self-registration with pre-filled code links *)",
+      "Bash(xargs grep -l \"sidebar\\\\|Sidebar\\\\|nav\\\\|Nav\")",
+      "Bash(git commit *)",
+      "Bash(node -e \"const bcrypt = require\\('bcryptjs'\\); bcrypt.hash\\('Student123!', 10\\).then\\(h => console.log\\(h\\)\\);\")",
+      "Read(//c/Users/User/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/4ae9c37e-15d3-41cd-9192-f5c700b5963a/15e15d0c-2c7d-4b62-bfb8-561e752f7b5e/skills/xlsx/**)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "Bash(python scripts/analyse_import.py)",
+      "Bash(python scripts/generate_matching_report.py)",
+      "Bash(python scripts/import_marks.py)",
+      "Bash(python scripts/insert_assessments.py)",
+      "mcp__plugin_claude-mem_mcp-search__get_observations",
+      "Bash(mkdir -p \"C:/Users/User/girls-stem-dashboard/app/api/v1/attendance/[id]\")",
+      "Bash(extract-text \"C:\\\\Users\\\\User\\\\Downloads\\\\GirlsSTEM_Learner_Matching_Report.xlsx\")",
+      "Bash(python \"C:/Users/User/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/4ae9c37e-15d3-41cd-9192-f5c700b5963a/15e15d0c-2c7d-4b62-bfb8-561e752f7b5e/skills/xlsx/scripts/recalc.py\" --help)",
+      "PowerShell(py -m pip install supabase pandas openpyxl 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\User\\\\girls-stem-dashboard\"; npx vercel deploy --prod 2>&1 | Where-Object { $_ -match 'Production|Aliased|Error|ready' } | Select-Object -Last 5)",
+      "Bash(xargs grep -l \"console\\\\.\\\\\\(log\\\\|error\\\\|warn\\\\\\)\")",
+      "Bash(xargs grep -l \"Math.round.*attendance_rate\\\\|attendance_rate.*Math.round\")"
     ]
   }
 }

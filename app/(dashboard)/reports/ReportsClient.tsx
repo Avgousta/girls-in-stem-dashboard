@@ -471,7 +471,7 @@ export default function ReportsClient({
      ...rawLearners.map((l: any) => [
        l.learner_code || '', l.learner_profiles?.first_name || '', l.learner_profiles?.last_name || '',
        l.schools?.school_name || '', String(l.grade ?? ''), l.programme_status,
-       String(Math.round(l.risk_scores?.attendance_rate || 0)),
+       String(Math.floor(l.risk_scores?.attendance_rate || 0)),
        String(Math.round(l.risk_scores?.avg_score || 0)),
        l.risk_scores?.risk_level || 'low',
      ])],
@@ -518,7 +518,7 @@ export default function ReportsClient({
     l.schools?.school_name || '—',
     l.grade != null ? `Grade ${l.grade}` : '—',
     l.programme_status,
-    `${Math.round(l.risk_scores?.attendance_rate || 0)}%`,
+    `${Math.floor(l.risk_scores?.attendance_rate || 0)}%`,
     `${Math.round(l.risk_scores?.avg_score || 0)}%`,
     l.risk_scores?.risk_level || 'low',
   ]);
