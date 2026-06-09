@@ -14,7 +14,7 @@ export default async function SponsorLayout({ children }: { children: React.Reac
     .eq('sponsor_id', user.sponsor_id)
     .single();
 
-  const sponsorName = (sponsor as any)?.sponsor_name || 'Sponsor';
+  const sponsorName = (sponsor as { sponsor_name: string } | null)?.sponsor_name || 'Sponsor';
   const initials    = sponsorName.split(' ').map((w: string) => w[0]).join('').slice(0,2).toUpperCase();
 
   const nav = [

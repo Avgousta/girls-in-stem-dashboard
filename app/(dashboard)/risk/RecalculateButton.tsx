@@ -17,8 +17,8 @@ export default function RecalculateButton() {
       const count = json.data?.recalculated ?? 0;
       toast.success(`Risk scores updated for ${count} learner${count !== 1 ? 's' : ''}`);
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.message || 'Something went wrong');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err) || 'Something went wrong');
     } finally {
       setLoading(false);
     }

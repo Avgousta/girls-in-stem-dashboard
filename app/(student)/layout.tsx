@@ -14,7 +14,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
     .eq('user_id', user.user_id)
     .single();
 
-  const profile    = (learner as any)?.learner_profiles;
+  const profile    = (learner as unknown as { learner_profiles: { first_name: string; avatar_url: string | null; cover_color: string | null } | null } | null)?.learner_profiles;
   const firstName  = profile?.first_name  || user.full_name.split(' ')[0];
   const avatarUrl  = profile?.avatar_url  || null;
   const accentColor = profile?.cover_color || '#4F2D7F';

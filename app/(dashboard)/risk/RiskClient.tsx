@@ -245,13 +245,14 @@ function RiskSection({
 }
 
 // ─── Chart tooltip ────────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }: any) {
+interface TTP { name:string; value:number; color?:string; fill?:string }
+function ChartTooltip({ active, payload, label }: { active?:boolean; payload?:TTP[]; label?:string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl px-3 py-2 text-xs shadow-xl"
       style={{ background: DS.bg, border: `1px solid ${DS.border}` }}>
       <p className="font-bold mb-1" style={{ color: DS.textMid }}>{label}</p>
-      {payload.map((p: any) => (
+      {payload.map(p => (
         <p key={p.name} style={{ color: p.fill ?? p.color }}>
           {p.name}: <strong>{p.value}</strong>
         </p>

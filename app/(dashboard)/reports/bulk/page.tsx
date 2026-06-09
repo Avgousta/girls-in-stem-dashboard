@@ -18,7 +18,8 @@ async function getLearners() {
     `)
     .eq('programme_status', 'active')
     .order('learner_code');
-  return (data || []).map((l: any) => ({
+  interface LRow { learner_id:string; learner_code:string; grade:number; learner_profiles:{first_name:string;last_name:string}|null; schools:{school_name:string}|null; risk_scores:{risk_level:string;avg_score:number;attendance_rate:number}|null }
+  return ((data || []) as unknown as LRow[]).map(l => ({
     learner_id:   l.learner_id,
     learner_code: l.learner_code,
     grade:        l.grade,

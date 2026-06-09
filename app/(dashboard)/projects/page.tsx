@@ -30,20 +30,21 @@ async function getProjects() {
     `)
     .order('created_at', { ascending: false });
 
-  return (data || []).map((p: any) => ({
+  interface ProjRow { project_id:string; project_name:string; description:string|null; stage:string|null; completion_status:string; score:number|null; max_score:number|null; due_date:string|null; submitted_at:string|null; created_at:string; learner_id:string; learners:{learner_code:string;grade:number;learner_profiles:{first_name:string;last_name:string}|null;schools:{school_name:string}|null}|null; programs:{program_name:string;program_type:string}|null }
+  return ((data || []) as unknown as ProjRow[]).map(p => ({
     id:          p.project_id,
     name:        p.project_name,
-    description: p.description,
+    description: p.description ?? '',
     stage:       p.stage || 'planning',
     status:      p.completion_status,
     score:       p.score,
-    max_score:   p.max_score,
+    max_score:   p.max_score ?? 100,
     due_date:    p.due_date,
     submitted_at:p.submitted_at,
     learner_id:  p.learner_id,
     learner:     `${p.learners?.learner_profiles?.first_name ?? ''} ${p.learners?.learner_profiles?.last_name ?? ''}`.trim(),
-    learner_code:p.learners?.learner_code,
-    grade:       p.learners?.grade,
+    learner_code:p.learners?.learner_code ?? '',
+    grade:       p.learners?.grade ?? 0,
     school:      p.learners?.schools?.school_name ?? '—',
     programme:   p.programs?.program_name ?? '—',
     prog_type:   p.programs?.program_type ?? '',

@@ -41,7 +41,7 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
     phone:       profile?.phone      || '',
   });
   const [hobbyInput, setHobbyInput] = useState('');
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
 
   const toggleInterest = (tag: string) =>
     set('interests', form.interests.includes(tag)

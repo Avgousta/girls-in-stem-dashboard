@@ -7,7 +7,8 @@ import { DS } from '@/components/platform/tokens';
 
 interface TrendPoint { w: string; r: number }
 
-function ChartTooltip({ active, payload, label }: any) {
+interface TTP { name:string; value:number; color?:string; fill?:string }
+function ChartTooltip({ active, payload, label }: { active?:boolean; payload?:TTP[]; label?:string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl px-3 py-2 text-xs shadow-xl"

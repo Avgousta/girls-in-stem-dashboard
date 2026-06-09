@@ -37,13 +37,13 @@ export default async function NewInterventionPage({ searchParams }: Props) {
         </h1>
         {preselected && (
           <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-mid)' }}>
-            For <strong>{(preselected as any).learner_profiles?.first_name} {(preselected as any).learner_profiles?.last_name}</strong>
+            For <strong>{(preselected as unknown as { learner_profiles: { first_name: string; last_name: string } | null }).learner_profiles?.first_name} {(preselected as unknown as { learner_profiles: { first_name: string; last_name: string } | null }).learner_profiles?.last_name}</strong>
           </p>
         )}
       </div>
       <div className="rounded-2xl p-6" style={{ background: 'var(--ds-surface)', border: '1px solid var(--ds-border)' }}>
         <NewInterventionForm
-          learners={(learnersRes.data || []).map((l: any) => ({
+          learners={((learnersRes.data || []) as unknown as Array<{ learner_id: string; learner_profiles: { first_name: string; last_name: string } | null; schools: { school_name: string } | null }>).map(l => ({
             learner_id: l.learner_id,
             full_name: `${l.learner_profiles?.first_name ?? ''} ${l.learner_profiles?.last_name ?? ''}`.trim(),
             school:    l.schools?.school_name ?? '',

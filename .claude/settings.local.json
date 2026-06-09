@@ -96,7 +96,12 @@
       "Bash(sed -i 's/.eq\\('\\\\''learner_id'\\\\'', \\(learner as any\\).learner_id\\)/.eq\\('\\\\''learner_id'\\\\'', \\(learner as unknown as { learner_id: string }\\).learner_id\\)/' \"app/api/v1/student/profile/route.ts\")",
       "Bash(sed -i 's/.map\\(\\(e: any\\) => e.learners?.user_id\\)/.map\\(\\(e: { learners: { user_id: string } | null }\\) => e.learners?.user_id\\)/' \"app/api/v1/notifications/send/route.ts\")",
       "Bash(sed -i 's/\\(users || \\\\[\\\\]\\).map\\(\\(u: any\\) => u.user_id\\)/\\(users || []\\).map\\(\\(u: { user_id: string }\\) => u.user_id\\)/' \"app/api/v1/notifications/send/route.ts\")",
-      "Bash(sed -i 's/\\(l.program_enrollments || \\\\[\\\\]\\).map\\(\\(e: any\\) => e.programs?.program_name\\).filter\\(Boolean\\)/\\(l.program_enrollments || []\\).map\\(\\(e: { programs: { program_name: string } | null }\\) => e.programs?.program_name\\).filter\\(\\(n\\): n is string => !!n\\)/' \"app/api/v1/learners/route.ts\")"
+      "Bash(sed -i 's/\\(l.program_enrollments || \\\\[\\\\]\\).map\\(\\(e: any\\) => e.programs?.program_name\\).filter\\(Boolean\\)/\\(l.program_enrollments || []\\).map\\(\\(e: { programs: { program_name: string } | null }\\) => e.programs?.program_name\\).filter\\(\\(n\\): n is string => !!n\\)/' \"app/api/v1/learners/route.ts\")",
+      "Bash(sed -i 's/const set = \\(k: string, v: any\\)/const set = \\(k: string, v: unknown\\)/' 'app/\\(student\\)/student/profile/ProfileEditor.tsx' 'app/\\(teacher\\)/teacher/meetings/TeacherMeetingsClient.tsx')",
+      "Bash(sed -i 's/catch \\(err: any\\)/catch \\(err\\)/' \"app/\\(dashboard\\)/risk/RecalculateButton.tsx\")",
+      "Bash(sed -i 's/err\\\\.message/err instanceof Error ? err.message : String\\(err\\)/' \"app/\\(dashboard\\)/risk/RecalculateButton.tsx\")",
+      "Bash(sed -i 's/\\(m.users as any\\)?.full_name/m.users?.full_name/g; s/\\(m.users as any\\).full_name/m.users?.full_name/g' \"app/\\(student\\)/student/meetings/MeetingsClient.tsx\")",
+      "Bash(sed -i \"s/\\(status as any\\)\\\\.pulse/\\( status as { pulse?: boolean } \\).pulse/\" \"app/\\(teacher\\)/teacher/meetings/TeacherMeetingsClient.tsx\")"
     ]
   }
 }

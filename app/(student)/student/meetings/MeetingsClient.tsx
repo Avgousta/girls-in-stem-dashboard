@@ -190,7 +190,7 @@ export default function MeetingsClient({ meetings: initial, learnerId }: { meeti
               </div>
               <h3 className="font-black text-sm leading-tight" style={{ color: 'var(--t-text)' }}>{m.title}</h3>
               {m.programs && <p className="text-xs mt-0.5" style={{ color: 'var(--t-muted)' }}>📚 {m.programs.program_name}</p>}
-              {(m.users as any)?.full_name && <p className="text-xs" style={{ color: 'var(--t-muted)' }}>👩‍🏫 {(m.users as any).full_name}</p>}
+              {m.users?.full_name && <p className="text-xs" style={{ color: 'var(--t-muted)' }}>👩‍🏫 {m.users?.full_name}</p>}
             </div>
             {/* My rating badge */}
             {m.myRating && (

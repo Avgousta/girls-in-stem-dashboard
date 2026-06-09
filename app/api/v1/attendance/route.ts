@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
   const { data, count, error } = await query;
   if (error) return err(error.message, 500);
 
-  const shaped = (data || []).map((a: any) => ({
+  interface AttRow2 { attendance_id:string; session_date:string; status:string; notes:string|null; created_at:string; learners:{learner_profiles:{first_name:string;last_name:string}|null}|null; programs:{program_name:string}|null }
+  const shaped = ((data || []) as unknown as AttRow2[]).map(a => ({
     attendance_id: a.attendance_id,
     session_date:  a.session_date,
     status:        a.status,

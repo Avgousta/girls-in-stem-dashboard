@@ -24,7 +24,8 @@ export async function GET(_: NextRequest, { params }: Params) {
 
   if (error) return err(error.message, 500);
 
-  const shaped = (data || []).map((e: any) => ({
+  interface EnrolRow { learners: { learner_id:string; learner_code:string; grade:number; programme_status:string; learner_profiles:{first_name:string;last_name:string;email:string}|null; schools:{school_name:string}|null } }
+  const shaped = ((data || []) as unknown as EnrolRow[]).map(e => ({
     learner_id:   e.learners.learner_id,
     learner_code: e.learners.learner_code,
     grade:        e.learners.grade,

@@ -16,7 +16,8 @@ async function getPrograms() {
       program_enrollments(count)
     `)
     .order('start_date', { ascending: false });
-  return (data || []).map((p: any) => ({
+  interface PRow { program_id:string; program_name:string; program_type:string; start_date:string; end_date:string|null; max_capacity:number; is_active:boolean; description:string|null; users:{full_name:string}|null; program_enrollments:Array<{count:number}> }
+  return ((data || []) as unknown as PRow[]).map(p => ({
     ...p,
     instructor_name: p.users?.full_name,
     enrolled_count:  p.program_enrollments?.length || 0,

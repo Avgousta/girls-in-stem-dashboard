@@ -22,7 +22,8 @@ async function getRiskData() {
     .order('risk_level', { ascending: false })
     .order('attendance_rate', { ascending: true });
 
-  const risks = (data || []).map((r: any) => ({
+  interface RRow { score_id:string; risk_level:string; attendance_rate:number|null; avg_score:number|null; risk_flags:string[]|null; last_calculated:string; learner_id:string; learners:{learner_profiles:{first_name:string;last_name:string}|null;schools:{school_name:string}|null;program_enrollments:Array<{programs:{program_name:string}|null}>}|null }
+  const risks = ((data || []) as unknown as RRow[]).map(r => ({
     score_id:        r.score_id,
     risk_level:      r.risk_level as 'high' | 'medium' | 'low',
     attendance_rate: Math.floor(r.attendance_rate ?? 0),

@@ -8,7 +8,7 @@ async function getSchools() {
     .from('schools')
     .select('*, learners(count)')
     .order('school_name');
-  return (data || []).map((s: any) => ({
+  return (data || []).map((s) => ({
     school_id:      s.school_id,
     school_name:    s.school_name,
     district:       s.district,

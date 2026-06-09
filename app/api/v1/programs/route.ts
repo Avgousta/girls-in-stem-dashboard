@@ -39,7 +39,8 @@ export async function GET(req: NextRequest) {
   const { data, count, error } = await query;
   if (error) return err(error.message, 500);
 
-  const shaped = (data || []).map((p: any) => ({
+  interface ProgRow { program_id:string; program_name:string; program_type:string; start_date:string; end_date:string|null; max_capacity:number; is_active:boolean; description:string|null; users:{full_name:string}|null; schools:{school_name:string}|null; program_enrollments:Array<unknown> }
+  const shaped = ((data || []) as unknown as ProgRow[]).map(p => ({
     program_id:      p.program_id,
     program_name:    p.program_name,
     program_type:    p.program_type,

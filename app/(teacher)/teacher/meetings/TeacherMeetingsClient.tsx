@@ -55,7 +55,7 @@ export default function TeacherMeetingsClient({ meetings: initial, programs, ins
     scheduled_at: '', duration_min: 60, program_id: '',
   });
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
 
   const detectPlatform = (url: string) => {
     if (url.includes('zoom.us'))             set('platform', 'zoom');
@@ -238,7 +238,7 @@ export default function TeacherMeetingsClient({ meetings: initial, programs, ins
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-lg">{plt.icon}</span>
                             <h3 className="font-bold" style={{ color: DS.text }}>{m.title}</h3>
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full${(status as any).pulse?' animate-pulse':''}`}
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full${( status as { pulse?: boolean } ).pulse?' animate-pulse':''}`}
                               style={{ background: status.bg, color: status.color }}>
                               {status.label}
                             </span>
