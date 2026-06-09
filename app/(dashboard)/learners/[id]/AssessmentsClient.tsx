@@ -341,7 +341,7 @@ export default function AssessmentsClient({ assessments: initial, learnerId, pro
     const yr    = yearOf(grade);
     const grNum = gradeNumOf(grade);
     const tNum  = termKey === 'none' ? null : Number(termKey);
-    const cat   = tNum === null ? 'Baseline' : `Term ${tNum}` as any;
+    const cat   = tNum === null ? 'Baseline' : `Term ${tNum}`;
     const label = cat === 'Baseline'
       ? `${source} ${subject} Baseline (Grade ${grNum} (${yr}))`
       : `${source} ${subject} — Term ${tNum} (Grade ${grNum} (${yr}))`;
@@ -350,7 +350,7 @@ export default function AssessmentsClient({ assessments: initial, learnerId, pro
   };
 
   // Determine programId to use (prefer one from existing assessments in this learner)
-  const resolvedProgramId = (assessments[0] as any)?.program_id ?? programId;
+  const resolvedProgramId = (assessments[0] as (Assessment & { program_id?: string }) | undefined)?.program_id ?? programId;
 
   return (
     <div className="space-y-6">
@@ -390,7 +390,7 @@ export default function AssessmentsClient({ assessments: initial, learnerId, pro
                       const src = (a.notes ?? '').startsWith('Melisizwe') ? 'Melisizwe' : 'School';
                       const subj = a.subject as 'Mathematics'|'Science';
                       return <ScoreChip key={i} label={shortLabel} assessment={a}
-                        slot={makeSlot(grade, 'none', src as any, subj)}
+                        slot={makeSlot(grade, 'none', src as 'Melisizwe' | 'School', subj)}
                         learnerId={learnerId} programId={resolvedProgramId}
                         onSaved={handleSaved} onDeleted={handleDeleted} />;
                     })}

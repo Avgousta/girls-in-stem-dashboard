@@ -18,15 +18,19 @@ export async function GET() {
   const sponsors = sponsorsRes.data  || [];
   const links    = linksRes.data     || [];
   const learners = learnersRes.data  || [];
-  const linkedIds = new Set(links.map((l: any) => l.learner_id));
-  const unlinked  = learners.filter((l: any) => !linkedIds.has(l.learner_id));
+  interface LinkRow    { learner_id: string }
+  interface LearnerRow { learner_id: string; learner_code: string; learner_profiles: { first_name: string; last_name: string } | null }
+  const typedLinks    = (links || []) as unknown as LinkRow[];
+  const typedLearners = (learners || []) as unknown as LearnerRow[];
+  const linkedIds     = new Set(typedLinks.map(l => l.learner_id));
+  const unlinked      = typedLearners.filter(l => !linkedIds.has(l.learner_id));
 
   return new NextResponse(JSON.stringify({
     sponsors,
-    total_links:    links.length,
-    total_learners: learners.length,
+    total_links:    typedLinks.length,
+    total_learners: typedLearners.length,
     unlinked_count: unlinked.length,
-    unlinked:       unlinked.map((l: any) => ({
+    unlinked:       unlinked.map(l => ({
       learner_id:   l.learner_id,
       learner_code: l.learner_code,
       name: `${l.learner_profiles?.first_name} ${l.learner_profiles?.last_name}`,

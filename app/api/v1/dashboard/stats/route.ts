@@ -32,11 +32,11 @@ export async function GET() {
   // Calculate average attendance rate
   const allAtt      = attRes.data || [];
   const avgAtt      = allAtt.length
-    ? Math.round(allAtt.filter((a: any) => a.status === 'present').length / allAtt.length * 100)
+    ? Math.round(allAtt.filter((a: { status: string }) => a.status === 'present').length / allAtt.length * 100)
     : 0;
 
   // Calculate average score
-  const allScores   = (scoreRes.data || []).map((a: any) => Number(a.percentage));
+  const allScores   = (scoreRes.data || []).map((a: { percentage: number | null }) => Number(a.percentage));
   const avgScore    = allScores.length
     ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length)
     : 0;

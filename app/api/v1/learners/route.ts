@@ -46,7 +46,8 @@ export async function GET(req: NextRequest) {
   const { data, count, error } = await query;
   if (error) return err(error.message, 500);
 
-  const shaped = (data || []).map((l: any) => ({
+  interface LRow { learner_id:string; learner_code:string; grade:number; enrollment_date:string; programme_status:string; learner_profiles:{first_name:string;last_name:string;email:string}|null; schools:{school_name:string}|null; risk_scores:{risk_level:string;attendance_rate:number;avg_score:number}|null; program_enrollments:Array<{programs:{program_name:string}|null}> }
+  const shaped = ((data || []) as unknown as LRow[]).map(l => ({
     learner_id:       l.learner_id,
     learner_code:     l.learner_code,
     grade:            l.grade,
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
     risk_level:       l.risk_scores?.risk_level || 'low',
     attendance_rate:  l.risk_scores?.attendance_rate || 0,
     avg_score:        l.risk_scores?.avg_score || 0,
-    programs:         (l.program_enrollments || []).map((e: any) => e.programs?.program_name).filter(Boolean),
+    programs:         (l.program_enrollments || []).map((e: { programs: { program_name: string } | null }) => e.programs?.program_name).filter((n): n is string => !!n),
   })).filter(l => !search ||
     l.full_name.toLowerCase().includes(search.toLowerCase()) ||
     l.learner_code.toLowerCase().includes(search.toLowerCase()));

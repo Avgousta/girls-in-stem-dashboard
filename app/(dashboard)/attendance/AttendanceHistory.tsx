@@ -125,8 +125,9 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
       setSessions(prev => prev.map(s => {
         if (s.session_date !== r.session_date || s.program_name !== r.program_name) return s;
         const updated = { ...s };
-        if (r.status in updated) (updated as any)[r.status]--;
-        if (editStatus in updated) (updated as any)[editStatus]++;
+        type StatusKey = 'present' | 'absent' | 'late' | 'excused';
+        const dec = r.status as StatusKey; if (dec in updated) updated[dec]--;
+        const inc = editStatus as StatusKey; if (inc in updated) updated[inc]++;
         updated.rate = updated.total ? Math.round(updated.present / updated.total * 100) : 0;
         return updated;
       }));
@@ -153,7 +154,7 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
         const key = `${r.session_date}__${r.program_name}`;
         if (!sessMap[key]) sessMap[key] = { key, session_date: r.session_date, program_name: r.program_name, total: 0, present: 0, absent: 0, late: 0, excused: 0, rate: 0 };
         sessMap[key].total++;
-        if (r.status in sessMap[key]) (sessMap[key] as any)[r.status]++;
+        const st = r.status as 'present' | 'absent' | 'late' | 'excused'; if (st in sessMap[key]) sessMap[key][st]++;
       });
       const sess = Object.values(sessMap)
         .map(s => ({ ...s, rate: s.total ? Math.round(s.present / s.total * 100) : 0 }))

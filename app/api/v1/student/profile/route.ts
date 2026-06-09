@@ -14,7 +14,7 @@ export async function GET(_: NextRequest) {
     .single();
 
   if (!learner) return err('Profile not found', 404);
-  return ok((learner as any).learner_profiles);
+  return ok((learner as unknown as { learner_profiles: unknown }).learner_profiles);
 }
 
 export async function PATCH(req: NextRequest) {
@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
   const { data, error } = await supabase
     .from('learner_profiles')
     .update(updates)
-    .eq('learner_id', (learner as any).learner_id)
+    .eq('learner_id', (learner as unknown as { learner_id: string }).learner_id)
     .select()
     .single();
 

@@ -91,7 +91,12 @@
       "Bash(Get-PSDrive C)",
       "Bash(Select-Object Used, Free)",
       "Bash(wmic logicaldisk *)",
-      "Bash(cd \"C:\\\\Users\\\\User\\\\girls-stem-dashboard\" && sed -i 's/catch \\(err: any\\)/catch \\(err\\)/g' \"app/\\(dashboard\\)/programs/[id]/EnrolmentManager.tsx\" && echo \"Done\")"
+      "Bash(cd \"C:\\\\Users\\\\User\\\\girls-stem-dashboard\" && sed -i 's/catch \\(err: any\\)/catch \\(err\\)/g' \"app/\\(dashboard\\)/programs/[id]/EnrolmentManager.tsx\" && echo \"Done\")",
+      "Bash(sed -i 's/return ok\\(\\(learner as any\\).learner_profiles\\)/return ok\\(\\(learner as unknown as { learner_profiles: unknown }\\).learner_profiles\\)/' \"app/api/v1/student/profile/route.ts\")",
+      "Bash(sed -i 's/.eq\\('\\\\''learner_id'\\\\'', \\(learner as any\\).learner_id\\)/.eq\\('\\\\''learner_id'\\\\'', \\(learner as unknown as { learner_id: string }\\).learner_id\\)/' \"app/api/v1/student/profile/route.ts\")",
+      "Bash(sed -i 's/.map\\(\\(e: any\\) => e.learners?.user_id\\)/.map\\(\\(e: { learners: { user_id: string } | null }\\) => e.learners?.user_id\\)/' \"app/api/v1/notifications/send/route.ts\")",
+      "Bash(sed -i 's/\\(users || \\\\[\\\\]\\).map\\(\\(u: any\\) => u.user_id\\)/\\(users || []\\).map\\(\\(u: { user_id: string }\\) => u.user_id\\)/' \"app/api/v1/notifications/send/route.ts\")",
+      "Bash(sed -i 's/\\(l.program_enrollments || \\\\[\\\\]\\).map\\(\\(e: any\\) => e.programs?.program_name\\).filter\\(Boolean\\)/\\(l.program_enrollments || []\\).map\\(\\(e: { programs: { program_name: string } | null }\\) => e.programs?.program_name\\).filter\\(\\(n\\): n is string => !!n\\)/' \"app/api/v1/learners/route.ts\")"
     ]
   }
 }

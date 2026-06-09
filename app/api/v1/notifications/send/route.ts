@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
       .select('learners(user_id)')
       .eq('program_id', program_id)
       .eq('status', 'active');
-    targetUserIds = (enrollments || [])
-      .map((e: any) => e.learners?.user_id)
-      .filter(Boolean);
+    targetUserIds = ((enrollments || []) as unknown as Array<{ learners: { user_id: string } | null }>)
+      .map(e => e.learners?.user_id)
+      .filter((id): id is string => !!id);
   } else if (role) {
     // All users with a specific role
     const { data: users } = await supabase
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       .select('user_id')
       .eq('role', role)
       .eq('is_active', true);
-    targetUserIds = (users || []).map((u: any) => u.user_id);
+    targetUserIds = (users || []).map((u: { user_id: string }) => u.user_id);
   } else {
     return err('Provide user_ids, program_id, or role as target');
   }
