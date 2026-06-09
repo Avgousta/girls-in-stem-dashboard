@@ -25,7 +25,7 @@ export default async function StudentSupportPage() {
 
   const { data: learnerRow } = await supabase
     .from('learners').select('learner_id').eq('user_id', user.user_id).single();
-  const learnerId = (learnerRow as any)?.learner_id;
+  const learnerId = (learnerRow as { learner_id: string } | null)?.learner_id;
 
   if (!learnerId) return (
     <div className="text-center py-16">
@@ -45,9 +45,10 @@ export default async function StudentSupportPage() {
     .eq('learner_id', learnerId)
     .order('created_at', { ascending: false });
 
-  const items    = interventions || [];
-  const open     = items.filter((i: any) => i.status !== 'resolved');
-  const resolved = items.filter((i: any) => i.status === 'resolved');
+  interface SupportItem { intervention_id: string; intervention_type: string | null; status: string; created_at: string; resolved_at: string | null; reason: string; action_plan: string | null; assigned_user: { full_name: string } | null; intervention_updates: Array<{ update_id: string; note: string; status_change: string | null; created_at: string; author: { full_name: string } | null }> }
+  const items    = (interventions || []) as unknown as SupportItem[];
+  const open     = items.filter(i => i.status !== 'resolved');
+  const resolved = items.filter(i => i.status === 'resolved');
 
   return (
     <div className="space-y-6 pt-1">
@@ -73,12 +74,12 @@ export default async function StudentSupportPage() {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: t.muted }}>Active Support</p>
           <div className="space-y-3">
-            {open.map((item: any) => {
+            {open.map(item => {
               const updates = (item.intervention_updates || [])
-                .sort((a: any, b: any) => a.created_at.localeCompare(b.created_at));
+                .sort((a, b) => a.created_at.localeCompare(b.created_at));
               const entries = [
                 { label: 'Support started', sub: fmt.date(item.created_at), color: '#94A3B8' },
-                ...updates.map((u: any) => ({
+                ...updates.map(u => ({
                   label: u.status_change ? `Update: ${u.status_change}` : u.note,
                   sub:   `${u.author?.full_name || '—'} · ${fmt.date(u.created_at)}`,
                   color: u.status_change ? '#60A5FA' : '#2DD4A0',
@@ -94,7 +95,7 @@ export default async function StudentSupportPage() {
                   <div className="px-5 py-4" style={{ borderBottom: t.border }}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold" style={{ color: t.text }}>{TYPE_LABEL[item.intervention_type] || '📋 Support'}</p>
+                        <p className="text-sm font-bold" style={{ color: t.text }}>{TYPE_LABEL[item.intervention_type ?? ''] || '📋 Support'}</p>
                         <p className="text-xs mt-0.5 leading-relaxed" style={{ color: t.muted }}>{item.reason}</p>
                       </div>
                       <span className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0"
@@ -107,9 +108,9 @@ export default async function StudentSupportPage() {
                         <p className="text-sm leading-relaxed" style={{ color: t.text }}>{item.action_plan}</p>
                       </div>
                     )}
-                    {(item.assigned_user as any)?.full_name && (
+                    {item.assigned_user?.full_name && (
                       <p className="text-xs mt-2" style={{ color: t.muted }}>
-                        👤 <strong style={{ color: t.text }}>{(item.assigned_user as any).full_name}</strong> is supporting you
+                        👤 <strong style={{ color: t.text }}>{item.assigned_user.full_name}</strong> is supporting you
                       </p>
                     )}
                   </div>
@@ -131,12 +132,12 @@ export default async function StudentSupportPage() {
             Resolved ({resolved.length})
           </p>
           <div className="space-y-2">
-            {resolved.map((item: any) => (
+            {resolved.map(item => (
               <div key={item.intervention_id} className="rounded-2xl px-5 py-4 flex items-center gap-3"
                 style={{ background: t.card, border: t.border }}>
                 <span className="text-xl shrink-0">✅</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold" style={{ color: t.text }}>{TYPE_LABEL[item.intervention_type]||'Support'}</p>
+                  <p className="text-sm font-bold" style={{ color: t.text }}>{TYPE_LABEL[item.intervention_type ?? '']||'Support'}</p>
                   <p className="text-xs mt-0.5 line-clamp-1" style={{ color: t.muted }}>{item.reason}</p>
                 </div>
                 {item.resolved_at && (

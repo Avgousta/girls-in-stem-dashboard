@@ -15,7 +15,7 @@ export default async function StudentMentorshipPage() {
 
   const { data: learnerRow } = await supabase
     .from('learners').select('learner_id').eq('user_id', user.user_id).single();
-  const learnerId = (learnerRow as any)?.learner_id;
+  const learnerId = (learnerRow as { learner_id: string } | null)?.learner_id;
 
   if (!learnerId) return (
     <div className="text-center py-16">
@@ -35,11 +35,13 @@ export default async function StudentMentorshipPage() {
       .order('created_at', { ascending: false }),
   ]);
 
-  const sessions       = sessionsRes.data  || [];
-  const goals          = goalsRes.data     || [];
-  const activeGoals    = goals.filter((g: any) => g.status === 'active');
-  const completedGoals = goals.filter((g: any) => g.status === 'completed');
-  const latestNextStep = sessions.find((s: any) => s.next_steps);
+  interface SessionRow { session_id: string; session_date: string; session_type: string | null; duration_minutes: number | null; notes: string | null; next_steps: string | null; goals_discussed: string | null; learner_mood: number | null; outcome: string | null; users: { full_name: string } | null }
+  interface GoalRow    { goal_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; users: { full_name: string } | null }
+  const sessions       = (sessionsRes.data  || []) as unknown as SessionRow[];
+  const goals          = (goalsRes.data     || []) as unknown as GoalRow[];
+  const activeGoals    = goals.filter(g => g.status === 'active');
+  const completedGoals = goals.filter(g => g.status === 'completed');
+  const latestNextStep = sessions.find(s => s.next_steps);
 
   return (
     <div className="space-y-6 pt-1">
@@ -66,7 +68,7 @@ export default async function StudentMentorshipPage() {
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#60A5FA' }}>
             📌 Your Next Steps
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: t.text }}>{(latestNextStep as any).next_steps}</p>
+          <p className="text-sm leading-relaxed" style={{ color: t.text }}>{latestNextStep.next_steps}</p>
         </div>
       )}
 
@@ -77,7 +79,7 @@ export default async function StudentMentorshipPage() {
             🎯 My Goals
           </p>
           <div className="space-y-2">
-            {activeGoals.map((g: any) => (
+            {activeGoals.map(g => (
               <LearnerGoalCard key={g.goal_id} title={g.title} desc={g.description||''} due={g.target_date} status={g.status} />
             ))}
           </div>
@@ -91,12 +93,12 @@ export default async function StudentMentorshipPage() {
             Session History
           </p>
           <div className="space-y-3">
-            {sessions.map((s: any) => (
+            {sessions.map(s => (
               <LearnerSessionSummary
                 key={s.session_id}
                 type={s.session_type || 'check_in'}
                 date={s.session_date}
-                mentorName={(s.users as any)?.full_name || '—'}
+                mentorName={s.users?.full_name || '—'}
                 outcome={s.outcome}
                 mood={s.learner_mood}
                 nextSteps={s.next_steps || ''}
@@ -112,7 +114,7 @@ export default async function StudentMentorshipPage() {
             ✅ Completed Goals ({completedGoals.length})
           </p>
           <div className="space-y-2">
-            {completedGoals.map((g: any) => (
+            {completedGoals.map(g => (
               <LearnerGoalCard key={g.goal_id} title={g.title} desc={g.description||''} due={g.target_date} status={g.status} />
             ))}
           </div>

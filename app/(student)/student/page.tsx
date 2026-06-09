@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import StudentDashboardClient from './StudentDashboardClient';
+import StudentDashboardClient, { type LearnerData, type Meeting } from './StudentDashboardClient';
 import { calcTotalXP, levelFromTotalXP, calcStreak, buildChallenges } from '@/lib/gamification/engine';
 
 export default async function StudentDashboard() {
@@ -56,8 +56,8 @@ export default async function StudentDashboard() {
 
   return (
     <StudentDashboardClient
-      learner={learner}
-      meetings={meetings || []}
+      learner={learner as unknown as LearnerData}
+      meetings={(meetings || []) as unknown as Meeting[]}
       streak={streak}
       totalXP={totalXP}
       levelData={levelData}

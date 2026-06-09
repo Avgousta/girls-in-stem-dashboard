@@ -19,13 +19,15 @@ export default async function StudentAttendancePage() {
     .eq('user_id', user.user_id)
     .single();
 
-  const records = ((learner as any)?.attendance || [])
-    .sort((a: any, b: any) => b.session_date.localeCompare(a.session_date));
+  interface AttRow { attendance_id: string; status: string; session_date: string; notes: string | null; programs: { program_name: string } | null }
+  interface AttLearner { attendance: AttRow[] }
+  const records = ((learner as unknown as AttLearner | null)?.attendance || [])
+    .sort((a, b) => b.session_date.localeCompare(a.session_date));
 
   const total   = records.length;
-  const present = records.filter((r: any) => r.status === 'present').length;
-  const absent  = records.filter((r: any) => r.status === 'absent').length;
-  const late    = records.filter((r: any) => r.status === 'late').length;
+  const present = records.filter(r => r.status === 'present').length;
+  const absent  = records.filter(r => r.status === 'absent').length;
+  const late    = records.filter(r => r.status === 'late').length;
   const rate    = total ? Math.round(present / total * 100) : 0;
 
   const STATUS: Record<string, { color: string; bg: string; emoji: string; label: string }> = {
@@ -99,7 +101,7 @@ export default async function StudentAttendancePage() {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: t.muted }}>All Sessions</p>
           <div className="space-y-2">
-            {records.map((r: any, i: number) => {
+            {records.map((r, i) => {
               const cfg = STATUS[r.status] || STATUS.present;
               return (
                 <div key={i} className="flex items-center justify-between px-4 py-3 rounded-2xl"
@@ -108,7 +110,7 @@ export default async function StudentAttendancePage() {
                     <span className="text-lg">{cfg.emoji}</span>
                     <div>
                       <p className="text-sm font-bold" style={{ color: t.text }}>{fmt.date(r.session_date)}</p>
-                      <p className="text-xs" style={{ color: t.muted }}>{(r.programs as any)?.program_name || 'Session'}</p>
+                      <p className="text-xs" style={{ color: t.muted }}>{r.programs?.program_name || 'Session'}</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full"

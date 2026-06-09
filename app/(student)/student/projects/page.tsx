@@ -18,7 +18,7 @@ export default async function StudentProjectsPage() {
 
   const { data: learner } = await supabase
     .from('learners').select('learner_id').eq('user_id', user.user_id).single();
-  const learnerId = (learner as any)?.learner_id;
+  const learnerId = (learner as { learner_id: string } | null)?.learner_id;
 
   const { data: projects } = learnerId ? await supabase
     .from('projects')
@@ -34,7 +34,8 @@ export default async function StudentProjectsPage() {
 
   const list = (projects || []);
 
-  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+  type LucideComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number | string }>;
+  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: LucideComponent }> = {
     planning:    { label: 'Planning',     color: '#6B7280', bg: 'rgba(107,114,128,0.12)', icon: Circle },
     in_progress: { label: 'In Progress',  color: '#D97706', bg: 'rgba(217,119,6,0.12)',   icon: Clock },
     review:      { label: 'Under Review', color: '#7C3AED', bg: 'rgba(124,58,237,0.12)',  icon: Clock },
@@ -44,8 +45,10 @@ export default async function StudentProjectsPage() {
     completed:   { label: 'Completed',    color: '#2DD4A0', bg: 'rgba(45,212,160,0.12)',  icon: CheckCircle2 },
   };
 
-  const active    = list.filter((p: any) => !['marked','completed'].includes(p.stage || p.completion_status)).length;
-  const completed = list.filter((p: any) => ['marked','completed'].includes(p.stage || p.completion_status)).length;
+  interface ProjectRow { project_id: string; project_name: string; description: string | null; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; submitted_at: string | null; file_url: string | null; created_at: string; programs: { program_name: string; program_type: string } | null; project_feedback: Array<{ feedback_id: string; body: string; created_at: string; is_private: boolean; users: { full_name: string; role: string } | null }> }
+  const typedList = list as unknown as ProjectRow[];
+  const active    = typedList.filter(p => !['marked','completed'].includes(p.stage || p.completion_status)).length;
+  const completed = typedList.filter(p => ['marked','completed'].includes(p.stage || p.completion_status)).length;
 
   return (
     <div className="space-y-5">
@@ -73,13 +76,13 @@ export default async function StudentProjectsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {list.map((p: any) => {
+          {typedList.map(p => {
             const stageKey       = p.stage || p.completion_status || 'not_started';
             const cfg            = STATUS_CONFIG[stageKey] || STATUS_CONFIG.not_started;
             const Icon           = cfg.icon;
             const pct            = p.score != null ? Math.round((p.score / (p.max_score || 100)) * 100) : null;
             const isOverdue      = p.due_date && new Date(p.due_date) < new Date() && !['marked','completed','submitted'].includes(stageKey);
-            const publicFeedback = (p.project_feedback || []).filter((f: any) => !f.is_private);
+            const publicFeedback = (p.project_feedback || []).filter(f => !f.is_private);
             const canSubmit      = ['planning','in_progress','review'].includes(stageKey);
             const scoreColor     = pct === null ? t.muted : pct >= 75 ? '#2DD4A0' : pct >= 50 ? '#FCD34D' : '#F87171';
 
@@ -145,7 +148,7 @@ export default async function StudentProjectsPage() {
                     <p className="text-xs font-semibold" style={{ color: t.muted }}>
                       💬 Teacher Feedback ({publicFeedback.length})
                     </p>
-                    {publicFeedback.slice(-2).map((f: any) => (
+                    {publicFeedback.slice(-2).map(f => (
                       <div key={f.feedback_id} className="rounded-xl p-3"
                         style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.15)' }}>
                         <div className="flex items-center justify-between mb-1">

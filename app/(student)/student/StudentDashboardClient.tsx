@@ -5,9 +5,22 @@ import { useTheme } from '../StudentThemeProvider';
 import type { StreakData, Challenge } from '@/lib/gamification/engine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+export interface LearnerData {
+  learner_id: string;
+  learner_code: string;
+  grade: number;
+  schools: { school_name: string } | null;
+  learner_profiles: { first_name: string; last_name: string; aspiration?: string | null; bio?: string | null; cover_color?: string | null } | null;
+  attendance: Array<{ status: string; session_date: string }>;
+  assessments: Array<{ percentage: number | null; grade_band: string | null; subject: string; assessment_date: string | null }>;
+  projects: Array<{ project_id: string; project_name: string; stage: string | null; completion_status: string; due_date: string | null }>;
+  program_enrollments: Array<{ status: string; programs: { program_name: string; program_type: string } | null }>;
+}
+export interface Meeting { meeting_id: string; title: string; scheduled_at: string; platform: string; meeting_url: string }
+
 interface Props {
-  learner:   any;
-  meetings:  any[];
+  learner:   LearnerData | null;
+  meetings:  Meeting[];
   streak:    StreakData;
   totalXP:   number;
   levelData: { level: number; currentXP: number; neededXP: number; pct: number };
@@ -123,12 +136,12 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
   const attendance  = learner.attendance  || [];
   const assessments = learner.assessments || [];
   const projects    = learner.projects    || [];
-  const programmes  = (learner.program_enrollments || []).filter((e: any) => e.status === 'active');
+  const programmes  = (learner.program_enrollments || []).filter(e => e.status === 'active');
 
-  const attRate   = attendance.length ? Math.round(attendance.filter((a: any) => a.status === 'present').length / attendance.length * 100) : 0;
-  const avgScore  = assessments.length ? Math.round(assessments.reduce((s: number, a: any) => s + Number(a.percentage || 0), 0) / assessments.length) : 0;
-  const doneProj  = projects.filter((p: any) => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
-  const activeProj= projects.filter((p: any) => !['marked','completed'].includes(p.stage || p.completion_status || '')).length;
+  const attRate   = attendance.length ? Math.round(attendance.filter(a => a.status === 'present').length / attendance.length * 100) : 0;
+  const avgScore  = assessments.length ? Math.round(assessments.reduce((s, a) => s + Number(a.percentage || 0), 0) / assessments.length) : 0;
+  const doneProj  = projects.filter(p => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
+  const activeProj= projects.filter(p => !['marked','completed'].includes(p.stage || p.completion_status || '')).length;
 
   const firstName  = profile?.first_name || 'Learner';
   const coverColor = profile?.cover_color || accentColor;
@@ -136,12 +149,12 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
   const greeting   = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const recentAss = [...assessments]
-    .sort((a: any, b: any) => (b.assessment_date||'').localeCompare(a.assessment_date||''))
+    .sort((a, b) => (b.assessment_date||'').localeCompare(a.assessment_date||''))
     .slice(0, 3);
 
   // Next steps (smart priority queue)
   const steps: Array<{ icon:string; title:string; sub:string; href:string; accent:string; pri:number }> = [];
-  const overdue = projects.filter((p: any) => p.due_date && new Date(p.due_date) < new Date() && !['marked','completed'].includes(p.stage||p.completion_status||''));
+  const overdue = projects.filter(p => p.due_date && new Date(p.due_date) < new Date() && !['marked','completed'].includes(p.stage||p.completion_status||''));
   if (overdue.length > 0)  steps.push({ icon:'⚠️', title:'Overdue project',    sub: overdue[0].project_name,       href:'/student/projects',   accent:'#F87171', pri:0 });
   if (meetings.length > 0) {
     const m    = meetings[0];
@@ -225,7 +238,7 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
   );
 
   const LiveBanner = liveClass ? (
-    <a href={(liveClass as any).meeting_url} target="_blank" rel="noopener noreferrer"
+    <a href={liveClass.meeting_url} target="_blank" rel="noopener noreferrer"
       className="flex items-center gap-3 rounded-2xl p-4 active:scale-[0.99] md:hover:scale-[1.01] transition-transform"
       style={{ background: liveClass.diff <= 0 ? 'rgba(52,211,153,0.18)' : 'rgba(52,211,153,0.10)', border:`1px solid ${liveClass.diff<=0?'rgba(52,211,153,0.5)':'rgba(52,211,153,0.25)'}` }}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
@@ -236,7 +249,7 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
         <p className="text-sm font-black truncate" style={{ color: theme.textPrimary }}>
           {liveClass.diff <= 0 ? 'Class is LIVE now!' : `Class starts in ${liveClass.diff}m`}
         </p>
-        <p className="text-xs truncate" style={{ color: '#34D399' }}>{(liveClass as any).title}</p>
+        <p className="text-xs truncate" style={{ color: '#34D399' }}>{liveClass.title}</p>
       </div>
       <span className="text-sm font-black text-white px-4 py-2 rounded-xl shrink-0"
         style={{ background: '#34D399' }}>
@@ -350,10 +363,10 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
         }
       />
       <div className="space-y-2">
-        {recentAss.map((a: any, i: number) => {
+        {recentAss.map((a, i) => {
           const pct   = Number(a.percentage || 0);
           const color = scoreColor(pct);
-          const gc    = GRADE_COLORS[a.grade_band as string] || color;
+          const gc    = GRADE_COLORS[a.grade_band ?? ''] || color;
           return (
             <div key={i} className="flex items-center justify-between px-4 py-3 rounded-2xl"
               style={{ background: `${color}10`, border: `1px solid ${color}22` }}>
@@ -383,9 +396,9 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
     <div>
       <SectionHeader icon="📚" title="My Programmes" />
       <div className="space-y-2">
-        {programmes.map((e: any, i: number) => (
+        {programmes.map((e, i) => (
           <div key={i} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={card}>
-            <span className="text-xl shrink-0">{PROG_ICONS[e.programs?.program_type] || '📚'}</span>
+            <span className="text-xl shrink-0">{PROG_ICONS[e.programs?.program_type ?? ''] || '📚'}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold truncate" style={{ color: theme.textPrimary }}>
                 {e.programs?.program_name}
@@ -406,7 +419,7 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
     <div>
       <SectionHeader icon="🗓️" title="Upcoming Classes" />
       <div className="space-y-2">
-        {meetings.map((m: any, i: number) => {
+        {meetings.map((m, i) => {
           const when    = new Date(m.scheduled_at);
           const isToday = when.toDateString() === new Date().toDateString();
           const PLAT: Record<string, string> = { zoom:'🎥', meet:'🟢', teams:'💼', other:'🔗' };

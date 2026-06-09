@@ -48,8 +48,8 @@ export function levelFromTotalXP(totalXP: number): {
 
 export function calcTotalXP(
   attendance: Array<{ status: string }>,
-  assessments: Array<{ percentage: string | number; grade_band?: string }>,
-  projects: Array<{ stage?: string; completion_status?: string }>,
+  assessments: Array<{ percentage: string | number | null; grade_band?: string | null }>,
+  projects: Array<{ stage?: string | null; completion_status?: string | null }>,
   mentorship: number,
   hasCompleteProfile: boolean,
   sessionStreak: number,
@@ -197,8 +197,8 @@ export interface Challenge {
 
 export function buildChallenges(
   attendance: Array<{ status: string }>,
-  assessments: Array<{ percentage: string|number; grade_band?: string }>,
-  projects: Array<{ stage?: string; completion_status?: string }>,
+  assessments: Array<{ percentage: string | number | null; grade_band?: string | null }>,
+  projects: Array<{ stage?: string | null; completion_status?: string | null }>,
   streak: number,
 ): Challenge[] {
   const present   = attendance.filter(a => a.status === 'present').length;
@@ -269,7 +269,7 @@ export interface Milestone {
 export function detectNewMilestones(
   attendance: Array<{ status: string }>,
   assessments: Array<{ percentage: string|number }>,
-  projects: Array<{ stage?: string; completion_status?: string }>,
+  projects: Array<{ stage?: string | null; completion_status?: string | null }>,
   badges: Array<{ id: string; earned: boolean }>,
   streak: number,
 ): Milestone[] {
