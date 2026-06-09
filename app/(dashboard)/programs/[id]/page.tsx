@@ -8,6 +8,7 @@ import { fmt } from '@/utils';
 import Link from 'next/link';
 import { ArrowLeft, Users, CalendarCheck2, BarChart3, BookOpen } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
+import EnrolmentManager from './EnrolmentManager';
 
 async function getProgramDetail(id: string) {
   const supabase = await createClient();
@@ -164,57 +165,8 @@ export default async function ProgramDetailPage({ params }: Props) {
         </ChartCard>
       </div>
 
-      {/* Enrolled learners */}
-      <div>
-        <h2 className="text-base font-semibold mb-3" style={{ color: DS.text }}>Enrolled Learners ({active.length})</h2>
-        <div className="rounded-2xl overflow-hidden" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {['ID','Name','Grade','Status','Attendance','Avg Score','Risk'].map(h => (
-                  <th key={h} style={{
-                    padding: '10px 16px', textAlign: 'left', fontSize: '10px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.08em', color: DS.textMuted as string,
-                    borderBottom: `1px solid ${DS.border}`, background: DS.surfaceHover as string,
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {active.map((e: any) => {
-                const l    = e.learners;
-                const risk = l?.risk_scores;
-                return (
-                  <tr key={e.enrollment_id} className="tr-hover"
-                    style={{ borderBottom: `1px solid ${DS.borderLight}` }}>
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: DS.textMuted }}>{l?.learner_code}</td>
-                    <td className="px-4 py-3">
-                      <Link href={`/learners/${l?.learner_id}`}
-                        className="font-medium hover:underline" style={{ color: DS.text }}>
-                        {l?.learner_profiles?.first_name} {l?.learner_profiles?.last_name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 font-mono" style={{ color: DS.textMid }}>Gr {l?.grade}</td>
-                    <td className="px-4 py-3"><StatusBadge label={e.status} /></td>
-                    <td className="px-4 py-3 font-mono font-semibold"
-                      style={{ color: (risk?.attendance_rate || 0) < 75 ? 'var(--ds-danger)' : DS.text as string }}>
-                      {risk?.attendance_rate ?? '—'}%
-                    </td>
-                    <td className="px-4 py-3 font-mono font-semibold"
-                      style={{ color: (risk?.avg_score || 0) < 50 ? 'var(--ds-danger)' : DS.text as string }}>
-                      {risk?.avg_score ?? '—'}%
-                    </td>
-                    <td className="px-4 py-3">{risk && <RiskBadge level={risk.risk_level} />}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {!active.length && (
-            <div className="text-center py-10 text-sm" style={{ color: DS.textMuted }}>No active enrolments yet.</div>
-          )}
-        </div>
-      </div>
+      {/* Enrolled learners — with add/remove */}
+      <EnrolmentManager programId={program.program_id} enrolments={active} />
     </div>
   );
 }

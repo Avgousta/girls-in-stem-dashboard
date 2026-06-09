@@ -82,7 +82,9 @@
       "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.learnerIds\\\\]/Array.from\\(learnerIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/admin/sponsors/bulk-link/BulkLinkClient.tsx\")",
       "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.\\\\\\(next\\\\[learnerId\\\\] \\\\|\\\\| \\\\[\\\\]\\\\\\)\\\\]/Array.from\\(next[learnerId] || []\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/admin/sponsors/bulk-link/BulkLinkClient.tsx\")",
       "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.selectedIds\\\\]/Array.from\\(selectedIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")",
-      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.learnerIds\\\\]/Array.from\\(learnerIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(sponsor\\)/sponsor/programmes/page.tsx\")"
+      "Bash(perl -i -pe 's/\\\\[\\\\.\\\\.\\\\.learnerIds\\\\]/Array.from\\(learnerIds\\)/g' \"C:/Users/User/girls-stem-dashboard/app/\\(sponsor\\)/sponsor/programmes/page.tsx\")",
+      "Bash(mkdir -p \"C:/Users/User/girls-stem-dashboard/app/api/v1/schools/[id]\")",
+      "Bash(cat)"
     ]
   }
 }
