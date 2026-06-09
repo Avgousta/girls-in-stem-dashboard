@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     .single();
 
   if (!project) return err('Project not found', 404);
-  if ((project as any).learners?.user_id !== profile!.user_id) return err('Not your project', 403);
+  if ((project as unknown as { learners: { user_id: string } | null }).learners?.user_id !== profile!.user_id) return err('Not your project', 403);
 
   const { data, error } = await supabase
     .from('projects')

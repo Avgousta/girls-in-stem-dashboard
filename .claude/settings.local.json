@@ -101,7 +101,18 @@
       "Bash(sed -i 's/catch \\(err: any\\)/catch \\(err\\)/' \"app/\\(dashboard\\)/risk/RecalculateButton.tsx\")",
       "Bash(sed -i 's/err\\\\.message/err instanceof Error ? err.message : String\\(err\\)/' \"app/\\(dashboard\\)/risk/RecalculateButton.tsx\")",
       "Bash(sed -i 's/\\(m.users as any\\)?.full_name/m.users?.full_name/g; s/\\(m.users as any\\).full_name/m.users?.full_name/g' \"app/\\(student\\)/student/meetings/MeetingsClient.tsx\")",
-      "Bash(sed -i \"s/\\(status as any\\)\\\\.pulse/\\( status as { pulse?: boolean } \\).pulse/\" \"app/\\(teacher\\)/teacher/meetings/TeacherMeetingsClient.tsx\")"
+      "Bash(sed -i \"s/\\(status as any\\)\\\\.pulse/\\( status as { pulse?: boolean } \\).pulse/\" \"app/\\(teacher\\)/teacher/meetings/TeacherMeetingsClient.tsx\")",
+      "Bash(sed -i 's/.filter\\(\\(e: any\\) => e.status === .active.\\)/.filter\\(\\(e: { status: string; program_id: string }\\) => e.status === '\\\\''active'\\\\''\\)/' \"app/\\(dashboard\\)/learners/[id]/edit/EditLearnerForm.tsx\")",
+      "Bash(sed -i 's/.map\\(\\(e: any\\) => e.program_id\\)/.map\\(e => e.program_id\\)/' \"app/\\(dashboard\\)/learners/[id]/edit/EditLearnerForm.tsx\")",
+      "Bash(sed -i 's/const ins: any = /const ins: Record<string, unknown> = /' \"app/api/v1/sponsors/route.ts\")",
+      "Bash(sed -i 's/\\(learner as any\\).learner_id/\\(learner as { learner_id: string }\\).learner_id/' \"app/api/v1/meetings/rate/route.ts\")",
+      "Bash(sed -i 's/const learner = \\(e as any\\).learners/const learner = \\(e as unknown as { learners: { learner_id: string; user_id: string; learner_profiles: { first_name: string; last_name: string } | null } | null }\\).learners/' \"app/api/v1/meetings/route.ts\")",
+      "Bash(sed -i \"s/\\\\[\\\\['marked','completed'\\\\]\\\\].includes\\(\\(p as any\\).stage || \\(p as any\\).completion_status || ''\\)/['marked','completed'].includes\\(\\(p as { stage: string | null; completion_status: string }\\).stage || \\(p as { stage: string | null; completion_status: string }\\).completion_status || ''\\)/\" \"app/\\(dashboard\\)/dashboard/page.tsx\")",
+      "Bash(sed -i 's/{d.recentInterv.map\\(\\(i: any\\) =>/{d.recentInterv.map\\(i =>/' \"app/\\(dashboard\\)/dashboard/page.tsx\")",
+      "Bash(sed -i 's/\\(learnersRes.data || \\\\[\\\\]\\).map\\(\\(l: any\\) =>/\\(learnersRes.data || []\\).map\\(\\(l\\)=>/' \"app/\\(dashboard\\)/admin/sponsors/bulk-link/page.tsx\")",
+      "Bash(sed -i 's/\\(existingLinksRes.data || \\\\[\\\\]\\).forEach\\(\\(lnk: any\\) =>/\\(existingLinksRes.data || []\\).forEach\\(\\(lnk\\) =>/' \"app/\\(dashboard\\)/admin/sponsors/bulk-link/page.tsx\")",
+      "Bash(sed -i 's/.map\\(\\(s: any\\) => \\({ school_id: s.school_id, school_name: s.school_name }\\)\\)/.map\\(\\(s: { school_id: string; school_name: string }\\) => \\({ school_id: s.school_id, school_name: s.school_name }\\)\\)/' \"app/\\(auth\\)/register/page.tsx\")",
+      "Bash(sed -i 's/\\(users || \\\\[\\\\]\\).map\\(\\(u: any\\) => \\({/\\(users || []\\).map\\(\\(u: { user_id: string; email: string; full_name: string; role: string; is_active: boolean; created_at: string; last_login: string | null; schools: { school_name: string } | null }\\) => \\({/' \"app/\\(dashboard\\)/admin/users/page.tsx\")"
     ]
   }
 }

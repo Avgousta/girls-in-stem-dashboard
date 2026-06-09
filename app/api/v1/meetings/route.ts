@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     });
 
     for (const e of (enrollments || [])) {
-      const learner = (e as any).learners;
+      const learner = (e as unknown as { learners: { learner_id: string; user_id: string; learner_profiles: { first_name: string; last_name: string } | null } | null }).learners;
       if (learner?.user_id) {
         try {
           await supabase.from('notifications').insert({

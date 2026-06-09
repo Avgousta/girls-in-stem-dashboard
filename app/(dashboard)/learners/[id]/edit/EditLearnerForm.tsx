@@ -33,9 +33,10 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
   });
 
   // Current enrolments
-  const currentEnrolments: string[] = (learner.program_enrollments || [])
-    .filter((e: any) => e.status === 'active')
-    .map((e: any) => e.program_id);
+  type EnrolEntry = { status: string; program_id: string };
+  const currentEnrolments: string[] = ((learner.program_enrollments || []) as unknown as EnrolEntry[])
+    .filter(e => e.status === 'active')
+    .map(e => e.program_id);
 
   const [selectedPrograms, setSelected] = useState<string[]>(currentEnrolments);
 

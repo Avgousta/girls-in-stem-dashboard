@@ -23,7 +23,7 @@ export default async function AdminUsersPage() {
           {(users || []).length} users · manage accounts, roles and access
         </p>
       </div>
-      <UsersManager users={(users || []).map((u: any) => ({
+      <UsersManager users={((users || []) as unknown as Array<{ user_id:string; email:string; full_name:string; role:string; is_active:boolean; created_at:string; last_login:string|null; phone:string|null; schools:{school_name:string}|null; sponsors:{sponsor_name:string}|null }>).map(u => ({
         ...u,
         school_name:   u.schools?.school_name   || '—',
         sponsor_name:  u.sponsors?.sponsor_name || '—',

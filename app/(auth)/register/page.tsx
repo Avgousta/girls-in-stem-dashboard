@@ -59,7 +59,7 @@ function RegisterForm() {
     setLoadingSchools(true);
     const res  = await fetch('/api/v1/schools');
     const json = await res.json();
-    setSchools(json.data?.map((s: any) => ({ school_id: s.school_id, school_name: s.school_name })) || []);
+    setSchools(json.data?.map((s: { school_id: string; school_name: string }) => ({ school_id: s.school_id, school_name: s.school_name })) || []);
     setLoadingSchools(false);
   };
 

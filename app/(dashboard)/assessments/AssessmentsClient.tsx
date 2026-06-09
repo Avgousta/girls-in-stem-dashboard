@@ -82,7 +82,7 @@ const thSt: React.CSSProperties = {
 };
 
 // ─── Assessment row ────────────────────────────────────────────────────────────
-function AssessmentRow({ a, onFeedback }: { a: Assessment; onFeedback: (id:string, data:any) => void }) {
+function AssessmentRow({ a, onFeedback }: { a: Assessment; onFeedback: (id:string, data:Partial<Assessment>) => void }) {
   const [open,   setOpen]   = useState(false);
   const [saving, setSaving] = useState(false);
   const [fb, setFb] = useState({ strengths: a.strengths, improvements: a.improvements, actions: a.actions });
@@ -337,7 +337,7 @@ export default function AssessmentsClient({ assessments: initAss, learners, prog
   const [gradeF, setGradeF] = useState('');
   const [progF,  setProgF]  = useState('');
 
-  const onFeedback = (id: string, data: any) =>
+  const onFeedback = (id: string, data: Partial<Assessment>) =>
     setAssessments(prev => prev.map(a => a.id !== id ? a : { ...a, ...data }));
 
   const filteredAss = useMemo(() => {

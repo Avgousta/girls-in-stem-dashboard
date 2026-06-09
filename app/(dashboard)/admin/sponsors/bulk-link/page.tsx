@@ -17,7 +17,8 @@ export default async function BulkLinkPage() {
   ]);
 
   const sponsors = sponsorsRes.data || [];
-  const learners = (learnersRes.data || []).map((l: any) => ({
+  interface LRow { learner_id:string; learner_code:string; grade:number; learner_profiles:{first_name:string;last_name:string}|null; schools:{school_name:string}|null }
+  const learners = ((learnersRes.data || []) as unknown as LRow[]).map(l => ({
     learner_id:   l.learner_id,
     learner_code: l.learner_code,
     grade:        l.grade,
@@ -27,7 +28,7 @@ export default async function BulkLinkPage() {
 
   // existing links: learner_id -> sponsor_ids[]
   const existingLinks: Record<string, string[]> = {};
-  (existingLinksRes.data || []).forEach((lnk: any) => {
+  (existingLinksRes.data || []).forEach((lnk) => {
     if (!existingLinks[lnk.learner_id]) existingLinks[lnk.learner_id] = [];
     existingLinks[lnk.learner_id].push(lnk.sponsor_id);
   });

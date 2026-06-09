@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     .from('meeting_ratings')
     .upsert({
       meeting_id,
-      learner_id: (learner as any).learner_id,
+      learner_id: (learner as { learner_id: string }).learner_id,
       rating,
       comment: comment || null,
     }, { onConflict: 'meeting_id,learner_id' })

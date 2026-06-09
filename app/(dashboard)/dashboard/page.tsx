@@ -36,7 +36,8 @@ async function getAdminData() {
   const attendance    = attendanceRes.data    || [];
   const assessments   = assessmentsRes.data   || [];
   const risks         = riskRes.data          || [];
-  const interventions = interventionsRes.data || [];
+  interface IntervRow { intervention_id:string; status:string; priority:string; reason:string; created_at:string; due_date:string|null; learner_id:string; learners:{learner_profiles:{first_name:string;last_name:string}|null}|null }
+  const interventions = (interventionsRes.data || []) as unknown as IntervRow[];
   const projects      = projectsRes.data      || [];
   const sponsors      = sponsorsRes.data      || [];
   const users         = usersRes.data         || [];
@@ -52,7 +53,7 @@ async function getAdminData() {
   const mediumRisk     = risks.filter(r => r.risk_level === 'medium').length;
   const lowRisk        = risks.filter(r => r.risk_level === 'low').length;
   const openInterv     = interventions.filter(i => i.status !== 'resolved').length;
-  const completedProj  = projects.filter(p => ['marked','completed'].includes((p as any).stage || (p as any).completion_status || '')).length;
+  const completedProj  = (projects as unknown as Array<{ stage: string | null; completion_status: string }>).filter(p => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
   const instructors    = users.filter(u => u.role === 'instructor' && u.is_active).length;
 
   // ── Attendance trend — last 8 weeks ──────────────────────────────────────
@@ -262,7 +263,7 @@ export default async function AdminDashboard() {
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: DS.borderLight }}>
-              {d.recentInterv.map((i: any) => {
+              {d.recentInterv.map(i => {
                 const learner = `${i.learners?.learner_profiles?.first_name ?? ''} ${i.learners?.learner_profiles?.last_name ?? ''}`.trim() || '—';
                 const isCrit  = i.priority === 'critical' || i.priority === 'high';
                 return (

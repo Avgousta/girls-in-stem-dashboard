@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const body   = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.issues[0].message);
-  const ins: any = { sponsor_name: parsed.data.sponsor_name };
+  const ins: Record<string, unknown> = { sponsor_name: parsed.data.sponsor_name };
   if (parsed.data.contact_name)  ins.contact_name  = parsed.data.contact_name;
   if (parsed.data.contact_email) ins.contact_email = parsed.data.contact_email;
   const { data, error } = await supabase.from('sponsors').insert(ins).select().single();

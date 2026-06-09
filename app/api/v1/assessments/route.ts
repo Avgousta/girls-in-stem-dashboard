@@ -81,12 +81,13 @@ export async function POST(req: NextRequest) {
   // Notify learner
   const { data: learner } = await supabase
     .from('learners').select('user_id').eq('learner_id', parsed.data.learner_id).single();
-  if ((learner as any)?.user_id) {
+  const typedLearner = learner as { user_id: string } | null;
+  if (typedLearner?.user_id) {
     const pct = parsed.data.score != null && parsed.data.max_score
       ? Math.round((parsed.data.score / parsed.data.max_score) * 100) : null;
     try {
       await supabase.from('notifications').insert({
-        user_id:    (learner as any).user_id,
+        user_id:    typedLearner.user_id,
         learner_id: parsed.data.learner_id,
         type:       'assessment',
         title:      `Result: ${parsed.data.subject}`,

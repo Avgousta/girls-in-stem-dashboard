@@ -81,7 +81,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     .from('learners').select('learner_code, learner_profiles(first_name, last_name)')
     .eq('learner_id', id).single();
   const label = lrn
-    ? `${(lrn.learner_profiles as any)?.first_name} ${(lrn.learner_profiles as any)?.last_name} (${lrn.learner_code})`
+    ? `${(lrn.learner_profiles as unknown as { first_name: string; last_name: string } | null)?.first_name} ${(lrn.learner_profiles as unknown as { first_name: string; last_name: string } | null)?.last_name} (${lrn.learner_code})`
     : id;
 
   if (permanent) {

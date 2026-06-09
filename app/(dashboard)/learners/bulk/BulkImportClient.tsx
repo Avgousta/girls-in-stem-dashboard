@@ -361,7 +361,7 @@ export default function BulkImportClient({ schools, programs }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {(items as any[]).map(s => (
+                {(items as unknown as Record<string, string>[]).map(s => (
                   <tr key={s[idKey]} style={{ borderTop: `1px solid ${DS.borderLight}` }}>
                     <td className="py-1.5 pr-3" style={{ color: DS.textMid }}>{s[nameKey]}</td>
                     <td className="py-1.5 font-mono select-all" style={{ color: DS.primary }}>{s[idKey]}</td>
