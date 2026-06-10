@@ -1,12 +1,132 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { today } from '@/utils';
 import { DS } from '@/components/platform/tokens';
+
+// ── Dark-mode programme combobox ──────────────────────────────────────────────
+function ProgramCombobox({
+  programs, value, onChange,
+}: {
+  programs: Array<{ program_id: string; program_name: string }>;
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open,    setOpen]    = useState(false);
+  const [query,   setQuery]   = useState('');
+  const [pos,     setPos]     = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef            = useRef<HTMLDivElement>(null);
+  const panelRef              = useRef<HTMLDivElement>(null);
+
+  const selected = programs.find(p => p.program_id === value);
+  const filtered = query.trim()
+    ? programs.filter(p => p.program_name.toLowerCase().includes(query.toLowerCase()))
+    : programs;
+
+  const openDropdown = useCallback(() => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    setOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (!triggerRef.current) return;
+      const r = triggerRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => { window.removeEventListener('scroll', update, true); window.removeEventListener('resize', update); };
+  }, [open]);
+
+  const triggerSt: React.CSSProperties = {
+    background: DS.surfaceHover as string,
+    border: `1px solid ${open ? DS.primary : DS.border}`,
+    borderRadius: '12px', padding: '10px 14px',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    transition: 'border-color 0.15s',
+  };
+
+  const panel = open ? createPortal(
+    <div ref={panelRef} style={{
+      position: 'fixed', top: pos.top, left: pos.left, width: pos.width,
+      zIndex: 9999, background: '#1a1330',
+      border: `1px solid ${DS.border}`, borderRadius: '12px',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.7)',
+      maxHeight: '280px', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      {/* Search */}
+      <div className="p-2 border-b" style={{ borderColor: DS.border }}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: DS.textMuted }} />
+          <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Search programme…"
+            className="w-full text-sm pl-8 pr-8 py-1.5 rounded-lg outline-none"
+            style={{ background: 'rgba(255,255,255,0.08)', color: DS.text as string, border: `1px solid ${DS.border}` }} />
+          {query && (
+            <button aria-label="Clear search" onClick={() => setQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: DS.textMuted }}>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Options */}
+      <div className="overflow-y-auto" role="listbox">
+        {filtered.length === 0
+          ? <p className="text-sm text-center py-5" style={{ color: DS.textMuted }}>No programmes found</p>
+          : filtered.map(p => (
+            <div key={p.program_id} role="option" aria-selected={p.program_id === value}
+              onClick={() => { onChange(p.program_id); setOpen(false); setQuery(''); }}
+              className="px-4 py-2.5 cursor-pointer text-sm font-medium"
+              style={{
+                background: p.program_id === value ? DS.primaryLight as string : 'transparent',
+                color: p.program_id === value ? DS.primary as string : DS.text as string,
+              }}
+              onMouseOver={e => { if (p.program_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)'; }}
+              onMouseOut={e =>  { if (p.program_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+              {p.program_name}
+            </div>
+          ))}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <div ref={triggerRef}>
+      <div style={triggerSt} onClick={open ? () => setOpen(false) : openDropdown}
+        role="combobox" aria-expanded={open} aria-haspopup="listbox" tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') open ? setOpen(false) : openDropdown(); }}>
+        <span className="text-sm truncate" style={{ color: selected ? DS.text as string : DS.textMuted as string }}>
+          {selected ? selected.program_name : 'Select programme…'}
+        </span>
+        {open ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />
+               : <ChevronDown className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />}
+      </div>
+      {panel}
+    </div>
+  );
+}
 
 const schema = z.object({
   program_id:   z.string().min(1, 'Select a programme'),
@@ -61,7 +181,7 @@ export default function AttendanceForm({ programs, currentUserId, onSuccess }: P
   const [savedGrades,     setSavedGrades]     = useState<Set<number | 'all'>>(new Set());
   const [activeGrade,     setActiveGrade]     = useState<number | 'all'>('all');
 
-  const { register, watch, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, watch, setValue, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { session_date: today(), captured_by: currentUserId },
   });
@@ -154,10 +274,11 @@ export default function AttendanceForm({ programs, currentUserId, onSuccess }: P
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="form-label">Programme <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
-          <select {...register('program_id')} className="form-select">
-            <option value="">Select programme…</option>
-            {programs.map(p => <option key={p.program_id} value={p.program_id}>{p.program_name}</option>)}
-          </select>
+          <ProgramCombobox
+            programs={programs}
+            value={programId || ''}
+            onChange={id => setValue('program_id', id, { shouldValidate: true })}
+          />
           {errors.program_id && <p className="form-error">{errors.program_id.message}</p>}
         </div>
         <div>
