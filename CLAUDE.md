@@ -313,9 +313,14 @@ Original audit Jun 2026. All critical + medium issues fixed. T1/T2/T5 completed 
 | **Overall** | **58/100** | **~88/100** |
 
 ### Remaining Open Items
-- [ ] **Vercel GitHub integration not linked** — deploys require `npx vercel deploy --prod` manually
+- [x] **Vercel GitHub integration** — connected Jun 2026; `git push origin master` auto-deploys to production
 - [ ] **T3 Accessibility** — partial; skip link + focus rings added but full audit not done
 - [ ] **Expand test coverage** — 53 unit tests exist (utils + gamification); no integration/e2e tests yet
+
+### RLS Status (updated Jun 2026)
+All 21 public tables now have authenticated + service_role policies:
+- ✅ `audit_log`, `intervention_updates`, `project_feedback` — policies added Jun 2026 (were service_role only)
+- ✅ All other tables covered in previous session
 
 ---
 
