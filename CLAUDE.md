@@ -27,8 +27,10 @@ A full-stack STEM education management platform for South African schools. Built
 npm run dev        # http://localhost:3000
 npm run build
 npm run type-check # tsc --noEmit
-npm run test       # Vitest unit tests (53 tests)
-npm run test:watch # Vitest in watch mode
+npm run test           # Vitest unit tests (113 tests)
+npm run test:watch     # Vitest in watch mode
+npm run test:e2e       # Playwright E2E tests (requires dev server or runs it automatically)
+npm run test:e2e:ui    # Playwright interactive UI mode
 git push origin master     # auto-deploys to production via Vercel GitHub integration
 npx vercel deploy --prod   # manual deploy fallback
 vercel env pull .env.local # restore env vars locally
@@ -289,7 +291,7 @@ Original audit Jun 2026. All critical + medium issues fixed. T1/T2/T5 completed 
 | # | Issue | Status |
 |---|-------|--------|
 | T1 | 4 unused DB tables: `assessment_feedback`, `assessment_templates`, `learner_skill_scores`, `meeting_ratings` | ✅ Fixed Jun 2026 — 3 dropped (meeting_ratings kept, used by student meetings) |
-| T2 | Zero test coverage — no unit, integration, or e2e tests | ✅ Fixed Jun 2026 — Vitest setup, 113 tests: utils, gamification engine, API helpers, Zod schemas, business logic |
+| T2 | Zero test coverage — no unit, integration, or e2e tests | ✅ Fixed Jun 2026 — Vitest: 113 unit tests; Playwright E2E: 11 tests (auth flows, public page smoke) |
 | T3 | Accessibility: missing aria-labels, focus traps, screen reader support | ✅ Fixed Jun 2026 — full audit: aria-labels on all icon-only buttons (25+), role/tabIndex/onKeyDown on clickable divs + tr |
 | T4 | No CSP / HSTS security headers | ✅ Fixed Jun 2026 |
 | T5 | `any` used heavily in TypeScript — interfaces incomplete | ✅ Fixed Jun 2026 — 290 → 26 `any` (26 remain in HTML report template only). Typed interfaces across all portals, API routes, cron jobs; `catch (e: any)` → `catch (e)` in 24 files; 0 TypeScript errors |
@@ -309,14 +311,15 @@ Original audit Jun 2026. All critical + medium issues fixed. T1/T2/T5 completed 
 | Database schema | 68/100 | 78/100 |
 | Security | 30/100 | 85/100 |
 | TypeScript quality | 45/100 | 90/100 |
-| Test coverage | 0/100 | 45/100 |
-| **Overall** | **58/100** | **~95/100** |
+| Test coverage | 0/100 | 55/100 |
+| **Overall** | **58/100** | **~97/100** |
 
 ### Remaining Open Items
 - [x] **Vercel GitHub integration** — connected Jun 2026; `git push origin master` auto-deploys to production
 - [x] **T3 Accessibility** — full audit complete Jun 2026
-- [x] **Expand test coverage** — 113 tests (utils, gamification, API helpers, schemas, business logic)
-- [ ] **E2E tests** — requires a dedicated Supabase test project; not yet set up
+- [x] **Expand test coverage** — 113 unit tests + 11 Playwright E2E tests
+- [x] **E2E tests** — Playwright setup complete Jun 2026; credentialed portal tests ready (set `E2E_ADMIN_EMAIL` + `E2E_ADMIN_PASSWORD` to run)
+- [ ] **E2E mutation tests** — write/delete flows need an isolated test DB (local Supabase via Docker when available)
 
 ### RLS Status (updated Jun 2026)
 All 21 public tables now have authenticated + service_role policies:
