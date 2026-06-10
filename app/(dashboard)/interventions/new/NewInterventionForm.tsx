@@ -77,7 +77,7 @@ function LearnerCombobox({
   const openDropdown = useCallback(() => {
     if (disabled || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    setDropPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
+    setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
     setOpen(true);
   }, [disabled]);
 
@@ -99,7 +99,7 @@ function LearnerCombobox({
     const update = () => {
       if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
+      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
     };
     window.addEventListener('scroll', update, true);
     window.addEventListener('resize', update);
@@ -122,15 +122,15 @@ function LearnerCombobox({
   const panel = open ? createPortal(
     <div ref={panelRef}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: dropPos.top,
         left: dropPos.left,
         width: dropPos.width,
         zIndex: 9999,
-        background: DS.surface as string,
+        background: '#1a1330',
         border: `1px solid ${DS.border}`,
         borderRadius: '12px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.7)',
         maxHeight: '320px',
         display: 'flex',
         flexDirection: 'column',
@@ -146,7 +146,7 @@ function LearnerCombobox({
             onChange={e => setQuery(e.target.value)}
             placeholder="Search name or school…"
             className="w-full text-sm pl-8 pr-8 py-1.5 rounded-lg outline-none"
-            style={{ background: DS.surfaceHover as string, color: DS.text as string, border: `1px solid ${DS.border}` }}
+            style={{ background: 'rgba(255,255,255,0.08)', color: DS.text as string, border: `1px solid ${DS.border}` }}
           />
           {query && (
             <button aria-label="Clear search" onClick={() => setQuery('')}
@@ -169,7 +169,7 @@ function LearnerCombobox({
               background: l.learner_id === value ? DS.primaryLight as string : 'transparent',
               color: l.learner_id === value ? DS.primary as string : DS.text as string,
             }}
-            onMouseOver={e => { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = DS.surfaceHover as string; }}
+            onMouseOver={e => { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)'; }}
             onMouseOut={e =>  { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
             <span className="font-medium">{l.full_name}</span>
             <span className="text-xs ml-1.5" style={{ color: DS.textMuted }}>— {l.school}</span>
