@@ -436,7 +436,7 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
               </thead>
               <tbody>
                 {sessions.map((s, i) => (
-                  <tr key={s.key || i} onClick={() => setSelected(s)}
+                  <tr key={s.key || i} role="button" tabIndex={0} aria-label={`View session ${fmt.date(s.session_date)}`} onClick={() => setSelected(s)} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setSelected(s)}
                     className="cursor-pointer transition-colors"
                     style={{ borderBottom: `1px solid ${DS.borderLight}` }}
                     onMouseOver={e => { (e.currentTarget as HTMLTableRowElement).style.background = DS.surfaceHover as string; }}
@@ -512,12 +512,12 @@ export default function AttendanceHistory({ programs, initialProgram, initialFro
                 {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
               </p>
               <div className="flex gap-1">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                <button aria-label="Previous page" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                   className="p-1.5 rounded-lg cursor-pointer disabled:opacity-40 transition-colors"
                   style={{ background: DS.surfaceHover }}>
                   <ChevronLeft className="w-4 h-4" style={{ color: DS.textMid }} />
                 </button>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                <button aria-label="Next page" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                   className="p-1.5 rounded-lg cursor-pointer disabled:opacity-40 transition-colors"
                   style={{ background: DS.surfaceHover }}>
                   <ChevronRight className="w-4 h-4" style={{ color: DS.textMid }} />

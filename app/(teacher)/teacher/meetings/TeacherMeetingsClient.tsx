@@ -122,7 +122,7 @@ export default function TeacherMeetingsClient({ meetings: initial, programs, ins
             <h2 className="text-base font-bold flex items-center gap-2" style={{ color: DS.text }}>
               <Video className="w-5 h-5" style={{ color: DS.primary }} /> New Online Class
             </h2>
-            <button onClick={() => setShowForm(false)} className="p-1.5 rounded-xl cursor-pointer"
+            <button aria-label="Close" onClick={() => setShowForm(false)} className="p-1.5 rounded-xl cursor-pointer"
               style={{ color: DS.textMuted }}>
               <X className="w-4 h-4" />
             </button>

@@ -147,7 +147,7 @@ export default function LearnersClient({ learners, sponsors, grades, schools, is
                 placeholder="Name, code, email, programme…"
                 className="form-input pl-9 w-full" />
               {search && (
-                <button onClick={() => setSearch('')}
+                <button aria-label="Clear search" onClick={() => setSearch('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: DS.textMuted }}>
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -218,7 +218,7 @@ export default function LearnersClient({ learners, sponsors, grades, schools, is
               <span key={f.label} className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
                 style={{ background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }}>
                 {f.label}
-                <button onClick={f.clear} className="cursor-pointer"><X className="w-3 h-3" /></button>
+                <button aria-label={`Remove ${f.label} filter`} onClick={f.clear} className="cursor-pointer"><X className="w-3 h-3" /></button>
               </span>
             ))}
             <span className="text-xs self-center ml-auto" style={{ color: DS.textMuted }}>

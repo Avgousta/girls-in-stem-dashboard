@@ -188,7 +188,7 @@ export default function SchoolsClient({ schools: initial }: { schools: SchoolRow
               <h2 className="text-base font-bold" style={{ color: DS.text }}>
                 {modal === 'create' ? 'Add School' : `Edit — ${editing?.school_name}`}
               </h2>
-              <button onClick={closeModal} className="cursor-pointer" style={{ color: DS.textMuted }}>
+              <button aria-label="Close" onClick={closeModal} className="cursor-pointer" style={{ color: DS.textMuted }}>
                 <X className="w-5 h-5" />
               </button>
             </div>

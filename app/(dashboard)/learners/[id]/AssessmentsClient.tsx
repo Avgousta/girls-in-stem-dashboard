@@ -149,7 +149,7 @@ function EditPanel({ assessment, slot, learnerId, programId, onClose, onSaved, o
         <p className="text-xs font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>
           {assessment ? 'Edit mark' : 'Add mark'}
         </p>
-        <button onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
+        <button aria-label="Close" onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
           <X className="w-4 h-4" />
         </button>
       </div>

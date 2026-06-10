@@ -395,7 +395,7 @@ function AddGoalPanel({
       style={{ background: DS.surface, border: `1px solid ${DS.primaryBorder}` }}>
       <div className="flex items-center justify-between">
         <p className="font-bold text-sm" style={{ color: DS.text }}>New Goal</p>
-        <button onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
+        <button aria-label="Close" onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
           <X className="w-4 h-4" />
         </button>
       </div>

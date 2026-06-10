@@ -211,7 +211,7 @@ export default function ProfileEditor({ learnerId, learnerCode, grade, schoolNam
               <span key={h} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full font-semibold"
                 style={{ background: theme.cardBg, color: theme.textPrimary as string, border: `1.5px solid ${theme.cardBorder}` }}>
                 {h}
-                <button onClick={() => removeHobby(h)}
+                <button aria-label={`Remove ${h}`} onClick={() => removeHobby(h)}
                   className="w-4 h-4 rounded-full flex items-center justify-center opacity-60 hover:opacity-100"
                   style={{ background: theme.cardBorder }}>
                   <X className="w-2.5 h-2.5 text-gray-600" />

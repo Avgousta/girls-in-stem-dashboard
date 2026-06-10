@@ -288,7 +288,7 @@ function EscalatePanel({
             <ArrowUpCircle className="w-4 h-4" />
             Escalate Priority
           </p>
-          <button onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
+          <button aria-label="Close" onClick={onClose} className="cursor-pointer" style={{ color: DS.textMuted }}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -467,7 +467,7 @@ function IntervCard({
         </button>
 
         {/* Expand + type icon */}
-        <div className="flex items-center gap-2 mt-0.5 shrink-0 cursor-pointer" onClick={() => setOpen(o => !o)}>
+        <div role="button" tabIndex={0} aria-expanded={open} className="flex items-center gap-2 mt-0.5 shrink-0 cursor-pointer" onClick={() => setOpen(o => !o)} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setOpen(o => !o)}>
           {open ? <ChevronDown className="w-4 h-4" style={{ color: DS.textMuted }} />
                 : <ChevronRight className="w-4 h-4" style={{ color: DS.textMuted }} />}
           <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -476,7 +476,7 @@ function IntervCard({
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setOpen(o => !o)}>
+        <div role="button" tabIndex={0} className="flex-1 min-w-0 cursor-pointer" onClick={() => setOpen(o => !o)} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setOpen(o => !o)}>
           <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
             <Link href={`/learners/${item.learner_id}`} onClick={e => e.stopPropagation()}
               className="font-bold text-sm hover:underline" style={{ color: DS.text }}>
@@ -504,7 +504,7 @@ function IntervCard({
 
         <div className="hidden sm:flex items-start gap-4 shrink-0">
           {/* Mini stats */}
-          <div className="flex gap-4 text-right cursor-pointer" onClick={() => setOpen(o => !o)}>
+          <div role="button" tabIndex={0} className="flex gap-4 text-right cursor-pointer" onClick={() => setOpen(o => !o)} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setOpen(o => !o)}>
             {[
               { v: item.att,           label:'Att',     bad: item.att < 75 },
               { v: item.score,         label:'Score',   bad: item.score < 50 },
@@ -702,7 +702,7 @@ function BulkBar({
         )}
       </div>
 
-      <button onClick={onClear} className="p-1.5 rounded-lg cursor-pointer"
+      <button aria-label="Clear filter" onClick={onClear} className="p-1.5 rounded-lg cursor-pointer"
         style={{ color: DS.textMuted }}
         onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = DS.text; }}
         onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = DS.textMuted as string; }}>
@@ -888,7 +888,7 @@ export default function InterventionsClient({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: DS.textMuted }} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search learner, reason, school…" className="form-input pl-9 w-full text-sm" />
-                {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"><X className="w-3.5 h-3.5" style={{ color: DS.textMuted }} /></button>}
+                {search && <button aria-label="Clear search" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"><X className="w-3.5 h-3.5" style={{ color: DS.textMuted }} /></button>}
               </div>
               <select value={typeF} onChange={e => setTypeF(e.target.value)} className="form-select text-sm w-36">
                 <option value="">All types</option>

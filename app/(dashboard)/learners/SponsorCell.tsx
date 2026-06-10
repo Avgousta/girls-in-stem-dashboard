@@ -98,6 +98,7 @@ export default function SponsorCell({ learnerId, currentSponsors: init, allSpons
               {s.sponsor_name}
               {canEdit && (
                 <button
+                  aria-label={`Remove ${s.sponsor_name ?? 'sponsor'}`}
                   onClick={e => { e.stopPropagation(); remove(s); }}
                   disabled={loading === 'rm-' + s.sponsor_id}
                   className="ml-0.5 hover:opacity-70 transition-opacity">
@@ -113,6 +114,7 @@ export default function SponsorCell({ learnerId, currentSponsors: init, allSpons
         {/* Add button — admin only */}
         {canEdit && available.length > 0 && (
           <button
+            aria-label="Add sponsor"
             onClick={() => setOpen(p => !p)}
             className={cn(
               'inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full border transition-all',

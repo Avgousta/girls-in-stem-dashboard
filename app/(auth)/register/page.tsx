@@ -221,7 +221,7 @@ function RegisterForm() {
                 <input type={showPass ? 'text' : 'password'} value={form.password}
                   onChange={e => set('password', e.target.value)}
                   className="form-input pr-10" placeholder="Choose a password (min 8 characters)" />
-                <button type="button" onClick={() => setShowPass(p => !p)}
+                <button type="button" aria-label={showPass ? 'Hide password' : 'Show password'} onClick={() => setShowPass(p => !p)}
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                   style={{ color: 'rgba(240,238,255,0.4)' }}>
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -303,7 +303,7 @@ function RegisterForm() {
                     <input type={showPass ? 'text' : 'password'} value={form.password}
                       onChange={e => set('password', e.target.value)}
                       className="form-input pr-10" placeholder="Min 8 characters" />
-                    <button type="button" onClick={() => setShowPass(p => !p)}
+                    <button type="button" aria-label={showPass ? 'Hide password' : 'Show password'} onClick={() => setShowPass(p => !p)}
                       className="absolute right-3 top-1/2 -translate-y-1/2"
                       style={{ color: 'rgba(240,238,255,0.4)' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

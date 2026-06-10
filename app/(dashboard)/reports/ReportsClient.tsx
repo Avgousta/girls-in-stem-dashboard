@@ -348,7 +348,7 @@ function SearchFilter({ value, onChange, placeholder }: {
           className="w-full text-sm pl-8 pr-8 py-2 rounded-xl outline-none"
           style={{ background: DS.surfaceHover, color: DS.text as string, border: `1px solid ${DS.border}` }} />
         {value && (
-          <button onClick={() => onChange('')}
+          <button aria-label="Clear search" onClick={() => onChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
             style={{ color: DS.textMuted }}>
             <X className="w-3.5 h-3.5" />

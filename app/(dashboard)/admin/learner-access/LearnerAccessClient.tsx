@@ -87,7 +87,7 @@ export default function LearnerAccessClient({ learners, baseUrl }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: DS.textMuted }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name or code…" className="form-input pl-9 w-full text-sm" />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
+          {search && <button aria-label="Clear search" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
             <X className="w-3.5 h-3.5" style={{ color: DS.textMuted }} />
           </button>}
         </div>

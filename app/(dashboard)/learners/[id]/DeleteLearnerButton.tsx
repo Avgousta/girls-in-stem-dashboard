@@ -67,7 +67,7 @@ export default function DeleteLearnerButton({ learnerId, learnerName, learnerCod
                   </p>
                 </div>
               </div>
-              <button onClick={() => { setOpen(false); setConfirm(''); }}
+              <button aria-label="Close" onClick={() => { setOpen(false); setConfirm(''); }}
                 className="cursor-pointer mt-0.5" style={{ color: DS.textMuted }}>
                 <X className="w-5 h-5" />
               </button>

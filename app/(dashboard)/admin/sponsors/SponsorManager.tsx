@@ -312,7 +312,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
                       For <strong style={{ color: DS.text }}>{loginModal.sponsorName}</strong> — they will only see their own learners
                     </p>
                   </div>
-                  <button onClick={closeLoginModal} className="p-2 rounded-xl transition-colors cursor-pointer"
+                  <button aria-label="Close" onClick={closeLoginModal} className="p-2 rounded-xl transition-colors cursor-pointer"
                     style={{ color: DS.textMuted }}>
                     <X className="w-4 h-4" />
                   </button>
@@ -336,7 +336,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
                         type={showPass ? 'text' : 'password'}
                         value={loginPass} onChange={e => setLoginPass(e.target.value)}
                         style={{ ...inputSt, paddingRight: '40px' }} placeholder="Min 8 characters" />
-                      <button type="button" onClick={() => setShowPass(p => !p)}
+                      <button type="button" aria-label={showPass ? 'Hide password' : 'Show password'} onClick={() => setShowPass(p => !p)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
                         style={{ color: DS.textMuted }}>
                         {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -378,7 +378,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
                   Assign learners sponsored by <strong style={{ color: DS.text }}>{linkModal.sponsorName}</strong>
                 </p>
               </div>
-              <button onClick={() => setLinkModal(null)} className="p-2 rounded-xl cursor-pointer"
+              <button aria-label="Close" onClick={() => setLinkModal(null)} className="p-2 rounded-xl cursor-pointer"
                 style={{ color: DS.textMuted }}>
                 <X className="w-4 h-4" />
               </button>
