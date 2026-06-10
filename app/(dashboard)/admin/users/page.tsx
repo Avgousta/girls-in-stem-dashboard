@@ -8,10 +8,10 @@ export default async function AdminUsersPage() {
   await requireAuth(['admin']);
   const supabase = await createClient();
 
-  const { data: users } = await supabase
-    .from('users')
-    .select('*, schools(school_name), sponsors(sponsor_name)')
-    .order('created_at', { ascending: false });
+  const [{ data: users }, { data: schools }] = await Promise.all([
+    supabase.from('users').select('*, schools(school_name), sponsors(sponsor_name)').order('created_at', { ascending: false }),
+    supabase.from('schools').select('school_id, school_name').order('school_name'),
+  ]);
 
   return (
     <div className="max-w-6xl space-y-6">
@@ -23,11 +23,14 @@ export default async function AdminUsersPage() {
           {(users || []).length} users · manage accounts, roles and access
         </p>
       </div>
-      <UsersManager users={((users || []) as unknown as Array<{ user_id:string; email:string; full_name:string; role:string; is_active:boolean; created_at:string; last_login:string|null; phone:string|null; schools:{school_name:string}|null; sponsors:{sponsor_name:string}|null }>).map(u => ({
-        ...u,
-        school_name:   u.schools?.school_name   || '—',
-        sponsor_name:  u.sponsors?.sponsor_name || '—',
-      }))} />
+      <UsersManager
+        users={((users || []) as unknown as Array<{ user_id:string; email:string; full_name:string; role:string; is_active:boolean; created_at:string; last_login:string|null; phone:string|null; schools:{school_name:string}|null; sponsors:{sponsor_name:string}|null }>).map(u => ({
+          ...u,
+          school_name:   u.schools?.school_name   || '—',
+          sponsor_name:  u.sponsors?.sponsor_name || '—',
+        }))}
+        schools={(schools || []) as { school_id: string; school_name: string }[]}
+      />
     </div>
   );
 }

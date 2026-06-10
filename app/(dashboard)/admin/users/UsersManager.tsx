@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2, XCircle, Search, UserX, UserCheck } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Search, UserX, UserCheck, UserPlus, X } from 'lucide-react';
 import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
 
@@ -10,6 +10,11 @@ interface User {
   is_active: boolean; created_at: string; last_login: string | null;
   school_name: string; sponsor_name: string; phone: string | null;
 }
+
+interface School { school_id: string; school_name: string }
+
+const ROLES = ['admin', 'instructor', 'learner', 'sponsor', 'parent'] as const;
+type Role = typeof ROLES[number];
 
 const ROLE_STYLE: Record<string, { color: string; bg: string }> = {
   admin:      { color: DS.primary as string,   bg: DS.primaryLight as string   },
@@ -24,24 +29,74 @@ const thSt: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.08em', color: DS.textMuted as string,
   borderBottom: `1px solid ${DS.border}`, background: DS.surfaceHover as string,
 };
-const selectSt: React.CSSProperties = {
+const inputSt: React.CSSProperties = {
   background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '7px 10px', fontSize: '13px', outline: 'none', width: 'auto',
+  padding: '8px 12px', fontSize: '13px', outline: 'none', width: '100%',
 };
+const selectSt: React.CSSProperties = { ...inputSt };
 
-export default function UsersManager({ users: initial }: { users: User[] }) {
-  const [users,   setUsers]   = useState(initial);
-  const [search,  setSearch]  = useState('');
-  const [role,    setRole]    = useState('');
-  const [loading, setLoading] = useState<string | null>(null);
+const BLANK_FORM = { full_name: '', email: '', password: '', role: 'instructor' as Role, school_id: '', phone: '' };
+
+export default function UsersManager({ users: initial, schools }: { users: User[]; schools: School[] }) {
+  const [users,    setUsers]   = useState(initial);
+  const [search,   setSearch]  = useState('');
+  const [roleF,    setRoleF]   = useState('');
+  const [loading,  setLoading] = useState<string | null>(null);
+  const [showAdd,  setShowAdd] = useState(false);
+  const [saving,   setSaving]  = useState(false);
+  const [form,     setForm]    = useState(BLANK_FORM);
+  const [showPw,   setShowPw]  = useState(false);
 
   const filtered = users.filter(u => {
     const q = search.toLowerCase();
     const matchSearch = !search || u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
-    const matchRole   = !role || u.role === role;
+    const matchRole   = !roleF || u.role === roleF;
     return matchSearch && matchRole;
   });
+
+  const set = (k: keyof typeof BLANK_FORM, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const closeAdd = () => { setShowAdd(false); setForm(BLANK_FORM); setShowPw(false); };
+
+  const createUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const body: Record<string, string> = {
+        full_name: form.full_name,
+        email:     form.email,
+        password:  form.password,
+        role:      form.role,
+      };
+      if (form.school_id) body.school_id = form.school_id;
+      if (form.phone)     body.phone     = form.phone;
+
+      const res = await fetch('/api/v1/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || 'Failed to create user'); return; }
+
+      // Find school name from school_id for display
+      const school = schools.find(s => s.school_id === form.school_id);
+      const newUser: User = {
+        ...json.data,
+        school_name:  school?.school_name || '—',
+        sponsor_name: '—',
+        last_login:   null,
+      };
+      setUsers(prev => [newUser, ...prev]);
+      toast.success(`${form.full_name} added successfully`);
+      closeAdd();
+    } catch {
+      toast.error('Network error — please try again');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const toggleActive = async (userId: string, currentlyActive: boolean) => {
     setLoading(userId);
@@ -58,40 +113,46 @@ export default function UsersManager({ users: initial }: { users: User[] }) {
     }
   };
 
-  const roles = ['admin', 'instructor', 'learner', 'parent', 'sponsor'];
+  const needsSchool = form.role === 'instructor' || form.role === 'learner';
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Filters + Add button */}
       <div className="rounded-2xl p-4 flex flex-wrap gap-3" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: DS.textMuted }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name or email…" className="form-input pl-9 py-2 w-full text-sm" />
         </div>
-        <select value={role} onChange={e => setRole(e.target.value)} style={selectSt}>
+        <select value={roleF} onChange={e => setRoleF(e.target.value)} style={{ ...inputSt, width: 'auto' }}>
           <option value="">All roles</option>
-          {roles.map(r => <option key={r} value={r} className="capitalize">{r}</option>)}
+          {ROLES.map(r => <option key={r} value={r} className="capitalize">{r}</option>)}
         </select>
         <div className="flex items-center gap-2 text-sm" style={{ color: DS.textMuted }}>
           <span className="font-semibold" style={{ color: DS.text }}>{filtered.length}</span> users
         </div>
+        <button onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+          style={{ background: DS.primary as string, color: '#fff' }}>
+          <UserPlus className="w-4 h-4" /> Add User
+        </button>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-        {roles.map(r => {
+        {ROLES.map(r => {
           const count = users.filter(u => u.role === r).length;
           const st = ROLE_STYLE[r] || { color: DS.textMid as string, bg: DS.surfaceHover as string };
           return (
-            <div key={r}
+            <div key={r} role="button" tabIndex={0}
               className="rounded-2xl p-3 text-center cursor-pointer transition-all"
               style={{
-                background: role === r ? st.bg : DS.surface as string,
-                border: role === r ? `2px solid ${st.color}` : `1px solid ${DS.border}`,
+                background: roleF === r ? st.bg : DS.surface as string,
+                border: roleF === r ? `2px solid ${st.color}` : `1px solid ${DS.border}`,
               }}
-              onClick={() => setRole(role === r ? '' : r)}>
-              <p className="text-xl font-bold" style={{ color: role === r ? st.color : DS.text as string }}>{count}</p>
+              onClick={() => setRoleF(roleF === r ? '' : r)}
+              onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setRoleF(roleF === r ? '' : r)}>
+              <p className="text-xl font-bold" style={{ color: roleF === r ? st.color : DS.text as string }}>{count}</p>
               <p className="text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full inline-block capitalize"
                 style={{ background: st.bg, color: st.color }}>{r}</p>
             </div>
@@ -171,6 +232,104 @@ export default function UsersManager({ users: initial }: { users: User[] }) {
           <div className="text-center py-12 text-sm" style={{ color: DS.textMuted }}>No users match your filters.</div>
         )}
       </div>
+
+      {/* Add User Modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-5"
+            style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold" style={{ color: DS.text }}>Add User</h2>
+                <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>Create a new account with immediate access</p>
+              </div>
+              <button aria-label="Close" onClick={closeAdd} className="p-2 rounded-xl cursor-pointer" style={{ color: DS.textMuted }}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={createUser} className="space-y-4">
+              {/* Full name */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: DS.textMid }}>Full name</label>
+                <input required value={form.full_name} onChange={e => set('full_name', e.target.value)}
+                  placeholder="e.g. Carmen Dlamini" style={inputSt} />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: DS.textMid }}>Email address</label>
+                <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                  placeholder="e.g. carmen@school.co.za" style={inputSt} />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: DS.textMid }}>Password</label>
+                <div className="relative">
+                  <input required type={showPw ? 'text' : 'password'} value={form.password}
+                    onChange={e => set('password', e.target.value)}
+                    placeholder="Min 8 characters" style={{ ...inputSt, paddingRight: '40px' }} />
+                  <button type="button" aria-label={showPw ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPw(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs cursor-pointer"
+                    style={{ color: DS.textMuted }}>
+                    {showPw ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                {form.password.length > 0 && form.password.length < 8 && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--ds-danger)' }}>At least 8 characters required</p>
+                )}
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: DS.textMid }}>Role</label>
+                <select value={form.role} onChange={e => set('role', e.target.value as Role)} style={selectSt}>
+                  {ROLES.map(r => <option key={r} value={r} className="capitalize">{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                </select>
+              </div>
+
+              {/* School — shown for instructor + learner */}
+              {needsSchool && (
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: DS.textMid }}>
+                    School <span style={{ color: DS.textMuted }}>(optional)</span>
+                  </label>
+                  <select value={form.school_id} onChange={e => set('school_id', e.target.value)} style={selectSt}>
+                    <option value="">— Select school —</option>
+                    {schools.map(s => <option key={s.school_id} value={s.school_id}>{s.school_name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Phone */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: DS.textMid }}>
+                  Phone <span style={{ color: DS.textMuted }}>(optional)</span>
+                </label>
+                <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
+                  placeholder="e.g. +27 82 000 0000" style={inputSt} />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={closeAdd}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors"
+                  style={{ background: DS.surfaceHover as string, color: DS.textMid as string }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={saving || form.password.length < 8}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: DS.primary as string, color: '#fff' }}>
+                  {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : <><UserPlus className="w-4 h-4" /> Create User</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
