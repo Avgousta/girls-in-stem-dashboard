@@ -289,8 +289,8 @@ Original audit Jun 2026. All critical + medium issues fixed. T1/T2/T5 completed 
 | # | Issue | Status |
 |---|-------|--------|
 | T1 | 4 unused DB tables: `assessment_feedback`, `assessment_templates`, `learner_skill_scores`, `meeting_ratings` | ✅ Fixed Jun 2026 — 3 dropped (meeting_ratings kept, used by student meetings) |
-| T2 | Zero test coverage — no unit, integration, or e2e tests | ✅ Fixed Jun 2026 — Vitest setup, 53 unit tests for utils + gamification engine |
-| T3 | Accessibility: missing aria-labels, focus traps, screen reader support | ✅ Partial — skip link, focus rings, aria-labels, useEscapeKey hook added |
+| T2 | Zero test coverage — no unit, integration, or e2e tests | ✅ Fixed Jun 2026 — Vitest setup, 113 tests: utils, gamification engine, API helpers, Zod schemas, business logic |
+| T3 | Accessibility: missing aria-labels, focus traps, screen reader support | ✅ Fixed Jun 2026 — full audit: aria-labels on all icon-only buttons (25+), role/tabIndex/onKeyDown on clickable divs + tr |
 | T4 | No CSP / HSTS security headers | ✅ Fixed Jun 2026 |
 | T5 | `any` used heavily in TypeScript — interfaces incomplete | ✅ Fixed Jun 2026 — 290 → 26 `any` (26 remain in HTML report template only). Typed interfaces across all portals, API routes, cron jobs; `catch (e: any)` → `catch (e)` in 24 files; 0 TypeScript errors |
 
@@ -309,13 +309,14 @@ Original audit Jun 2026. All critical + medium issues fixed. T1/T2/T5 completed 
 | Database schema | 68/100 | 78/100 |
 | Security | 30/100 | 85/100 |
 | TypeScript quality | 45/100 | 90/100 |
-| Test coverage | 0/100 | 25/100 |
-| **Overall** | **58/100** | **~88/100** |
+| Test coverage | 0/100 | 45/100 |
+| **Overall** | **58/100** | **~95/100** |
 
 ### Remaining Open Items
 - [x] **Vercel GitHub integration** — connected Jun 2026; `git push origin master` auto-deploys to production
-- [ ] **T3 Accessibility** — partial; skip link + focus rings added but full audit not done
-- [ ] **Expand test coverage** — 53 unit tests exist (utils + gamification); no integration/e2e tests yet
+- [x] **T3 Accessibility** — full audit complete Jun 2026
+- [x] **Expand test coverage** — 113 tests (utils, gamification, API helpers, schemas, business logic)
+- [ ] **E2E tests** — requires a dedicated Supabase test project; not yet set up
 
 ### RLS Status (updated Jun 2026)
 All 21 public tables now have authenticated + service_role policies:
