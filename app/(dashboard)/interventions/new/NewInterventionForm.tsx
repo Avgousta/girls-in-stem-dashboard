@@ -1,5 +1,6 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -49,7 +50,7 @@ const TEMPLATES = [
   },
 ] as const;
 
-// ─── Custom dark-mode learner combobox ───────────────────────────────────────
+// ─── Custom dark-mode learner combobox (portal-based) ────────────────────────
 function LearnerCombobox({
   learners, value, onChange, disabled,
 }: {
@@ -58,9 +59,11 @@ function LearnerCombobox({
   onChange: (id: string) => void;
   disabled?: boolean;
 }) {
-  const [open, setOpen]       = useState(false);
-  const [query, setQuery]     = useState('');
-  const ref                   = useRef<HTMLDivElement>(null);
+  const [open, setOpen]             = useState(false);
+  const [query, setQuery]           = useState('');
+  const [dropPos, setDropPos]       = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef                  = useRef<HTMLDivElement>(null);
+  const panelRef                    = useRef<HTMLDivElement>(null);
 
   const selected = learners.find(l => l.learner_id === value);
 
@@ -71,14 +74,37 @@ function LearnerCombobox({
       )
     : learners;
 
+  const openDropdown = useCallback(() => {
+    if (disabled || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
+    setOpen(true);
+  }, [disabled]);
+
   // Close on outside click
   useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [open]);
+
+  // Reposition on scroll/resize
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => { window.removeEventListener('scroll', update, true); window.removeEventListener('resize', update); };
+  }, [open]);
 
   const containerSt: React.CSSProperties = {
     background: DS.surfaceHover as string,
@@ -93,65 +119,83 @@ function LearnerCombobox({
     transition: 'border-color 0.15s',
   };
 
+  const panel = open ? createPortal(
+    <div ref={panelRef}
+      style={{
+        position: 'absolute',
+        top: dropPos.top,
+        left: dropPos.left,
+        width: dropPos.width,
+        zIndex: 9999,
+        background: DS.surface as string,
+        border: `1px solid ${DS.border}`,
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        maxHeight: '320px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+      {/* Search */}
+      <div className="p-2 border-b" style={{ borderColor: DS.border }}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: DS.textMuted }} />
+          <input
+            autoFocus
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search name or school…"
+            className="w-full text-sm pl-8 pr-8 py-1.5 rounded-lg outline-none"
+            style={{ background: DS.surfaceHover as string, color: DS.text as string, border: `1px solid ${DS.border}` }}
+          />
+          {query && (
+            <button aria-label="Clear search" onClick={() => setQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+              style={{ color: DS.textMuted }}>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Options */}
+      <div className="overflow-y-auto" role="listbox">
+        {filtered.length === 0 ? (
+          <p className="text-sm text-center py-6" style={{ color: DS.textMuted }}>No learners found</p>
+        ) : filtered.map(l => (
+          <div key={l.learner_id} role="option" aria-selected={l.learner_id === value}
+            onClick={() => { onChange(l.learner_id); setOpen(false); setQuery(''); }}
+            className="px-4 py-2.5 cursor-pointer transition-colors text-sm"
+            style={{
+              background: l.learner_id === value ? DS.primaryLight as string : 'transparent',
+              color: l.learner_id === value ? DS.primary as string : DS.text as string,
+            }}
+            onMouseOver={e => { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = DS.surfaceHover as string; }}
+            onMouseOut={e =>  { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+            <span className="font-medium">{l.full_name}</span>
+            <span className="text-xs ml-1.5" style={{ color: DS.textMuted }}>— {l.school}</span>
+          </div>
+        ))}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
-    <div ref={ref} className="relative">
-      {/* Trigger */}
-      <div style={containerSt} onClick={() => !disabled && setOpen(o => !o)}
-        role="combobox" aria-expanded={open} aria-haspopup="listbox" tabIndex={disabled ? -1 : 0}
-        onKeyDown={e => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) setOpen(o => !o); }}>
+    <div ref={triggerRef}>
+      {/* Trigger button */}
+      <div style={containerSt}
+        onClick={open ? () => setOpen(false) : openDropdown}
+        role="combobox" aria-expanded={open} aria-haspopup="listbox"
+        tabIndex={disabled ? -1 : 0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { open ? setOpen(false) : openDropdown(); } }}>
         <span className="text-sm truncate" style={{ color: selected ? DS.text as string : DS.textMuted as string }}>
           {selected ? `${selected.full_name} — ${selected.school}` : 'Select learner…'}
         </span>
-        {open ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />
-               : <ChevronDown className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />}
+        {open
+          ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />
+          : <ChevronDown className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />}
       </div>
-
-      {/* Dropdown panel */}
-      {open && (
-        <div className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden shadow-xl"
-          style={{ background: DS.surface as string, border: `1px solid ${DS.border}`, maxHeight: '320px', display: 'flex', flexDirection: 'column' }}>
-          {/* Search */}
-          <div className="p-2 border-b" style={{ borderColor: DS.border }}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: DS.textMuted }} />
-              <input
-                autoFocus
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search name or school…"
-                className="w-full text-sm pl-8 pr-8 py-1.5 rounded-lg outline-none"
-                style={{ background: DS.surfaceHover as string, color: DS.text as string, border: `1px solid ${DS.border}` }}
-              />
-              {query && (
-                <button aria-label="Clear search" onClick={() => setQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
-                  style={{ color: DS.textMuted }}>
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-          {/* Options */}
-          <div className="overflow-y-auto" role="listbox">
-            {filtered.length === 0 ? (
-              <p className="text-sm text-center py-6" style={{ color: DS.textMuted }}>No learners found</p>
-            ) : filtered.map(l => (
-              <div key={l.learner_id} role="option" aria-selected={l.learner_id === value}
-                onClick={() => { onChange(l.learner_id); setOpen(false); setQuery(''); }}
-                className="px-4 py-2.5 cursor-pointer transition-colors text-sm"
-                style={{
-                  background: l.learner_id === value ? DS.primaryLight as string : 'transparent',
-                  color: l.learner_id === value ? DS.primary as string : DS.text as string,
-                }}
-                onMouseOver={e => { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = DS.surfaceHover as string; }}
-                onMouseOut={e =>  { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
-                <span className="font-medium">{l.full_name}</span>
-                <span className="text-xs ml-1.5" style={{ color: DS.textMuted }}>— {l.school}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {panel}
     </div>
   );
 }
