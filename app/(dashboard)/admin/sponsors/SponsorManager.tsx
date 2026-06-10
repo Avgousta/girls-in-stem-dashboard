@@ -31,7 +31,7 @@ const labelSt: React.CSSProperties = {
 const inputSt: React.CSSProperties = {
   width: '100%', background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '8px 10px', fontSize: '13px', outline: 'none',
+  padding: '8px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
 };
 
 export default function SponsorManager({ sponsors: initial, allLearners }: Props) {

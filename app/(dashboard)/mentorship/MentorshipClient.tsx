@@ -349,7 +349,7 @@ function AddGoalPanel({
   const inputStyle: React.CSSProperties = {
     background: DS.surfaceHover as string, color: DS.text as string,
     border: `1px solid ${DS.border}`, borderRadius: '10px',
-    padding: '8px 12px', fontSize: '13px', outline: 'none', width: '100%',
+    padding: '8px 12px', fontSize: '13px', outline: 'none', colorScheme: 'dark', width: '100%',
   };
 
   const save = async () => {
@@ -577,7 +577,7 @@ export default function MentorshipClient({
   const selectStyle: React.CSSProperties = {
     background: DS.surfaceHover as string, color: DS.text as string,
     border: `1px solid ${DS.border}`, borderRadius: '10px',
-    padding: '6px 10px', fontSize: '13px', outline: 'none',
+    padding: '6px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
   };
 
   return (

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { cn, calcGradeBand, pct, today } from '@/utils';
 import type { Learner } from '@/types';
+import DarkCombobox from '@/components/ui/DarkCombobox';
 
 const schema = z.object({
   learner_id:      z.string().min(1, 'Select a learner'),
@@ -36,12 +37,13 @@ export default function AssessmentForm({ programs, currentUserId, onSuccess }: P
   const [learners, setLearners] = useState<Learner[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, watch, control, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, control, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { max_score: 100, assessment_date: today() },
   });
 
   const programId = watch('program_id');
+  const learnerId = watch('learner_id');
   const score    = watch('score');
   const maxScore = watch('max_score') || 100;
   const percentage = score !== undefined && score !== null ? pct(Number(score), Number(maxScore)) : null;
@@ -79,22 +81,25 @@ export default function AssessmentForm({ programs, currentUserId, onSuccess }: P
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="form-label">Programme <span className="text-red-500">*</span></label>
-          <select {...register('program_id')} className="form-select">
-            <option value="">Select programme…</option>
-            {programs.map(p => <option key={p.program_id} value={p.program_id}>{p.program_name}</option>)}
-          </select>
+          <DarkCombobox
+            options={programs.map(p => ({ value: p.program_id, label: p.program_name }))}
+            value={programId || ''}
+            onChange={v => setValue('program_id', v, { shouldValidate: true })}
+            placeholder="Select programme…"
+            error={!!errors.program_id}
+          />
           {errors.program_id && <p className="form-error">{errors.program_id.message}</p>}
         </div>
         <div>
           <label className="form-label">Learner <span className="text-red-500">*</span></label>
-          <select {...register('learner_id')} className="form-select" disabled={!programId}>
-            <option value="">{programId ? 'Select learner…' : 'Select programme first'}</option>
-            {learners.map(l => (
-              <option key={l.learner_id} value={l.learner_id}>
-                {l.full_name || `${l.first_name} ${l.last_name}`}
-              </option>
-            ))}
-          </select>
+          <DarkCombobox
+            options={learners.map(l => ({ value: l.learner_id, label: l.full_name || `${l.first_name} ${l.last_name}` }))}
+            value={learnerId || ''}
+            onChange={v => setValue('learner_id', v, { shouldValidate: true })}
+            placeholder={programId ? 'Select learner…' : 'Select programme first'}
+            disabled={!programId}
+            error={!!errors.learner_id}
+          />
           {errors.learner_id && <p className="form-error">{errors.learner_id.message}</p>}
         </div>
         <div>

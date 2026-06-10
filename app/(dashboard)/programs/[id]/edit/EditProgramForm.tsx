@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Loader2, Save, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
+import DarkCombobox from '@/components/ui/DarkCombobox';
 
 const PROGRAM_TYPES = [
   { value: 'Coding',             label: 'Coding' },
@@ -58,7 +59,7 @@ export default function EditProgramForm({ program, instructors }: Props) {
   const [deleting,       setDeleting]      = useState(false);
   const [confirmDelete,  setConfirmDelete] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       program_name:  program.program_name,
@@ -71,6 +72,7 @@ export default function EditProgramForm({ program, instructors }: Props) {
       is_active:     program.is_active,
     },
   });
+  const instructorId = watch('instructor_id') || '';
 
   const onSubmit = async (data: FormData) => {
     setSaving(true);
@@ -152,12 +154,12 @@ export default function EditProgramForm({ program, instructors }: Props) {
 
         <div>
           <label className="form-label">Lead Instructor</label>
-          <select {...register('instructor_id')} className="form-select">
-            <option value="">None assigned</option>
-            {instructors.map(i => (
-              <option key={i.user_id} value={i.user_id}>{i.full_name}</option>
-            ))}
-          </select>
+          <DarkCombobox
+            options={[{ value: '', label: 'None assigned' }, ...instructors.map(i => ({ value: i.user_id, label: i.full_name }))]}
+            value={instructorId}
+            onChange={v => setValue('instructor_id', v, { shouldValidate: true })}
+            placeholder="None assigned"
+          />
         </div>
 
         <div>

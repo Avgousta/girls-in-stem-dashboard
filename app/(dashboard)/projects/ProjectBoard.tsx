@@ -31,7 +31,7 @@ const isOverdue = (due: string | null) => due && new Date(due) < new Date();
 const selectSt: React.CSSProperties = {
   background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '7px 10px', fontSize: '13px', outline: 'none',
+  padding: '7px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
 };
 
 export default function ProjectBoard({ projects: initial, stages, isAdmin }: Props) {

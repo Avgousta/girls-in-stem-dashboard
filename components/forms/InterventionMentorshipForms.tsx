@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { today } from '@/utils';
 import type { Learner } from '@/types';
+import DarkCombobox from '@/components/ui/DarkCombobox';
 
 // ══════════════════════════════════════════════════════
 // INTERVENTION FORM
@@ -29,10 +30,11 @@ interface InterventionProps {
 
 export function InterventionForm({ learners, currentUserId, preselectedLearnerId, onSuccess }: InterventionProps) {
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<InterventionData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<InterventionData>({
     resolver: zodResolver(interventionSchema),
     defaultValues: { learner_id: preselectedLearnerId || '', status: 'open' },
   });
+  const learnerId = watch('learner_id');
 
   const onSubmit = async (data: InterventionData) => {
     setLoading(true);
@@ -59,14 +61,13 @@ export function InterventionForm({ learners, currentUserId, preselectedLearnerId
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="form-label">Learner <span className="text-red-500">*</span></label>
-          <select {...register('learner_id')} className="form-select">
-            <option value="">Select learner…</option>
-            {learners.map(l => (
-              <option key={l.learner_id} value={l.learner_id}>
-                {l.full_name || `${l.first_name} ${l.last_name}`}
-              </option>
-            ))}
-          </select>
+          <DarkCombobox
+            options={learners.map(l => ({ value: l.learner_id, label: l.full_name || `${l.first_name} ${l.last_name}` }))}
+            value={learnerId || ''}
+            onChange={v => setValue('learner_id', v, { shouldValidate: true })}
+            placeholder="Select learner…"
+            error={!!errors.learner_id}
+          />
           {errors.learner_id && <p className="form-error">{errors.learner_id.message}</p>}
         </div>
         <div>
@@ -123,10 +124,12 @@ interface MentorshipProps {
 
 export function MentorshipForm({ learners, mentors, currentUserId, onSuccess }: MentorshipProps) {
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<MentorshipData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<MentorshipData>({
     resolver: zodResolver(mentorshipSchema),
     defaultValues: { mentor_id: currentUserId, session_date: today() },
   });
+  const learnerId = watch('learner_id');
+  const mentorId  = watch('mentor_id');
 
   const onSubmit = async (data: MentorshipData) => {
     setLoading(true);
@@ -153,21 +156,23 @@ export function MentorshipForm({ learners, mentors, currentUserId, onSuccess }: 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="form-label">Learner <span className="text-red-500">*</span></label>
-          <select {...register('learner_id')} className="form-select">
-            <option value="">Select learner…</option>
-            {learners.map(l => (
-              <option key={l.learner_id} value={l.learner_id}>
-                {l.full_name || `${l.first_name} ${l.last_name}`}
-              </option>
-            ))}
-          </select>
+          <DarkCombobox
+            options={learners.map(l => ({ value: l.learner_id, label: l.full_name || `${l.first_name} ${l.last_name}` }))}
+            value={learnerId || ''}
+            onChange={v => setValue('learner_id', v, { shouldValidate: true })}
+            placeholder="Select learner…"
+            error={!!errors.learner_id}
+          />
           {errors.learner_id && <p className="form-error">{errors.learner_id.message}</p>}
         </div>
         <div>
           <label className="form-label">Mentor <span className="text-red-500">*</span></label>
-          <select {...register('mentor_id')} className="form-select">
-            {mentors.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}
-          </select>
+          <DarkCombobox
+            options={mentors.map(m => ({ value: m.user_id, label: m.full_name }))}
+            value={mentorId || ''}
+            onChange={v => setValue('mentor_id', v, { shouldValidate: true })}
+            placeholder="Select mentor…"
+          />
         </div>
         <div>
           <label className="form-label">Session Date <span className="text-red-500">*</span></label>

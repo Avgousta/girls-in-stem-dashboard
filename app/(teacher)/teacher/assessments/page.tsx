@@ -28,7 +28,7 @@ const thSt: React.CSSProperties = {
 const selectSt: React.CSSProperties = {
   background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '8px 10px', fontSize: '13px', outline: 'none', width: '100%',
+  padding: '8px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark', width: '100%',
 };
 const labelSt: React.CSSProperties = {
   display: 'block', fontSize: '11px', fontWeight: 700,

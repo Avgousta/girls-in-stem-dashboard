@@ -52,13 +52,13 @@ function StatusPill({ status }: { status: string }) {
 const selectSt: React.CSSProperties = {
   background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '7px 10px', fontSize: '13px', outline: 'none', width: '100%',
+  padding: '7px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark', width: '100%',
 };
 
 const inputSt: React.CSSProperties = {
   background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '7px 10px', fontSize: '13px', outline: 'none', width: '100%',
+  padding: '7px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark', width: '100%',
 };
 
 function StatCard({ label, value, color }: { label: string; value: string | number; color: string }) {

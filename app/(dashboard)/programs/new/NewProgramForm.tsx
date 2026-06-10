@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Loader2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
+import DarkCombobox from '@/components/ui/DarkCombobox';
 
 const PROGRAM_TYPES = [
   { value: 'Coding',              label: 'Coding' },
@@ -42,10 +43,11 @@ export default function NewProgramForm({ instructors }: Props) {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { max_capacity: 30 },
   });
+  const instructorId = watch('instructor_id') || '';
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -107,12 +109,13 @@ export default function NewProgramForm({ instructors }: Props) {
 
         <div>
           <label className="form-label">Lead Instructor <span style={{ color: 'var(--ds-danger)' }}>*</span></label>
-          <select {...register('instructor_id')} className="form-select">
-            <option value="">Select instructor…</option>
-            {instructors.map(i => (
-              <option key={i.user_id} value={i.user_id}>{i.full_name}</option>
-            ))}
-          </select>
+          <DarkCombobox
+            options={instructors.map(i => ({ value: i.user_id, label: i.full_name }))}
+            value={instructorId}
+            onChange={v => setValue('instructor_id', v, { shouldValidate: true })}
+            placeholder="Select instructor…"
+            error={!!errors.instructor_id}
+          />
           {errors.instructor_id && <p className="form-error">{errors.instructor_id.message}</p>}
         </div>
 

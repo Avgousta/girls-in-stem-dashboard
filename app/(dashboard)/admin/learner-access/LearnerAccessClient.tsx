@@ -58,7 +58,7 @@ export default function LearnerAccessClient({ learners, baseUrl }: Props) {
   const selectSt: React.CSSProperties = {
     background: DS.surfaceHover as string, color: DS.text as string,
     border: `1px solid ${DS.border}`, borderRadius: '10px',
-    padding: '7px 10px', fontSize: '13px', outline: 'none',
+    padding: '7px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
   };
 
   return (

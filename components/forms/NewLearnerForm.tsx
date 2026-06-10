@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Loader2, UserPlus, CheckSquare, Square } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/utils';
+import DarkCombobox from '@/components/ui/DarkCombobox';
 
 const schema = z.object({
   first_name:      z.string().min(1, 'Required'),
@@ -34,13 +35,14 @@ export default function NewLearnerForm({ schools, programs }: Props) {
   const [selectedPrograms, setSelected] = useState<string[]>([]);
   const [programError, setProgramError] = useState('');
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       enrollment_date: new Date().toISOString().slice(0, 10),
       grade: 10,
     },
   });
+  const schoolId = watch('school_id') || '';
 
   const toggleProgram = (id: string) => {
     setSelected(prev =>
@@ -117,12 +119,13 @@ export default function NewLearnerForm({ schools, programs }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="form-label">School <span className="text-red-500">*</span></label>
-            <select {...register('school_id')} className="form-select">
-              <option value="">Select school…</option>
-              {schools.map(s => (
-                <option key={s.school_id} value={s.school_id}>{s.school_name}</option>
-              ))}
-            </select>
+            <DarkCombobox
+              options={schools.map(s => ({ value: s.school_id, label: s.school_name }))}
+              value={schoolId}
+              onChange={v => setValue('school_id', v, { shouldValidate: true })}
+              placeholder="Select school…"
+              error={!!errors.school_id}
+            />
             {errors.school_id && <p className="form-error">{errors.school_id.message}</p>}
           </div>
           <div>

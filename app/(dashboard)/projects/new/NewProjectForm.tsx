@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2, FolderKanban } from 'lucide-react';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
+import DarkCombobox from '@/components/ui/DarkCombobox';
 
 interface Learner  { learner_id: string; learner_code: string; full_name: string; school_name: string }
 interface Program  { program_id: string; program_name: string; program_type: string }
@@ -157,12 +158,12 @@ export default function NewProjectForm({ learners, programs }: Props) {
           </div>
           <div>
             <label className="form-label">Programme</label>
-            <select value={form.program_id} onChange={e => set('program_id', e.target.value)} className="form-select">
-              <option value="">No programme</option>
-              {programs.map(p => (
-                <option key={p.program_id} value={p.program_id}>{p.program_name} — {p.program_type}</option>
-              ))}
-            </select>
+            <DarkCombobox
+              options={[{ value: '', label: 'No programme' }, ...programs.map(p => ({ value: p.program_id, label: p.program_name, sublabel: p.program_type }))]}
+              value={form.program_id}
+              onChange={v => set('program_id', v)}
+              placeholder="No programme"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

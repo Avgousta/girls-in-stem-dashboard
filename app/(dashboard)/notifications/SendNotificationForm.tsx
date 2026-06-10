@@ -27,7 +27,7 @@ const ROLES = [
 const inputSt: React.CSSProperties = {
   width: '100%', background: DS.surfaceHover as string, color: DS.text as string,
   border: `1px solid ${DS.border}`, borderRadius: '10px',
-  padding: '8px 12px', fontSize: '13px', outline: 'none',
+  padding: '8px 12px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
 };
 const labelSt: React.CSSProperties = {
   display: 'block', fontSize: '11px', fontWeight: 700,

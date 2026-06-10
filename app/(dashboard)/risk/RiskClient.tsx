@@ -464,7 +464,7 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
   const selectStyle: React.CSSProperties = {
     background: DS.surfaceHover as string, color: DS.text as string,
     border: `1px solid ${DS.border}`, borderRadius: '10px',
-    padding: '7px 12px', fontSize: '13px', outline: 'none',
+    padding: '7px 12px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
   };
 
   // Summary counts (always from full risks, not filtered)
