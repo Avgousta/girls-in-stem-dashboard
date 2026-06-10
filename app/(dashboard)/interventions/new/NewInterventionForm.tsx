@@ -1,10 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Loader2, AlertTriangle, BookOpen, CalendarCheck2,
-  AlertOctagon, MessageCircle, Monitor, FileText, Wand2, ChevronDown, ChevronUp,
+  AlertOctagon, MessageCircle, Monitor, FileText, Wand2, ChevronDown, ChevronUp, Search, X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DS } from '@/components/platform/tokens';
@@ -48,6 +48,113 @@ const TEMPLATES = [
     action_plan: '1. Private meeting with learner to hear their perspective\n2. Mediation session with all parties if appropriate\n3. Set clear behavioural expectations going forward\n4. Monitor for 2 weeks; escalate if behaviour continues',
   },
 ] as const;
+
+// ─── Custom dark-mode learner combobox ───────────────────────────────────────
+function LearnerCombobox({
+  learners, value, onChange, disabled,
+}: {
+  learners: Array<{ learner_id: string; full_name: string; school: string }>;
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen]       = useState(false);
+  const [query, setQuery]     = useState('');
+  const ref                   = useRef<HTMLDivElement>(null);
+
+  const selected = learners.find(l => l.learner_id === value);
+
+  const filtered = query.trim()
+    ? learners.filter(l =>
+        l.full_name.toLowerCase().includes(query.toLowerCase()) ||
+        l.school.toLowerCase().includes(query.toLowerCase())
+      )
+    : learners;
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const containerSt: React.CSSProperties = {
+    background: DS.surfaceHover as string,
+    border: `1px solid ${open ? DS.primary : DS.border}`,
+    borderRadius: '12px',
+    padding: '10px 14px',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    opacity: disabled ? 0.6 : 1,
+    transition: 'border-color 0.15s',
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Trigger */}
+      <div style={containerSt} onClick={() => !disabled && setOpen(o => !o)}
+        role="combobox" aria-expanded={open} aria-haspopup="listbox" tabIndex={disabled ? -1 : 0}
+        onKeyDown={e => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) setOpen(o => !o); }}>
+        <span className="text-sm truncate" style={{ color: selected ? DS.text as string : DS.textMuted as string }}>
+          {selected ? `${selected.full_name} — ${selected.school}` : 'Select learner…'}
+        </span>
+        {open ? <ChevronUp className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />
+               : <ChevronDown className="w-4 h-4 shrink-0" style={{ color: DS.textMuted }} />}
+      </div>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden shadow-xl"
+          style={{ background: DS.surface as string, border: `1px solid ${DS.border}`, maxHeight: '320px', display: 'flex', flexDirection: 'column' }}>
+          {/* Search */}
+          <div className="p-2 border-b" style={{ borderColor: DS.border }}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: DS.textMuted }} />
+              <input
+                autoFocus
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search name or school…"
+                className="w-full text-sm pl-8 pr-8 py-1.5 rounded-lg outline-none"
+                style={{ background: DS.surfaceHover as string, color: DS.text as string, border: `1px solid ${DS.border}` }}
+              />
+              {query && (
+                <button aria-label="Clear search" onClick={() => setQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+                  style={{ color: DS.textMuted }}>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          {/* Options */}
+          <div className="overflow-y-auto" role="listbox">
+            {filtered.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: DS.textMuted }}>No learners found</p>
+            ) : filtered.map(l => (
+              <div key={l.learner_id} role="option" aria-selected={l.learner_id === value}
+                onClick={() => { onChange(l.learner_id); setOpen(false); setQuery(''); }}
+                className="px-4 py-2.5 cursor-pointer transition-colors text-sm"
+                style={{
+                  background: l.learner_id === value ? DS.primaryLight as string : 'transparent',
+                  color: l.learner_id === value ? DS.primary as string : DS.text as string,
+                }}
+                onMouseOver={e => { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = DS.surfaceHover as string; }}
+                onMouseOut={e =>  { if (l.learner_id !== value) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+                <span className="font-medium">{l.full_name}</span>
+                <span className="text-xs ml-1.5" style={{ color: DS.textMuted }}>— {l.school}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   learners:       Array<{ learner_id:string; full_name:string; school:string }>;
@@ -186,19 +293,12 @@ export default function NewInterventionForm({ learners, instructors, preselected
         <label className="form-label">
           Learner <span style={{ color: 'var(--ds-danger)' }}>*</span>
         </label>
-        <select
+        <LearnerCombobox
+          learners={learners}
           value={form.learner_id}
-          onChange={e => set('learner_id', e.target.value)}
-          className="form-select"
+          onChange={id => set('learner_id', id)}
           disabled={!!preselectedId}
-        >
-          <option value="">Select learner…</option>
-          {learners.map(l => (
-            <option key={l.learner_id} value={l.learner_id}>
-              {l.full_name} — {l.school}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       {/* Type */}
