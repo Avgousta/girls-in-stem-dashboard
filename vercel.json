@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/parent-summary",
       "schedule": "0 9 1 * *"
+    },
+    {
+      "path": "/api/cron/learner-reengagement",
+      "schedule": "0 8 * * 3"
     }
   ],
   "buildCommand": "npm run build",

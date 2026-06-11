@@ -320,3 +320,74 @@ export async function emailMentorCadenceNudge({
     }),
   ]);
 }
+
+// ─── Learner re-engagement outreach ──────────────────────────────────────────
+
+export async function emailLearnerReengagement({
+  learnerEmail, learnerName, parentEmail, parentName,
+  triggerDetail, programName, coordinatorName, appUrl,
+  adminUserIds,
+}: {
+  learnerEmail:   string | null;
+  learnerName:    string;
+  parentEmail:    string | null;
+  parentName:     string | null;
+  triggerDetail:  string;
+  programName:    string;
+  coordinatorName:string;
+  appUrl:         string;
+  adminUserIds:   string[];
+}) {
+  const subject = `We miss you — ${learnerName}, please check in`;
+
+  const learnerHtml = baseHtml("We haven't heard from you in a while 💜", `
+    <p style="color:rgba(240,238,255,0.8);font-size:14px;margin:0 0 20px;">
+      Hi ${learnerName.split(' ')[0]}, we noticed you've been quiet recently and wanted to reach out.
+      The Melisizwe team is here for you — no matter what's going on.
+    </p>
+    ${detail('Programme', programName)}
+    ${detail('What we noticed', triggerDetail)}
+    <p style="color:rgba(240,238,255,0.6);font-size:13px;margin:20px 0;">
+      If anything is making it hard to participate — transport, home situations, confidence — please
+      let your coordinator know. We can help.
+    </p>
+    <p style="color:rgba(167,139,250,0.9);font-size:13px;margin:0 0 4px;">Your coordinator:</p>
+    <p style="color:rgba(240,238,255,0.85);font-size:14px;font-weight:600;margin:0 0 20px;">${coordinatorName}</p>
+    <a href="${appUrl}/student"
+      style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
+      Check In Now →
+    </a>
+  `);
+
+  const parentHtml = baseHtml(`A check-in about ${learnerName}`, `
+    <p style="color:rgba(240,238,255,0.8);font-size:14px;margin:0 0 20px;">
+      Dear ${parentName ?? 'Parent/Guardian'}, we wanted to reach out regarding ${learnerName}'s
+      participation in the Melisizwe Girls in STEM programme.
+    </p>
+    ${detail('Programme', programName)}
+    ${detail('What we noticed', triggerDetail)}
+    <p style="color:rgba(240,238,255,0.6);font-size:13px;margin:20px 0;">
+      If there are any barriers to ${learnerName}'s participation — transport, access, confidence,
+      or anything at home — please contact your programme coordinator. We want to support your child.
+    </p>
+    <p style="color:rgba(167,139,250,0.9);font-size:13px;margin:0 0 4px;">Programme coordinator:</p>
+    <p style="color:rgba(240,238,255,0.85);font-size:14px;font-weight:600;margin:0;">${coordinatorName}</p>
+  `);
+
+  const sends: Promise<unknown>[] = [];
+
+  if (learnerEmail) sends.push(sendEmail(learnerEmail, subject, learnerHtml));
+  if (parentEmail)  sends.push(sendEmail(parentEmail,  `Melisizwe Girls in STEM — check-in for ${learnerName}`, parentHtml));
+
+  // In-app notification to all admins
+  for (const uid of adminUserIds) {
+    sends.push(createNotification({
+      user_id: uid,
+      type: 'reengagement_sent',
+      title: `Re-engagement sent — ${learnerName}`,
+      body: triggerDetail,
+    }));
+  }
+
+  await Promise.all(sends);
+}
