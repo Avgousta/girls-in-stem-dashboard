@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import AttendanceForm from '@/components/forms/AttendanceForm';
 import AttendanceHistory from './AttendanceHistory';
 import Link from 'next/link';
-import { CalendarCheck2, History } from 'lucide-react';
+import { CalendarCheck2, History, Smartphone } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
 async function getPrograms() {
@@ -28,14 +28,21 @@ export default async function AttendancePage({ searchParams }: Props) {
 
   return (
     <div className="max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
-          <CalendarCheck2 className="w-6 h-6" style={{ color: 'var(--ds-purple)' }} />
-          Attendance
-        </h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-muted)' }}>
-          Mark sessions or view attendance history and reports
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ds-text)' }}>
+            <CalendarCheck2 className="w-6 h-6" style={{ color: 'var(--ds-purple)' }} />
+            Attendance
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--ds-text-muted)' }}>
+            Mark sessions or view attendance history and reports
+          </p>
+        </div>
+        <Link href="/capture"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+          style={{ background: DS.primaryLight, color: DS.primary, border: `1px solid ${DS.primaryBorder}` }}>
+          <Smartphone className="w-4 h-4" /> Mobile Capture
+        </Link>
       </div>
 
       {/* Tab switcher */}
