@@ -5,7 +5,7 @@ import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
 import {
   CalendarCheck2, BarChart3, BookOpen, AlertTriangle,
-  HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban, Heart, GraduationCap,
+  HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban, Heart, GraduationCap, ShieldAlert,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
@@ -13,6 +13,7 @@ import AssessmentsClient from './AssessmentsClient';
 import DeleteLearnerButton from './DeleteLearnerButton';
 import BaselinePanel from '@/components/learners/BaselinePanel';
 import CertificatesPanel from '@/components/learners/CertificatesPanel';
+import BarriersPanel from '@/components/learners/BarriersPanel';
 
 interface LearnerProject { project_id: string; project_name: string; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null; project_feedback: Array<{ feedback_id: string; body: string; is_private: boolean; created_at: string; users: { full_name: string; role: string } | null }> }
 interface LearnerMentorSession { session_id: string; session_date: string; duration_minutes: number | null; notes: string | null; next_steps: string | null; users: { full_name: string } | null }
@@ -95,6 +96,16 @@ export default async function LearnerProfilePage({ params }: Props) {
   const supabase = await createClient();
   const learner = await getLearnerProfile(id);
   if (!learner) notFound();
+
+  // Fetch barriers
+  const { data: barrierRows } = await supabase
+    .from('learner_barriers')
+    .select('barrier_id, barrier_type, severity, reported_by, notes, active, resolved_at, created_at')
+    .eq('learner_id', id)
+    .order('active', { ascending: false })
+    .order('created_at', { ascending: false });
+  interface BarrierRow { barrier_id: string; barrier_type: string; severity: number; reported_by: string; notes: string | null; active: boolean; resolved_at: string | null; created_at: string }
+  const barriers = (barrierRows || []) as unknown as BarrierRow[];
 
   // Fetch certificates
   const { data: certRows } = await supabase
@@ -385,6 +396,12 @@ export default async function LearnerProfilePage({ params }: Props) {
           </div>
         </Section>
       )}
+
+      {/* Barriers */}
+      <Section title="Barriers" icon={ShieldAlert} iconColor="var(--ds-warn)"
+        count={barriers.filter(b => b.active).length || undefined}>
+        <BarriersPanel learnerId={learner.learner_id} initial={barriers} />
+      </Section>
 
       {/* Certificates */}
       <Section title="Certificates" icon={GraduationCap} iconColor="#1D4ED8" count={certificates.length || undefined}>

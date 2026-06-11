@@ -62,5 +62,28 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return err(error.message, 500);
+
+  // If learner flagged a barrier and rated low (1-2), auto-create a barrier record
+  // Only create if no active barrier of that type already exists this week
+  if (parsed.data.barrier_flag && parsed.data.rating <= 2) {
+    const { data: existing } = await supabase
+      .from('learner_barriers')
+      .select('barrier_id')
+      .eq('learner_id', parsed.data.learner_id)
+      .eq('barrier_type', parsed.data.barrier_flag)
+      .eq('active', true)
+      .limit(1);
+
+    if (!existing?.length) {
+      Promise.resolve(supabase.from('learner_barriers').insert({
+        learner_id:   parsed.data.learner_id,
+        barrier_type: parsed.data.barrier_flag,
+        severity:     parsed.data.rating === 1 ? 3 : 2,
+        reported_by:  'learner',
+        notes:        parsed.data.notes ?? `Self-reported via weekly check-in (week of ${parsed.data.week_date})`,
+      })).catch(() => {});
+    }
+  }
+
   return created(data);
 }
