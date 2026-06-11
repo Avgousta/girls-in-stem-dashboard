@@ -333,3 +333,161 @@ All 21 public tables now have authenticated + service_role policies:
 ```
 https://girls-stem-dashboard.vercel.app/api/diagnostics
 ```
+
+---
+
+## Impact Platform Audit — Jun 2026
+
+**Conducted by:** 10-expert panel (Education Data Analyst, M&E Specialist, Programme Director, Product Manager, UX Designer, Data Scientist, Student Success Specialist, Salesforce Nonprofit Architect, Educational Psychologist, VC Due Diligence Analyst)
+
+**Core finding:** The platform is a well-engineered administrative tool but needs to shift from *record-keeping* to *intelligence* — from data storage to evidence-based action. The mission is to identify factors that help learners thrive and intervene early.
+
+### Product Maturity Score: 52 / 100
+
+| Dimension | Score |
+|-----------|-------|
+| Data collection breadth | 68 |
+| Risk identification | 55 |
+| Intervention management | 58 |
+| Learner monitoring depth | 45 |
+| Reporting quality | 40 |
+| Sponsor reporting readiness | 35 |
+| UX / usability | 62 |
+| Security | 80 |
+| Parent engagement | 15 |
+| Alumni & longitudinal tracking | 0 |
+| AI/ML readiness | 20 |
+| **Overall** | **52** |
+
+---
+
+### Critical Gaps (CG) — Fix Before Scale-Up
+
+| # | Gap | Problem | Fix |
+|---|-----|---------|-----|
+| CG1 | Risk engine is a lagging indicator | Flags learners after crisis (att<75%, score<50%) — not before | Add trend-based flags: 3 consecutive misses, declining score trend, 21-day no-mentorship |
+| CG2 | Intervention outcomes never measured | No before/after comparison, no effectiveness rating — can't prove impact | Add `outcome_rating` (1-5) + auto risk score comparison on resolution |
+| CG3 | No sponsor impact dashboard | Sponsors see counts, not stories — won't justify continued funding | Narrative-first dashboard + auto-generated quarterly PDF report |
+| CG4 | Learner voice absent | No self-reporting of barriers, feelings, or goals — misses key risk signals | Weekly pulse check-in (1 question, emoji scale), learner-flagged barriers |
+| CG5 | Zero alumni tracking | Programme cannot demonstrate long-term impact | Alumni table + 6/12/36-month follow-up surveys |
+| CG6 | No baseline assessment at enrolment | Cannot show value-add without a starting point | Mandatory baseline at enrolment: maths/science/digital confidence (1-5) |
+| CG7 | Email notifications configured but silent | Resend API key set on Vercel — zero emails ever sent | Wire Resend: absence alert to parent, mentor nudge, intervention assigned |
+| CG8 | Parent portal is decorative | Parents are passive observers — can't communicate or flag concerns | Two-way messaging, absence excuses, intervention alerts, monthly summary |
+
+---
+
+### Missing Data Points
+
+- Socioeconomic context (household size, internet access, transport, first-gen student)
+- Baseline academic scores at enrolment (per discipline)
+- Learner-reported barriers (financial, health, family, confidence)
+- Sense of belonging in STEM (periodic survey)
+- Time-on-platform / engagement depth
+- Grade 12 final results
+- University enrolment and career pathway
+- School-reported external marks (for cross-validation)
+
+---
+
+### Missing Workflows
+
+1. **Cohort comparison** — no way to compare programme vs programme, school vs school, or cohort year vs year
+2. **Learner re-engagement journey** — no automated re-engagement when learner disengages
+3. **Baseline-to-outcome journey** — no structured arc from enrolment → mid-programme → exit → alumni
+4. **Certificate issuance** — gamification badges exist but no formal digital certificate generated or delivered
+5. **Sponsor reporting cycle** — no automated quarterly report, no scheduling, no distribution
+6. **Graduation / alumni transition** — no off-boarding, no exit survey, learners simply go inactive
+7. **Peer support pairing** — no mechanism to identify strong learners as near-peer tutors
+8. **Data completeness alerts** — no warning when programme has no attendance for 7+ days
+
+---
+
+### High-Impact Quick Wins (0–4 weeks)
+
+| # | Win | Effort |
+|---|-----|--------|
+| QW1 | **Wire Resend email** — 3 emails: absence→parent, mentor cadence nudge, intervention assigned | 3 days |
+| QW2 | **Trend-based risk flags** — declining last-3 scores, 2 consecutive absences | 4 days |
+| QW3 | **Intervention outcome field** — `outcome_rating` 1-5 + notes on resolution | 2 days |
+| QW4 | **Weekly learner pulse check-in** — 1-question emoji scale, stored in `learner_pulse` | 4 days |
+| QW5 | **Baseline assessment at enrolment** — 3 confidence fields (maths, science, digital) | 3 days |
+| QW6 | **Narrative sponsor dashboard** — sentences not numbers ("improved by X%") | 3 days |
+| QW7 | **Data completeness alerts** — banner when programme/learner data is stale | 2 days |
+
+**Start here: CG7 (email) and QW2 (trend risk). Everything else depends on these.**
+
+---
+
+### Medium-Term (1–3 months)
+
+- Predictive risk model (rule-based heuristic first, ML later)
+- Cohort analytics engine (`/analytics` — compare programmes, schools, grades, years)
+- Parent engagement layer (WhatsApp/SMS via Twilio — most SA parents don't use email)
+- Certificate management (PDF generation, verification code, Vercel Blob storage)
+- Alumni tracking module (`alumni` table + follow-up surveys)
+- Sponsor auto-generated PDF impact report (quarterly, branded, auto-delivered)
+- Intervention effectiveness analysis (which types + which staff produce best outcomes)
+- Mobile-first field capture UI (attendance + intervention logging on phone)
+
+---
+
+### Long-Term Roadmap (3–18 months)
+
+- **Phase 1 (3–6 months):** Intelligence layer — ML risk prediction, learner trajectory modelling, NLP on session notes, recommendation engine ("learners like this respond well to X")
+- **Phase 2 (6–12 months):** Ecosystem — WhatsApp integration, school LMS import (Siyavula/GreenBook), NSN linkage, multi-organisation support
+- **Phase 3 (12–18 months):** Sector platform — anonymised cross-org benchmarking, national DHET reporting, research export, funder marketplace, AI tutor
+
+---
+
+### New Database Tables Required
+
+```sql
+-- Baseline assessments at enrolment
+learner_baselines (baseline_id, learner_id, maths_confidence 1-5, science_confidence 1-5, digital_confidence 1-5, prior_coding_exp bool)
+
+-- Weekly learner pulse
+learner_pulse (pulse_id, learner_id, week_date, rating 1-5, barrier_flag, notes) UNIQUE(learner_id, week_date)
+
+-- Alumni tracking
+alumni (alumni_id, learner_id, graduated_at, final_status, higher_ed_enrolled, institution, career_field, employed_in_stem, consent_for_followup)
+
+-- Post-programme surveys
+alumni_surveys (survey_id, alumni_id, survey_date, survey_type: exit|6_month|1_year|3_year, stem_career, programme_impact 1-5)
+
+-- Intervention outcomes (auto-populated on resolution)
+intervention_outcomes (outcome_id, intervention_id, risk_before, risk_after, score_before, score_after, effectiveness 1-5)
+
+-- Self-reported barriers
+learner_barriers (barrier_id, learner_id, barrier_type, severity 1-3, reported_by: learner|staff|parent, active bool)
+
+-- Sponsor impact reports
+sponsor_reports (report_id, sponsor_id, period_start, period_end, report_type, content_json, pdf_url, sent_at)
+
+-- Certificates
+certificates (certificate_id, learner_id, cert_type, issued_at, pdf_url, verification_code UNIQUE, programme_id)
+
+-- Learner context fields (add to learner_profiles)
+internet_access, household_size, primary_language, transport_type, first_gen_student
+```
+
+---
+
+### Feature Priority Matrix
+
+| # | Feature | Impact | Effort |
+|---|---------|--------|--------|
+| 1 | Email/WhatsApp notifications (Resend + Twilio) | Critical | Low |
+| 2 | Trend-based early warning risk engine | Critical | Medium |
+| 3 | Intervention outcome measurement | Critical | Low |
+| 4 | Learner weekly pulse check-in | High | Low |
+| 5 | Enrolment baseline assessments | High | Low |
+| 6 | Alumni tracking module | High | Medium |
+| 7 | Sponsor auto-generated impact report | High | Medium |
+| 8 | Certificate issuance & verification | High | Medium |
+| 9 | Parent two-way communication | High | High |
+| 10 | Cohort comparison analytics | High | Medium |
+| 11 | Predictive risk model | Medium | High |
+| 12 | Mobile-first field capture UI | Medium | Medium |
+| 13 | Learner barrier tracking | Medium | Low |
+| 14 | Programme effectiveness analytics | Medium | Medium |
+| 15 | School LMS data integration | Medium | High |
