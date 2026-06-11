@@ -25,6 +25,14 @@ interface RawProject      { project_name: string | null; stage: string | null; c
 interface RawIntervention { learner_id: string; status: string; created_at: string }
 
 interface YearRow { year: string; count: number; att: number; score: number; high: number; medium: number; low: number }
+interface IntervTypeRow { type: string; total: number; resolved: number; resRate: number; avgRating: number | null; riskImproved: number }
+interface StaffRow { name: string; total: number; resolved: number; resRate: number; avgRating: number | null }
+interface EffectivenessData {
+  interventionByType: IntervTypeRow[];
+  staffPerformance:   StaffRow[];
+  valueAdd:           { count: number; improved: number; declined: number; avgGain: number };
+  mentorship:         { withMentorCount: number; withoutMentorCount: number; mentorHighRisk: number; noMentorHighRisk: number; mentorAvgScore: number; noMentorAvgScore: number };
+}
 
 interface Props {
   schoolBreakdown:    SchoolRow[];
@@ -33,6 +41,7 @@ interface Props {
   sponsorBreakdown:   SponsorRow[];
   yearBreakdown:      YearRow[];
   scoreDist:          BandRow[];
+  effectivenessData:  EffectivenessData;
   rawLearners:        RawLearner[];
   rawAttendance:      RawAttendance[];
   rawAssessments:     RawAssessment[];
@@ -40,7 +49,7 @@ interface Props {
   rawInterventions:   RawIntervention[];
 }
 
-type Tab = 'overview' | 'schools' | 'grades' | 'programmes' | 'sponsors' | 'cohort' | 'export';
+type Tab = 'overview' | 'schools' | 'grades' | 'programmes' | 'sponsors' | 'cohort' | 'effectiveness' | 'export';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const BAND_COLOR: Record<string, string> = {
@@ -447,6 +456,7 @@ function ExportPreview({ headers, rows, filename, onDownload }: {
 export default function ReportsClient({
   schoolBreakdown, gradeBreakdown, programmeBreakdown, sponsorBreakdown,
   yearBreakdown, scoreDist, rawLearners, rawAttendance, rawAssessments, rawProjects, rawInterventions,
+  effectivenessData,
 }: Props) {
   const [tab,        setTab]        = useState<Tab>('overview');
   const [schoolQ,    setSchoolQ]    = useState('');
@@ -459,8 +469,9 @@ export default function ReportsClient({
     { key: 'grades',      label: 'Grades',      icon: Users           },
     { key: 'programmes',  label: 'Programmes',  icon: BarChart3       },
     { key: 'sponsors',    label: 'Sponsors',    icon: Award           },
-    { key: 'cohort',      label: 'Cohort Year', icon: TrendingUp      },
-    { key: 'export',      label: 'Export',      icon: Download        },
+    { key: 'cohort',        label: 'Cohort Year',    icon: TrendingUp   },
+    { key: 'effectiveness', label: 'Effectiveness',  icon: TrendingUp   },
+    { key: 'export',        label: 'Export',         icon: Download     },
   ];
 
   // ── Export helpers ──────────────────────────────────────────────────────
@@ -764,6 +775,106 @@ export default function ReportsClient({
           </SectionCard>
         </div>
       )}
+
+      {/* ── EFFECTIVENESS ── */}
+      {tab === 'effectiveness' && (() => {
+        const { interventionByType, staffPerformance, valueAdd, mentorship } = effectivenessData;
+        const ITYPES: Record<string, string> = { academic:'Academic', attendance:'Attendance', behavioural:'Behavioural', personal:'Personal', technical:'Technical', other:'Other' };
+        return (
+          <div className="space-y-5">
+
+            {/* Value-add callout */}
+            {valueAdd.count > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { label: 'Learners with baseline',       value: valueAdd.count,    color: DS.primary as string },
+                  { label: 'Improved since enrolment',     value: `${valueAdd.improved} (${Math.round(valueAdd.improved/valueAdd.count*100)}%)`, color: 'var(--ds-success)' },
+                  { label: `Avg score gain`,               value: `${valueAdd.avgGain > 0 ? '+' : ''}${valueAdd.avgGain}%`, color: valueAdd.avgGain >= 0 ? 'var(--ds-success)' : 'var(--ds-danger)' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="rounded-2xl p-5 text-center" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+                    <p className="text-2xl font-black" style={{ color }}>{String(value)}</p>
+                    <p className="text-xs mt-1" style={{ color: DS.textMuted }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Mentorship impact */}
+            {mentorship.withMentorCount > 0 && (
+              <SectionCard title="Mentorship Impact (3+ sessions vs fewer)">
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: `With 3+ sessions (${mentorship.withMentorCount})`,    highRisk: mentorship.mentorHighRisk,   avgScore: mentorship.mentorAvgScore,   color: 'var(--ds-success)' },
+                    { label: `Fewer sessions (${mentorship.withoutMentorCount})`,   highRisk: mentorship.noMentorHighRisk, avgScore: mentorship.noMentorAvgScore, color: 'var(--ds-warn)' },
+                  ].map(g => (
+                    <div key={g.label} className="rounded-xl p-4 space-y-2" style={{ background: DS.surfaceHover }}>
+                      <p className="text-xs font-bold" style={{ color: DS.textMid }}>{g.label}</p>
+                      <div className="flex gap-4">
+                        <div>
+                          <p className="text-xl font-black" style={{ color: g.color }}>{g.avgScore}%</p>
+                          <p className="text-[10px]" style={{ color: DS.textMuted }}>Avg score</p>
+                        </div>
+                        <div>
+                          <p className="text-xl font-black" style={{ color: g.highRisk > 30 ? 'var(--ds-danger)' : 'var(--ds-success)' }}>{g.highRisk}%</p>
+                          <p className="text-[10px]" style={{ color: DS.textMuted }}>High risk</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+
+            {/* Intervention by type */}
+            {interventionByType.length > 0 && (
+              <SectionCard title="Intervention Effectiveness by Type">
+                <div style={{ height: 200 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={interventionByType.map(t => ({ name: ITYPES[t.type]??t.type, 'Res %': t.resRate, 'Avg Rating': t.avgRating ? t.avgRating * 20 : 0 }))} barGap={4} barSize={18}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={DS.borderLight as string} vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: DS.textMuted as string }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0,100]} tick={{ fontSize: 10, fill: DS.textMuted as string }} axisLine={false} tickLine={false} unit="%" />
+                      <Tooltip contentStyle={{ background: DS.bg, border: `1px solid ${DS.border}`, borderRadius: 10, fontSize: 12 }} />
+                      <Bar dataKey="Res %"       fill="#7C3AED" radius={[4,4,0,0]} />
+                      <Bar dataKey="Avg Rating"  fill="#34D399" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <DTable headers={['Type','Total','Resolved','Res Rate','Avg Effectiveness','Risk Improved']}>
+                  {interventionByType.map((t, i) => (
+                    <DRow key={t.type} cells={[
+                      <span key="t" className="capitalize">{ITYPES[t.type]??t.type}</span>,
+                      String(t.total),
+                      String(t.resolved),
+                      <span key="r" style={{ color: t.resRate >= 70 ? 'var(--ds-success)' : t.resRate >= 40 ? 'var(--ds-warn)' : 'var(--ds-danger)', fontWeight: 700 }}>{t.resRate}%</span>,
+                      t.avgRating != null ? <span key="e" style={{ color: 'var(--ds-success)', fontWeight: 700 }}>{t.avgRating}/5</span> : <span key="e" style={{ color: DS.textMuted }}>—</span>,
+                      String(t.riskImproved),
+                    ]} highlight={i % 2 === 0} />
+                  ))}
+                </DTable>
+              </SectionCard>
+            )}
+
+            {/* Staff performance */}
+            {staffPerformance.length > 0 && (
+              <SectionCard title="Staff Performance">
+                <DTable headers={['Staff Member','Assigned','Resolved','Resolution Rate','Avg Rating']}>
+                  {staffPerformance.map((s, i) => (
+                    <DRow key={s.name} cells={[
+                      s.name,
+                      String(s.total),
+                      String(s.resolved),
+                      <span key="r" style={{ color: s.resRate >= 70 ? 'var(--ds-success)' : s.resRate >= 40 ? 'var(--ds-warn)' : 'var(--ds-danger)', fontWeight: 700 }}>{s.resRate}%</span>,
+                      s.avgRating != null ? <span key="e" style={{ color: 'var(--ds-success)', fontWeight: 700 }}>{s.avgRating}/5</span> : <span key="e" style={{ color: DS.textMuted }}>—</span>,
+                    ]} highlight={i % 2 === 0} />
+                  ))}
+                </DTable>
+              </SectionCard>
+            )}
+
+          </div>
+        );
+      })()}
 
       {/* ── EXPORT ── */}
       {tab === 'export' && (

@@ -24,6 +24,8 @@ interface RawProject     { learner_id: string; project_name: string | null; stag
 interface RawIntervention { learner_id: string; status: string; created_at: string }
 interface RawSponsor     { sponsor_id: string; sponsor_name: string; sponsor_learners: Array<{ learner_id: string }> | null }
 interface RawProgram     { program_id: string; program_name: string; program_type: string }
+interface RawEffectiveInterv { intervention_id: string; intervention_type: string; status: string; priority: string; created_at: string; resolved_at: string | null; assigned_user: { full_name: string } | null; intervention_outcomes: Array<{ effectiveness: number | null; risk_before: string | null; risk_after: string | null; score_before: number | null; score_after: number | null }> }
+interface RawBaseline    { learner_id: string; maths_confidence: number; science_confidence: number; digital_confidence: number }
 
 async function getReportData() {
   const supabase = await createClient();
@@ -32,6 +34,7 @@ async function getReportData() {
     learnersRes, schoolsRes, programsRes,
     attendanceRes, assessmentsRes, projectsRes,
     interventionsRes, sponsorsRes,
+    effectiveIntervRes, baselinesRes, mentorSessionsRes,
   ] = await Promise.all([
     supabase.from('learners').select(`
       learner_id, learner_code, grade, programme_status, enrollment_date,
@@ -47,17 +50,28 @@ async function getReportData() {
     supabase.from('projects').select('learner_id, project_name, stage, completion_status, score, max_score, due_date, programs(program_name)'),
     supabase.from('interventions').select('learner_id, status, created_at'),
     supabase.from('sponsors').select('sponsor_id, sponsor_name, sponsor_learners(learner_id)'),
+    // Effectiveness data
+    supabase.from('interventions').select(`
+      intervention_id, intervention_type, status, priority, created_at, resolved_at,
+      assigned_user:users!assigned_to(full_name),
+      intervention_outcomes(effectiveness, risk_before, risk_after, score_before, score_after)
+    `).order('created_at', { ascending: false }),
+    supabase.from('learner_baselines').select('learner_id, maths_confidence, science_confidence, digital_confidence'),
+    supabase.from('mentorship_sessions').select('learner_id, session_date'),
   ]);
 
   return {
-    learners:      (learnersRes.data      || []) as unknown as RawLearner[],
-    schools:       schoolsRes.data        || [],
-    programs:      (programsRes.data      || []) as unknown as RawProgram[],
-    attendance:    (attendanceRes.data    || []) as unknown as RawAttendance[],
-    assessments:   (assessmentsRes.data   || []) as unknown as RawAssessment[],
-    projects:      (projectsRes.data      || []) as unknown as RawProject[],
-    interventions: (interventionsRes.data || []) as unknown as RawIntervention[],
-    sponsors:      (sponsorsRes.data      || []) as unknown as RawSponsor[],
+    learners:         (learnersRes.data         || []) as unknown as RawLearner[],
+    schools:          schoolsRes.data           || [],
+    programs:         (programsRes.data         || []) as unknown as RawProgram[],
+    attendance:       (attendanceRes.data       || []) as unknown as RawAttendance[],
+    assessments:      (assessmentsRes.data      || []) as unknown as RawAssessment[],
+    projects:         (projectsRes.data         || []) as unknown as RawProject[],
+    interventions:    (interventionsRes.data    || []) as unknown as RawIntervention[],
+    sponsors:         (sponsorsRes.data         || []) as unknown as RawSponsor[],
+    effectiveIntervs: (effectiveIntervRes.data  || []) as unknown as RawEffectiveInterv[],
+    baselines:        (baselinesRes.data        || []) as unknown as RawBaseline[],
+    mentorSessions:   (mentorSessionsRes.data   || []) as unknown as { learner_id: string; session_date: string }[],
   };
 }
 
@@ -211,19 +225,94 @@ export default async function ReportsPage() {
         <KPICard label="Open Interventions" value={openInterv}            color={openInterv > 0 ? 'var(--ds-warn)' : 'var(--ds-success)'}   sub="unresolved"                 icon={Award}          />
       </div>
 
-      <ReportsClient
-        schoolBreakdown={schoolBreakdown}
-        gradeBreakdown={gradeBreakdown}
-        programmeBreakdown={programmeBreakdown}
-        sponsorBreakdown={sponsorBreakdown}
-        yearBreakdown={yearBreakdown}
-        scoreDist={scoreDist}
-        rawLearners={data.learners}
-        rawAttendance={data.attendance}
-        rawAssessments={data.assessments}
-        rawProjects={data.projects}
-        rawInterventions={data.interventions}
-      />
+      {(() => {
+        // ── Effectiveness: intervention type breakdown ─────────────────────
+        const typeMap: Record<string, { type: string; total: number; resolved: number; ratings: number[]; riskImproved: number }> = {};
+        data.effectiveIntervs.forEach(i => {
+          const t = i.intervention_type || 'other';
+          if (!typeMap[t]) typeMap[t] = { type: t, total: 0, resolved: 0, ratings: [], riskImproved: 0 };
+          typeMap[t].total++;
+          if (i.status === 'resolved') typeMap[t].resolved++;
+          const o = i.intervention_outcomes?.[0];
+          if (o?.effectiveness != null) typeMap[t].ratings.push(o.effectiveness);
+          const RISK_ORDER: Record<string, number> = { low: 0, medium: 1, high: 2 };
+          if (o?.risk_before && o?.risk_after && RISK_ORDER[o.risk_after] < RISK_ORDER[o.risk_before]) typeMap[t].riskImproved++;
+        });
+        const interventionByType = Object.values(typeMap).map(t => ({
+          type:         t.type,
+          total:        t.total,
+          resolved:     t.resolved,
+          resRate:      t.total > 0 ? Math.round(t.resolved / t.total * 100) : 0,
+          avgRating:    t.ratings.length > 0 ? Math.round(t.ratings.reduce((a,b) => a+b, 0) / t.ratings.length * 10) / 10 : null,
+          riskImproved: t.riskImproved,
+        })).sort((a, b) => b.resRate - a.resRate);
+
+        // ── Effectiveness: staff performance ─────────────────────────────
+        const staffMap: Record<string, { name: string; total: number; resolved: number; ratings: number[] }> = {};
+        data.effectiveIntervs.forEach(i => {
+          const name = i.assigned_user?.full_name ?? 'Unassigned';
+          if (!staffMap[name]) staffMap[name] = { name, total: 0, resolved: 0, ratings: [] };
+          staffMap[name].total++;
+          if (i.status === 'resolved') staffMap[name].resolved++;
+          const o = i.intervention_outcomes?.[0];
+          if (o?.effectiveness != null) staffMap[name].ratings.push(o.effectiveness);
+        });
+        const staffPerformance = Object.values(staffMap).filter(s => s.name !== 'Unassigned').map(s => ({
+          name:      s.name,
+          total:     s.total,
+          resolved:  s.resolved,
+          resRate:   s.total > 0 ? Math.round(s.resolved / s.total * 100) : 0,
+          avgRating: s.ratings.length > 0 ? Math.round(s.ratings.reduce((a,b) => a+b, 0) / s.ratings.length * 10) / 10 : null,
+        })).sort((a, b) => b.resolved - a.resolved).slice(0, 10);
+
+        // ── Value-add: baseline confidence vs current score ───────────────
+        const riskMap = Object.fromEntries(data.learners.map(l => [l.learner_id, l.risk_scores]));
+        const valueAdd = data.baselines.map(b => {
+          const avgConf = Math.round((b.maths_confidence + b.science_confidence + b.digital_confidence) / 3 * 20);
+          const curScore = riskMap[b.learner_id]?.avg_score ?? null;
+          return { learner_id: b.learner_id, baseline_pct: avgConf, current_pct: curScore };
+        }).filter(v => v.current_pct != null);
+        const improved  = valueAdd.filter(v => (v.current_pct ?? 0) > v.baseline_pct).length;
+        const declined  = valueAdd.filter(v => (v.current_pct ?? 0) < v.baseline_pct).length;
+        const avgGain   = valueAdd.length > 0 ? Math.round(valueAdd.reduce((s, v) => s + ((v.current_pct ?? 0) - v.baseline_pct), 0) / valueAdd.length) : 0;
+
+        // ── Mentorship impact: 3+ sessions vs fewer ───────────────────────
+        const sessionCountMap: Record<string, number> = {};
+        data.mentorSessions.forEach(s => { sessionCountMap[s.learner_id] = (sessionCountMap[s.learner_id] ?? 0) + 1; });
+        const withMentor    = data.learners.filter(l => (sessionCountMap[l.learner_id] ?? 0) >= 3 && l.risk_scores);
+        const withoutMentor = data.learners.filter(l => (sessionCountMap[l.learner_id] ?? 0) < 3  && l.risk_scores);
+        const mentorHighRisk = withMentor.length    > 0 ? Math.round(withMentor.filter(l => l.risk_scores?.risk_level === 'high').length / withMentor.length * 100) : 0;
+        const noMentorHighRisk = withoutMentor.length > 0 ? Math.round(withoutMentor.filter(l => l.risk_scores?.risk_level === 'high').length / withoutMentor.length * 100) : 0;
+        const mentorAvgScore = withMentor.length > 0    ? Math.round(withMentor.reduce((s, l) => s + (l.risk_scores?.avg_score ?? 0), 0) / withMentor.length) : 0;
+        const noMentorAvgScore = withoutMentor.length > 0 ? Math.round(withoutMentor.reduce((s, l) => s + (l.risk_scores?.avg_score ?? 0), 0) / withoutMentor.length) : 0;
+
+        const effectivenessData = {
+          interventionByType,
+          staffPerformance,
+          valueAdd: { count: valueAdd.length, improved, declined, avgGain },
+          mentorship: {
+            withMentorCount: withMentor.length, withoutMentorCount: withoutMentor.length,
+            mentorHighRisk, noMentorHighRisk, mentorAvgScore, noMentorAvgScore,
+          },
+        };
+
+        return (
+          <ReportsClient
+            schoolBreakdown={schoolBreakdown}
+            gradeBreakdown={gradeBreakdown}
+            programmeBreakdown={programmeBreakdown}
+            sponsorBreakdown={sponsorBreakdown}
+            yearBreakdown={yearBreakdown}
+            scoreDist={scoreDist}
+            rawLearners={data.learners}
+            rawAttendance={data.attendance}
+            rawAssessments={data.assessments}
+            rawProjects={data.projects}
+            rawInterventions={data.interventions}
+            effectivenessData={effectivenessData}
+          />
+        );
+      })()}
     </div>
   );
 }
