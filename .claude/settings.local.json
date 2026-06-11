@@ -116,7 +116,16 @@
       "Bash(sed -i 's/const p = \\(data as any\\).learner_profiles/const p = \\(data as unknown as { learner_profiles: Record<string, unknown> }\\).learner_profiles/' \"app/api/v1/auth/lookup-learner/route.ts\")",
       "Bash(sed -i 's/supabase: null as any/supabase: null as unknown as ReturnType<typeof import\\('\\\\''@\\\\/lib\\\\/supabase\\\\/server'\\\\''\\)['\\\\''createClient'\\\\'']> extends Promise<infer T> ? T : never/' \"app/api/helpers.ts\")",
       "Bash(sed -i 's/\\(learnersRes.data || \\\\[\\\\]\\).map\\(\\(l: any\\) =>/\\(learnersRes.data || []\\).map\\(\\(l\\)=>/' \"app/\\(dashboard\\)/projects/new/page.tsx\")",
-      "Bash(sed -i \"s/style={{ '--tw-divide-color': DS.borderLight } as any}/style={{ '--tw-divide-color': DS.borderLight } as React.CSSProperties}/\" \"app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")"
+      "Bash(sed -i \"s/style={{ '--tw-divide-color': DS.borderLight } as any}/style={{ '--tw-divide-color': DS.borderLight } as React.CSSProperties}/\" \"app/\\(dashboard\\)/interventions/InterventionsClient.tsx\")",
+      "Bash(npx vercel *)",
+      "Bash(grep -v \"//.*onClick\")",
+      "Bash(ls -la \"C:\\\\Users\\\\User\\\\girls-stem-dashboard\\\\\" | head -20)",
+      "PowerShell(cd C:\\\\Users\\\\User\\\\girls-stem-dashboard && git add app/\\(auth\\)/login/page.tsx app/\\(auth\\)/register/page.tsx \"app/\\(auth\\)/reset-password/page.tsx\" \"app/\\(dashboard\\)/admin/learner-access/LearnerAccessClient.tsx\" \"app/\\(dashboard\\)/admin/schools/SchoolsClient.tsx\" \"app/\\(dashboard\\)/admin/sponsors/SponsorManager.tsx\" \"app/\\(dashboard\\)/assessments/AssessmentsClient.tsx\" \"app/\\(dashboard\\)/attendance/AttendanceHistory.tsx\" \"app/\\(dashboard\\)/interventions/InterventionsClient.tsx\" \"app/\\(dashboard\\)/learners/LearnersClient.tsx\" \"app/\\(dashboard\\)/learners/SponsorCell.tsx\" \"app/\\(dashboard\\)/learners/[id]/AssessmentsClient.tsx\" \"app/\\(dashboard\\)/learners/[id]/DeleteLearnerButton.tsx\" \"app/\\(dashboard\\)/mentorship/MentorshipClient.tsx\" \"app/\\(dashboard\\)/reports/ReportsClient.tsx\" \"app/\\(student\\)/student/profile/ProfileEditor.tsx\" \"app/\\(teacher\\)/teacher/meetings/TeacherMeetingsClient.tsx\")",
+      "PowerShell(supabase --version 2>&1)",
+      "PowerShell(docker --version 2>&1)",
+      "PowerShell(npx playwright --version 2>&1)",
+      "Bash(sed -n '11,22p' components/ui/RiskAlertCard.tsx)",
+      "Bash(sed -n '35,47p' app/\\\\\\(dashboard\\\\\\)/risk/RiskClient.tsx)"
     ]
   }
 }

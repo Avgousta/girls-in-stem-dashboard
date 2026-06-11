@@ -248,3 +248,75 @@ export async function emailInterventionResolved({
     }),
   ]);
 }
+
+// ─── Absence alert to parent ──────────────────────────────────────────────────
+
+export async function emailAbsenceAlert({
+  parentEmail, parentUserId, learnerName, programName, sessionDate,
+}: {
+  parentEmail: string; parentUserId: string;
+  learnerName: string; programName: string; sessionDate: string;
+}) {
+  const subject = `Absence notice — ${learnerName} missed a session`;
+  const html = baseHtml('Absence Notice', `
+    <p style="color:rgba(240,238,255,0.8);font-size:14px;margin:0 0 20px;">
+      We wanted to let you know that ${learnerName} was marked absent from a session today.
+    </p>
+    ${detail('Learner', learnerName)}
+    ${detail('Programme', programName)}
+    ${detail('Date', sessionDate)}
+    <p style="color:rgba(240,238,255,0.6);font-size:13px;margin-top:20px;">
+      If this absence was planned or there are any concerns, please contact your programme coordinator.
+    </p>
+  `);
+
+  await Promise.all([
+    sendEmail(parentEmail, subject, html),
+    createNotification({
+      user_id: parentUserId,
+      type: 'absence',
+      title: `Absence notice — ${learnerName}`,
+      body: `${learnerName} was absent from ${programName} on ${sessionDate}.`,
+    }),
+  ]);
+}
+
+// ─── Mentor cadence nudge ─────────────────────────────────────────────────────
+
+export async function emailMentorCadenceNudge({
+  mentorEmail, mentorUserId, mentorName, learnerName, daysSince, appUrl,
+}: {
+  mentorEmail: string; mentorUserId: string; mentorName: string;
+  learnerName: string; daysSince: number | null; appUrl: string;
+}) {
+  const daysText = daysSince != null
+    ? `${daysSince} days ago`
+    : 'never';
+  const subject = `Mentorship check-in overdue — ${learnerName}`;
+  const html = baseHtml('Mentorship Check-In Due', `
+    <p style="color:rgba(240,238,255,0.8);font-size:14px;margin:0 0 20px;">
+      Hi ${mentorName}, one of your mentees is overdue for a session.
+    </p>
+    ${detail('Learner', learnerName)}
+    ${detail('Last session', daysText)}
+    <p style="color:rgba(240,238,255,0.6);font-size:13px;margin:16px 0 0;">
+      At-risk learners benefit most from regular mentorship contact. Please log a session or reach out soon.
+    </p>
+    <a href="${appUrl}/mentorship"
+      style="display:inline-block;margin-top:20px;padding:12px 24px;background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
+      Log a Session →
+    </a>
+  `);
+
+  await Promise.all([
+    sendEmail(mentorEmail, subject, html),
+    createNotification({
+      user_id: mentorUserId,
+      type: 'mentorship_cadence_alert',
+      title: `Session overdue — ${learnerName}`,
+      body: daysSince != null
+        ? `Last session was ${daysSince} days ago — check in soon.`
+        : `No sessions have been logged yet.`,
+    }),
+  ]);
+}

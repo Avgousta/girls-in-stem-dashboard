@@ -5,12 +5,13 @@ import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
 import {
   CalendarCheck2, BarChart3, BookOpen, AlertTriangle,
-  HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban,
+  HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban, Heart,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import AssessmentsClient from './AssessmentsClient';
 import DeleteLearnerButton from './DeleteLearnerButton';
+import BaselinePanel from '@/components/learners/BaselinePanel';
 
 interface LearnerProject { project_id: string; project_name: string; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null; project_feedback: Array<{ feedback_id: string; body: string; is_private: boolean; created_at: string; users: { full_name: string; role: string } | null }> }
 interface LearnerMentorSession { session_id: string; session_date: string; duration_minutes: number | null; notes: string | null; next_steps: string | null; users: { full_name: string } | null }
@@ -90,8 +91,28 @@ const STAGE_CFG: Record<string, { color: string; bg: string }> = {
 export default async function LearnerProfilePage({ params }: Props) {
   await requireAuth(['admin', 'instructor']);
   const { id } = await params;
+  const supabase = await createClient();
   const learner = await getLearnerProfile(id);
   if (!learner) notFound();
+
+  // Fetch baseline
+  const { data: baselineRow } = await supabase
+    .from('learner_baselines')
+    .select('*')
+    .eq('learner_id', id)
+    .single();
+  interface BaselineRow { baseline_id: string; maths_confidence: number; science_confidence: number; digital_confidence: number; prior_coding_exp: boolean; notes: string | null; captured_at: string }
+  const baseline = (baselineRow as unknown as BaselineRow | null) ?? null;
+
+  // Fetch last 8 weekly pulse check-ins
+  const { data: pulseRows } = await supabase
+    .from('learner_pulse')
+    .select('pulse_id, week_date, rating, barrier_flag, notes')
+    .eq('learner_id', id)
+    .order('week_date', { ascending: false })
+    .limit(8);
+  interface PulseRow { pulse_id: string; week_date: string; rating: number; barrier_flag: string | null; notes: string | null }
+  const pulseHistory = (pulseRows || []) as unknown as PulseRow[];
 
   const profile      = learner.learner_profiles;
   const risk         = learner.risk_scores;
@@ -215,6 +236,17 @@ export default async function LearnerProfilePage({ params }: Props) {
           </div>
         </Section>
       )}
+
+      {/* Enrolment baseline */}
+      <Section title="Enrolment Baseline" icon={BarChart3} iconColor="#F59E0B"
+        count={baseline ? 1 : undefined}>
+        <BaselinePanel
+          learnerId={learner.learner_id}
+          existing={baseline}
+          currentMaths={risk ? Math.round(risk.avg_score ?? 0) : null}
+          currentSci={null}
+        />
+      </Section>
 
       {/* Assessments — always shown so marks can be added for new learners */}
       <Section title="Assessments" icon={BarChart3} iconColor={DS.primary} count={assessments.length || undefined}>
@@ -343,6 +375,45 @@ export default async function LearnerProfilePage({ params }: Props) {
           </div>
         </Section>
       )}
+
+      {/* Weekly pulse history */}
+      {pulseHistory.length > 0 && (() => {
+        const PULSE_EMOJI: Record<number, string> = { 1:'😔', 2:'😟', 3:'😐', 4:'😊', 5:'🤩' };
+        const PULSE_COLOR: Record<number, string> = { 1:'var(--ds-danger)', 2:'#F97316', 3:'var(--ds-warn)', 4:'var(--ds-success)', 5: DS.primary as string };
+        return (
+          <Section title="Weekly Pulse" icon={Heart} iconColor="#F472B6" count={pulseHistory.length}>
+            <div className="space-y-2">
+              {pulseHistory.map(p => (
+                <div key={p.pulse_id} className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: DS.surfaceHover }}>
+                  <span className="text-2xl">{PULSE_EMOJI[p.rating]}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold" style={{ color: PULSE_COLOR[p.rating] }}>
+                        {p.rating}/5
+                      </span>
+                      {p.barrier_flag && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize"
+                          style={{ background: 'var(--ds-danger-light)', color: 'var(--ds-danger)' }}>
+                          {p.barrier_flag}
+                        </span>
+                      )}
+                      <span className="text-xs ml-auto shrink-0" style={{ color: DS.textMuted }}>
+                        {fmt.date(p.week_date)}
+                      </span>
+                    </div>
+                    {p.notes && (
+                      <p className="text-xs mt-0.5 truncate" style={{ color: DS.textMid }}>
+                        &quot;{p.notes}&quot;
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        );
+      })()}
     </div>
   );
 }

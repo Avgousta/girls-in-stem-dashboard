@@ -3,6 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 import StudentDashboardClient, { type LearnerData, type Meeting } from './StudentDashboardClient';
 import { calcTotalXP, levelFromTotalXP, calcStreak, buildChallenges } from '@/lib/gamification/engine';
 
+function thisMonday(): string {
+  const d = new Date();
+  const diff = d.getDay() === 0 ? -6 : 1 - d.getDay();
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
 export default async function StudentDashboard() {
   const user     = await requireAuth(['learner']);
   const supabase = await createClient();
@@ -55,6 +62,19 @@ export default async function StudentDashboard() {
   const levelData   = levelFromTotalXP(totalXP);
   const challenges  = buildChallenges(attendance, assessments, projects, streak.current);
 
+  // Fetch this week's pulse (if already submitted)
+  const learnerId = (learner as unknown as { learner_id: string } | null)?.learner_id ?? '';
+  const { data: pulseRow } = learnerId
+    ? await supabase
+        .from('learner_pulse')
+        .select('rating, barrier_flag, notes')
+        .eq('learner_id', learnerId)
+        .eq('week_date', thisMonday())
+        .single()
+    : { data: null };
+
+  const typedPulse = pulseRow as { rating: number; barrier_flag: string | null; notes: string | null } | null;
+
   return (
     <StudentDashboardClient
       learner={learner as unknown as LearnerData}
@@ -62,7 +82,8 @@ export default async function StudentDashboard() {
       streak={streak}
       totalXP={totalXP}
       levelData={levelData}
-      challenges={challenges.filter(c => !c.done).slice(0, 2)} // top 2 active challenges
+      challenges={challenges.filter(c => !c.done).slice(0, 2)}
+      pulse={{ learnerId, alreadySubmitted: !!typedPulse, existingRating: typedPulse?.rating ?? null }}
     />
   );
 }

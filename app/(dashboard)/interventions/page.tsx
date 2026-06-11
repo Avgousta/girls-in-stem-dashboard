@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertTriangle, Plus } from 'lucide-react';
 
 interface RawUpdate { update_id: string; note: string; status_change: string | null; created_at: string; author: { full_name: string } | null }
+interface RawOutcome { risk_before: string | null; risk_after: string | null; score_before: number | null; score_after: number | null; att_before: number | null; att_after: number | null; effectiveness: number | null; notes: string | null }
 interface RawIntervention {
   intervention_id: string; intervention_type: string | null; priority: string; reason: string;
   action_plan: string | null; action_taken: string | null; follow_up_date: string | null;
@@ -14,6 +15,7 @@ interface RawIntervention {
   flagged_by_user: { full_name: string } | null;
   assigned_user: { full_name: string; user_id: string } | null;
   intervention_updates: RawUpdate[];
+  intervention_outcomes: RawOutcome | null;
 }
 interface RawAtRiskRow {
   risk_level: string; attendance_rate: number; avg_score: number;
@@ -41,6 +43,10 @@ async function getPageData() {
       intervention_updates(
         update_id, note, status_change, created_at,
         author:users!author_id(full_name)
+      ),
+      intervention_outcomes(
+        risk_before, risk_after, score_before, score_after,
+        att_before, att_after, effectiveness, notes
       )
     `).order('created_at', { ascending: false }),
 
@@ -92,6 +98,7 @@ async function getPageData() {
         created: u.created_at, author: u.author?.full_name ?? '—',
       }))
       .sort((a, b) => a.created.localeCompare(b.created)),
+    outcome: i.intervention_outcomes ?? null,
   }));
 
   const atRisk = ((atRiskRes.data || []) as unknown as RawAtRiskRow[]).map(r => {

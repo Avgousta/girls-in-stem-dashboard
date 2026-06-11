@@ -33,10 +33,13 @@ const RISK_CFG = {
 } as const;
 
 const FLAG_LABELS: Record<string, string> = {
-  attendance_critical: '< 75% attendance',
-  score_critical:      '< 50% avg score',
-  attendance_warning:  '75–84% attendance',
-  score_warning:       '50–59% avg score',
+  attendance_critical:  '< 75% attendance',
+  score_critical:       '< 50% avg score',
+  attendance_warning:   '75–84% attendance',
+  score_warning:        '50–59% avg score',
+  consecutive_absences: '2 consecutive absences',
+  declining_scores:     'Declining score trend',
+  no_recent_mentorship: 'No mentorship in 21+ days',
 };
 
 // ─── Inline intervention button ───────────────────────────────────────────────

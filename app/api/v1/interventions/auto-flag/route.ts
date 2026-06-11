@@ -4,20 +4,28 @@ import { NextRequest } from 'next/server';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
 
 function deriveType(flags: string[]): string {
-  if (flags.includes('low_attendance')) return 'attendance';
-  if (flags.includes('low_score') || flags.includes('failing')) return 'academic';
-  if (flags.includes('behavioural')) return 'behavioural';
+  if (flags.some(f => f.startsWith('attendance') || f === 'consecutive_absences')) return 'attendance';
+  if (flags.some(f => f.startsWith('score') || f === 'declining_scores')) return 'academic';
+  if (flags.includes('no_recent_mentorship')) return 'personal';
   return 'academic';
 }
 
+const FLAG_REASONS: Record<string, string> = {
+  attendance_critical:  'attendance below 75%',
+  attendance_warning:   'attendance between 75–84%',
+  score_critical:       'average score below 50%',
+  score_warning:        'average score between 50–59%',
+  consecutive_absences: '2 consecutive absences recorded',
+  declining_scores:     'scores declining over last 3 assessments',
+  no_recent_mentorship: 'no mentorship session in 21+ days',
+};
+
 function deriveReason(flags: string[], att: number, score: number): string {
-  const parts: string[] = [];
-  if (flags.includes('low_attendance') || att < 75)
-    parts.push(`attendance at ${att}%`);
-  if (flags.includes('low_score') || flags.includes('failing') || score < 50)
-    parts.push(`average score at ${score}%`);
-  if (parts.length === 0 && flags.length > 0)
-    parts.push(...flags.map(f => f.replace(/_/g, ' ')));
+  const parts = flags.map(f => FLAG_REASONS[f] ?? f.replace(/_/g, ' '));
+  if (parts.length === 0) {
+    if (att < 75)  parts.push(`attendance at ${att}%`);
+    if (score < 50) parts.push(`average score at ${score}%`);
+  }
   return `Auto-flagged: ${parts.join('; ') || 'elevated risk score'}.`;
 }
 

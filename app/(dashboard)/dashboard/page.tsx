@@ -16,9 +16,11 @@ async function getAdminData() {
   const [
     learnersRes, programsRes, attendanceRes, assessmentsRes,
     riskRes, interventionsRes, projectsRes, sponsorsRes, usersRes,
+    // Completeness checks
+    lastAttPerProgramRes, noBaselineRes, noAssessmentRes, noMentorshipRes,
   ] = await Promise.all([
     supabase.from('learners').select('learner_id, programme_status'),
-    supabase.from('programs').select('program_id, is_active'),
+    supabase.from('programs').select('program_id, program_name, is_active'),
     supabase.from('attendance').select('status, session_date').order('session_date', { ascending: false }).limit(500),
     supabase.from('assessments').select('percentage, grade_band').limit(200),
     supabase.from('risk_scores').select('risk_level'),
@@ -29,10 +31,18 @@ async function getAdminData() {
     supabase.from('projects').select('stage, completion_status'),
     supabase.from('sponsors').select('sponsor_id'),
     supabase.from('users').select('user_id, full_name, role, is_active, created_at').order('created_at', { ascending: false }),
+    // Last attendance date per programme (for stale detection)
+    supabase.from('attendance').select('program_id, session_date').order('session_date', { ascending: false }),
+    // Learner IDs that DO have a baseline
+    supabase.from('learner_baselines').select('learner_id'),
+    // Learner IDs that DO have at least one assessment
+    supabase.from('assessments').select('learner_id'),
+    // Learner IDs that DO have at least one mentorship session
+    supabase.from('mentorship_sessions').select('learner_id'),
   ]);
 
   const learners      = learnersRes.data      || [];
-  const programs      = programsRes.data      || [];
+  const programs      = (programsRes.data     || []) as { program_id: string; program_name: string; is_active: boolean }[];
   const attendance    = attendanceRes.data    || [];
   const assessments   = assessmentsRes.data   || [];
   const risks         = riskRes.data          || [];
@@ -41,6 +51,30 @@ async function getAdminData() {
   const projects      = projectsRes.data      || [];
   const sponsors      = sponsorsRes.data      || [];
   const users         = usersRes.data         || [];
+
+  // ── Completeness checks ───────────────────────────────────────────────────
+  const lastAttRows    = (lastAttPerProgramRes.data || []) as { program_id: string; session_date: string }[];
+  const hasBaselineIds = new Set((noBaselineRes.data  || []).map((r: { learner_id: string }) => r.learner_id));
+  const hasAssessIds   = new Set((noAssessmentRes.data || []).map((r: { learner_id: string }) => r.learner_id));
+  const hasMentorIds   = new Set((noMentorshipRes.data || []).map((r: { learner_id: string }) => r.learner_id));
+
+  const activeLearnerIds = learners.filter(l => l.programme_status === 'active').map(l => l.learner_id as string);
+
+  const noBaselineCount   = activeLearnerIds.filter(id => !hasBaselineIds.has(id)).length;
+  const noAssessmentCount = activeLearnerIds.filter(id => !hasAssessIds.has(id)).length;
+  const noMentorCount     = activeLearnerIds.filter(id => !hasMentorIds.has(id)).length;
+
+  // Find active programmes with no attendance in 7+ days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  const lastAttByProg: Record<string, string> = {};
+  lastAttRows.forEach(r => {
+    if (!lastAttByProg[r.program_id] || r.session_date > lastAttByProg[r.program_id]) {
+      lastAttByProg[r.program_id] = r.session_date;
+    }
+  });
+  const stalePrograms = programs.filter(p =>
+    p.is_active && (!lastAttByProg[p.program_id] || lastAttByProg[p.program_id] < sevenDaysAgo)
+  );
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const activeLearners = learners.filter(l => l.programme_status === 'active').length;
@@ -99,6 +133,7 @@ async function getAdminData() {
     attTrend: attTrendFixed, bands,
     totalAssessments: assessments.length, totalProjects: projects.length,
     pendingApprovals, criticalOpen, overdueOpen, recentInterv,
+    noBaselineCount, noAssessmentCount, noMentorCount, stalePrograms,
   };
 }
 
@@ -172,6 +207,49 @@ export default async function AdminDashboard() {
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                 style={{ background: 'var(--ds-danger)', color: '#fff' }}>
                 {d.overdueOpen.length} overdue intervention{d.overdueOpen.length !== 1 ? 's' : ''}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Data completeness warnings */}
+      {(d.noBaselineCount > 0 || d.noAssessmentCount > 0 || d.noMentorCount > 0 || d.stalePrograms.length > 0) && (
+        <div className="rounded-2xl p-4 space-y-3"
+          style={{ background: 'var(--ds-warn-light)', border: '1px solid var(--ds-warn)' }}>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 shrink-0" style={{ color: 'var(--ds-warn)' }} />
+            <p className="text-sm font-bold" style={{ color: 'var(--ds-warn)' }}>
+              Data completeness — action recommended
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {d.stalePrograms.map(p => (
+              <Link key={p.program_id} href="/attendance"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: 'var(--ds-warn)', color: '#fff' }}>
+                No attendance logged for &quot;{p.program_name}&quot; in 7+ days
+              </Link>
+            ))}
+            {d.noBaselineCount > 0 && (
+              <Link href="/learners"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: 'var(--ds-warn)', color: '#fff' }}>
+                {d.noBaselineCount} learner{d.noBaselineCount !== 1 ? 's' : ''} missing enrolment baseline
+              </Link>
+            )}
+            {d.noAssessmentCount > 0 && (
+              <Link href="/assessments/bulk"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: 'var(--ds-warn)', color: '#fff' }}>
+                {d.noAssessmentCount} active learner{d.noAssessmentCount !== 1 ? 's' : ''} with no assessments
+              </Link>
+            )}
+            {d.noMentorCount > 0 && (
+              <Link href="/mentorship"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: 'var(--ds-warn)', color: '#fff' }}>
+                {d.noMentorCount} learner{d.noMentorCount !== 1 ? 's' : ''} never had a mentorship session
               </Link>
             )}
           </div>

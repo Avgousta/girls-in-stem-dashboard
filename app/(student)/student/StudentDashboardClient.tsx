@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTheme } from '../StudentThemeProvider';
 import type { StreakData, Challenge } from '@/lib/gamification/engine';
+import PulseCheckIn from '@/components/student/PulseCheckIn';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface LearnerData {
@@ -25,6 +26,7 @@ interface Props {
   totalXP:   number;
   levelData: { level: number; currentXP: number; neededXP: number; pct: number };
   challenges: Challenge[];
+  pulse:     { learnerId: string; alreadySubmitted: boolean; existingRating: number | null };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -121,7 +123,7 @@ function SectionHeader({ icon, title, action }: { icon: string; title: string; a
 }
 
 // ─── Main dashboard ───────────────────────────────────────────────────────────
-export default function StudentDashboardClient({ learner, meetings, streak, totalXP, levelData, challenges }: Props) {
+export default function StudentDashboardClient({ learner, meetings, streak, totalXP, levelData, challenges, pulse }: Props) {
   const { theme, accentColor } = useTheme();
 
   if (!learner) return (
@@ -482,6 +484,13 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
           {RecentResults}
         </div>
       </div>
+
+      {/* Row 4: Weekly pulse check-in */}
+      <PulseCheckIn
+        learnerId={pulse.learnerId}
+        alreadySubmitted={pulse.alreadySubmitted}
+        existingRating={pulse.existingRating}
+      />
     </div>
   );
 
@@ -492,6 +501,11 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
       {StatsGrid}
       {LiveBanner}
       {NextSteps}
+      <PulseCheckIn
+        learnerId={pulse.learnerId}
+        alreadySubmitted={pulse.alreadySubmitted}
+        existingRating={pulse.existingRating}
+      />
       {StreakCard}
       {ChallengesCard}
       {RecentResults}

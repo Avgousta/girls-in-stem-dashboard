@@ -34,9 +34,9 @@ async function getSponsorData(sponsorId: string) {
   const learnerIds = (linksRes.data || []).map(l => l.learner_id);
   const sponsor    = sponsorRes.data;
 
-  if (!learnerIds.length) return { sponsor, learnerIds: [], learners: [], att: [], ass: [], projects: [], interventions: [] };
+  if (!learnerIds.length) return { sponsor, learnerIds: [], learners: [], att: [], ass: [], projects: [], interventions: [], mentorshipCount: 0, assWithLearner: [] };
 
-  const [learnersRes, attRes, assRes, projRes, intRes] = await Promise.all([
+  const [learnersRes, attRes, assRes, projRes, intRes, mentorRes, assLearnerRes] = await Promise.all([
     supabase.from('learners').select(`
       learner_id, learner_code, grade, programme_status, enrollment_date,
       learner_profiles(first_name, last_name),
@@ -52,16 +52,23 @@ async function getSponsorData(sponsorId: string) {
     supabase.from('projects').select('completion_status, stage, score, max_score').in('learner_id', learnerIds),
 
     supabase.from('interventions').select('status, created_at').in('learner_id', learnerIds),
+
+    supabase.from('mentorship_sessions').select('session_id', { count: 'exact', head: true }).in('learner_id', learnerIds),
+
+    // Need learner_id per assessment to compute per-learner score trends
+    supabase.from('assessments').select('learner_id, percentage, assessment_date').in('learner_id', learnerIds).not('percentage', 'is', null).order('assessment_date', { ascending: true }),
   ]);
 
   return {
     sponsor,
     learnerIds,
-    learners:      (learnersRes.data  || []) as unknown as SponsorLearner[],
-    att:           (attRes.data       || []) as AttRecord[],
-    ass:           (assRes.data       || []) as AssRecord[],
-    projects:      (projRes.data      || []) as ProjRecord[],
-    interventions: (intRes.data       || []) as IntervRecord[],
+    learners:        (learnersRes.data  || []) as unknown as SponsorLearner[],
+    att:             (attRes.data       || []) as AttRecord[],
+    ass:             (assRes.data       || []) as AssRecord[],
+    projects:        (projRes.data      || []) as ProjRecord[],
+    interventions:   (intRes.data       || []) as IntervRecord[],
+    mentorshipCount: mentorRes.count    ?? 0,
+    assWithLearner:  (assLearnerRes.data || []) as { learner_id: string; percentage: number; assessment_date: string }[],
   };
 }
 
@@ -116,7 +123,7 @@ function Bar({ value, max, color }: { value: number; max: number; color: string 
 
 export default async function SponsorDashboard() {
   const user    = await requireAuth(['sponsor']);
-  const { sponsor, learners, att, ass, projects, interventions, learnerIds } = await getSponsorData(user.sponsor_id!);
+  const { sponsor, learners, att, ass, projects, interventions, learnerIds, mentorshipCount, assWithLearner } = await getSponsorData(user.sponsor_id!);
 
   const sponsorName = sponsor?.sponsor_name || 'Sponsor';
   const total   = learnerIds.length;
@@ -127,8 +134,78 @@ export default async function SponsorDashboard() {
   const completedProj = projects.filter(p => ['marked','completed'].includes(p.stage || p.completion_status || '')).length;
   const openInterv    = interventions.filter(i => i.status !== 'resolved').length;
 
-  const highRisk = learners.filter(l => l.risk_scores?.risk_level === 'high').length;
-  const onTrack  = learners.filter(l => l.risk_scores?.risk_level === 'low').length;
+  const highRisk       = learners.filter(l => l.risk_scores?.risk_level === 'high').length;
+  const onTrack        = learners.filter(l => l.risk_scores?.risk_level === 'low').length;
+  const resolvedInterv = interventions.filter(i => i.status === 'resolved').length;
+  const goodAtt        = learners.filter(l => (l.risk_scores?.attendance_rate ?? 0) >= 75).length;
+
+  // Per-learner score improvement: compare first vs last assessment
+  const learnerScoreMap: Record<string, number[]> = {};
+  assWithLearner.forEach(a => {
+    if (!learnerScoreMap[a.learner_id]) learnerScoreMap[a.learner_id] = [];
+    learnerScoreMap[a.learner_id].push(a.percentage);
+  });
+  const improved = Object.values(learnerScoreMap).filter(scores => {
+    if (scores.length < 2) return false;
+    return scores[scores.length - 1] > scores[0];
+  }).length;
+
+  // ─── Narrative sentences ───────────────────────────────────────────────────
+  const narratives: { icon: string; headline: string; detail: string; color: string }[] = [];
+
+  if (total > 0) {
+    narratives.push({
+      icon:     '🎓',
+      headline: `${active} of ${total} learners ${active === 1 ? 'is' : 'are'} actively enrolled`,
+      detail:   `Your investment is supporting ${active} young ${active === 1 ? 'woman' : 'women'} in STEM — building skills, confidence, and career pathways.`,
+      color:    '#1D4ED8',
+    });
+  }
+
+  if (att.length > 0) {
+    narratives.push({
+      icon:     '📅',
+      headline: `${goodAtt} of ${total} learners ${goodAtt === 1 ? 'is' : 'are'} attending consistently (75%+)`,
+      detail:   `Overall attendance sits at ${attRate}% — ${attRate >= 80 ? 'a strong result showing real commitment from learners' : 'there is room to grow, and the team is actively following up on absences'}.`,
+      color:    attRate >= 75 ? '#10B981' : '#F59E0B',
+    });
+  }
+
+  if (improved > 0) {
+    narratives.push({
+      icon:     '📈',
+      headline: `${improved} learner${improved !== 1 ? 's' : ''} improved ${improved !== 1 ? 'their' : 'their'} academic scores`,
+      detail:   `Comparing first and most recent assessments, ${improved} of ${Object.keys(learnerScoreMap).length} learners with multiple results show measurable academic growth.`,
+      color:    '#10B981',
+    });
+  }
+
+  if (mentorshipCount > 0) {
+    narratives.push({
+      icon:     '🤝',
+      headline: `${mentorshipCount} mentorship session${mentorshipCount !== 1 ? 's' : ''} logged`,
+      detail:   `One-on-one mentorship is central to learner success. Each session provides personalised guidance, goal-setting, and emotional support.`,
+      color:    '#7C3AED',
+    });
+  }
+
+  if (interventions.length > 0) {
+    narratives.push({
+      icon:     '🛡️',
+      headline: `${resolvedInterv} of ${interventions.length} support intervention${interventions.length !== 1 ? 's' : ''} resolved`,
+      detail:   `When learners show signs of struggle, the team acts. ${openInterv > 0 ? `${openInterv} intervention${openInterv !== 1 ? 's are' : ' is'} currently active.` : 'All flagged cases have been addressed.'}`,
+      color:    resolvedInterv === interventions.length ? '#10B981' : '#F59E0B',
+    });
+  }
+
+  if (onTrack > 0) {
+    narratives.push({
+      icon:     '⭐',
+      headline: `${onTrack} learner${onTrack !== 1 ? 's' : ''} ${onTrack !== 1 ? 'are' : 'is'} on track for programme completion`,
+      detail:   `These learners are meeting attendance and academic benchmarks — they are well-positioned to complete the programme and achieve their goals.`,
+      color:    '#10B981',
+    });
+  }
 
   // Grade distribution
   const gradeMap: Record<string, number> = {};
@@ -189,6 +266,29 @@ export default async function SponsorDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* ── Narrative impact story ── */}
+      {narratives.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: DS.textMuted }}>
+            Your Impact This Programme
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {narratives.map((n, i) => (
+              <div key={i} className="rounded-2xl p-5 space-y-2"
+                style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl shrink-0 mt-0.5">{n.icon}</span>
+                  <p className="text-sm font-bold leading-snug" style={{ color: n.color }}>{n.headline}</p>
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: DS.textMuted, paddingLeft: '2.5rem' }}>
+                  {n.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Primary KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px"

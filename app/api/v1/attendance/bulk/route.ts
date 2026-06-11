@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
+import { emailAbsenceAlert } from '@/lib/email';
 
 const bulkSchema = z.object({
   program_id:   z.string().uuid(),
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   // Trigger risk recalculation
   try { await supabase.rpc('calculate_risk_scores'); } catch (_) {}
 
-  // Notify parents of absent learners
+  // Notify + email parents of absent learners
   const absentIds = records.filter(r => r.status === 'absent').map(r => r.learner_id);
   if (absentIds.length > 0) {
     const { data: learners } = await supabase
@@ -59,18 +60,34 @@ export async function POST(req: NextRequest) {
 
     interface AbsLearner { learner_id: string; parent_id: string | null; learner_profiles: { first_name: string; last_name: string } | null }
     const typedProg = prog as unknown as { program_name: string } | null;
-    for (const l of ((learners || []) as unknown as AbsLearner[])) {
-      const name = `${l.learner_profiles?.first_name} ${l.learner_profiles?.last_name}`;
-      try {
-        await supabase.from('notifications').insert({
-          user_id:    l.parent_id,
-          learner_id: l.learner_id,
-          type:       'absence',
-          title:      `${name} was marked absent`,
-          body:       `${name} was absent from ${typedProg?.program_name || 'a session'} on ${session_date}.`,
-        });
-      } catch (_) {}
-    }
+    const programName = typedProg?.program_name || 'a session';
+
+    const parentIds = ((learners || []) as unknown as AbsLearner[])
+      .map(l => l.parent_id).filter(Boolean) as string[];
+
+    const { data: parentUsers } = parentIds.length > 0
+      ? await supabase.from('users').select('user_id, email').in('user_id', parentIds)
+      : { data: [] };
+
+    const parentEmailMap = Object.fromEntries(
+      ((parentUsers || []) as { user_id: string; email: string }[]).map(u => [u.user_id, u.email])
+    );
+
+    await Promise.all(
+      ((learners || []) as unknown as AbsLearner[]).map(l => {
+        if (!l.parent_id) return Promise.resolve();
+        const name        = `${l.learner_profiles?.first_name} ${l.learner_profiles?.last_name}`.trim();
+        const parentEmail = parentEmailMap[l.parent_id];
+        if (!parentEmail) return Promise.resolve();
+        return emailAbsenceAlert({
+          parentEmail,
+          parentUserId: l.parent_id,
+          learnerName:  name,
+          programName,
+          sessionDate:  session_date,
+        }).catch(() => {});
+      })
+    );
   }
 
   return ok({ saved: data?.length || rows.length, session_date, program_id });

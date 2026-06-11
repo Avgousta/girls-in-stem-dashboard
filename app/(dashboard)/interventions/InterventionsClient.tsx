@@ -22,11 +22,13 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Update { id:string; note:string; status_change:string|null; created:string; author:string }
+interface Outcome { risk_before:string|null; risk_after:string|null; score_before:number|null; score_after:number|null; att_before:number|null; att_after:number|null; effectiveness:number|null; notes:string|null }
 interface Interv {
   id:string; type:string; priority:string; reason:string; action_plan:string; action_taken:string;
   follow_up:string|null; due_date:string|null; status:string; created:string; resolved_at:string|null;
   learner_id:string; learner:string; school:string; risk:string; att:number; score:number;
   flagged_by:string; assigned_to:string|null; assigned_id:string|null; updates:Update[];
+  outcome:Outcome|null;
 }
 interface AtRisk { learner_id:string; learner:string; school:string; risk:string; att:number; score:number; open_interventions:number; has_critical:boolean }
 interface Stats   { open:number; inProgress:number; resolved:number; critical:number; overdue:number; resRate:number; avgDaysToResolve:number|null; typeDist:Record<string,number> }
@@ -160,6 +162,41 @@ function WorkloadPanel({ items, instructors, onFilter }: { items:Interv[]; instr
 }
 
 // ─── Outcome Tracker ──────────────────────────────────────────────────────────
+const RISK_ORDER: Record<string, number> = { low: 0, medium: 1, high: 2 };
+
+function RiskDelta({ before, after }: { before: string | null; after: string | null }) {
+  if (!before && !after) return <span style={{ color: DS.textMuted }}>—</span>;
+  const improved = before && after && RISK_ORDER[after] < RISK_ORDER[before];
+  const worsened = before && after && RISK_ORDER[after] > RISK_ORDER[before];
+  const color = improved ? 'var(--ds-success)' : worsened ? 'var(--ds-danger)' : DS.textMid;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-bold capitalize" style={{ color }}>
+      {before ?? '—'} → {after ?? '—'}
+      {improved && ' ↑'}{worsened && ' ↓'}
+    </span>
+  );
+}
+
+function ScoreDelta({ before, after, label }: { before: number | null; after: number | null; label: string }) {
+  const diff = before != null && after != null ? Math.round(after - before) : null;
+  const color = diff == null ? DS.textMuted : diff > 0 ? 'var(--ds-success)' : diff < 0 ? 'var(--ds-danger)' : DS.textMid;
+  return (
+    <div className="text-center rounded-xl py-3" style={{ background: DS.surfaceHover }}>
+      <p className="text-base font-black tabular-nums" style={{ color: DS.text }}>
+        {before != null ? `${Math.round(before)}%` : '—'}
+        {' → '}
+        {after  != null ? `${Math.round(after)}%`  : '—'}
+      </p>
+      {diff != null && (
+        <p className="text-xs font-bold" style={{ color }}>
+          {diff > 0 ? `+${diff}` : diff === 0 ? '±0' : `${diff}`} pts
+        </p>
+      )}
+      <p className="text-[10px] uppercase tracking-wide mt-0.5" style={{ color: DS.textMuted }}>{label}</p>
+    </div>
+  );
+}
+
 function OutcomePanel({ item }: { item: Interv }) {
   const daysToResolve = item.resolved_at
     ? Math.round((new Date(item.resolved_at).getTime() - new Date(item.created).getTime()) / 86_400_000)
@@ -170,6 +207,7 @@ function OutcomePanel({ item }: { item: Interv }) {
     .reverse()
     .find(u => u.note.startsWith('RESOLUTION:'));
 
+  const o = item.outcome;
   const [reopening, setReopening] = useState(false);
 
   const reopen = async () => {
@@ -187,12 +225,13 @@ function OutcomePanel({ item }: { item: Interv }) {
 
   return (
     <div className="space-y-4">
-      {/* Outcome summary bar */}
+      {/* Summary KPIs */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Days to Resolve', value: daysToResolve != null ? `${daysToResolve}d` : '—', color: daysToResolve != null && daysToResolve <= 3 ? 'var(--ds-success)' : DS.text },
           { label: 'Updates Logged',  value: item.updates.length, color: DS.text },
-          { label: 'Baseline Att.',   value: `${item.att}%`, color: item.att < 75 ? 'var(--ds-danger)' : 'var(--ds-success)' },
+          { label: 'Effectiveness',   value: o?.effectiveness != null ? `${o.effectiveness}/5` : '—',
+            color: o?.effectiveness != null ? (o.effectiveness >= 4 ? 'var(--ds-success)' : o.effectiveness <= 2 ? 'var(--ds-danger)' : DS.text) : DS.textMuted },
         ].map(({ label, value, color }) => (
           <div key={label} className="text-center rounded-xl py-3"
             style={{ background: DS.surfaceHover }}>
@@ -202,8 +241,25 @@ function OutcomePanel({ item }: { item: Interv }) {
         ))}
       </div>
 
+      {/* Before / After comparison */}
+      {o && (o.risk_before || o.risk_after || o.score_before != null || o.score_after != null) && (
+        <div className="rounded-xl p-4 space-y-3" style={{ background: DS.surfaceHover }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: DS.textMuted }}>Before → After</p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider w-14 shrink-0" style={{ color: DS.textMuted }}>Risk</span>
+            <RiskDelta before={o.risk_before} after={o.risk_after} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <ScoreDelta before={o.score_before} after={o.score_after} label="Avg Score" />
+            <ScoreDelta before={o.att_before}   after={o.att_after}   label="Attendance" />
+          </div>
+        </div>
+      )}
+
       {/* Resolution note */}
-      {resolutionNote && (
+      {(resolutionNote || o?.notes) && (
         <div className="rounded-xl p-4 space-y-1"
           style={{ background: 'var(--ds-success-light)', border: '1px solid var(--ds-success)' }}>
           <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--ds-success)' }}>
@@ -211,11 +267,13 @@ function OutcomePanel({ item }: { item: Interv }) {
             Resolution Summary
           </p>
           <p className="text-sm leading-relaxed" style={{ color: DS.text }}>
-            {resolutionNote.note.replace('RESOLUTION:', '').trim()}
+            {o?.notes ?? resolutionNote?.note.replace('RESOLUTION:', '').trim()}
           </p>
-          <p className="text-[10px]" style={{ color: DS.textMuted }}>
-            {resolutionNote.author} · {fmt.date(resolutionNote.created)}
-          </p>
+          {resolutionNote && (
+            <p className="text-[10px]" style={{ color: DS.textMuted }}>
+              {resolutionNote.author} · {fmt.date(resolutionNote.created)}
+            </p>
+          )}
         </div>
       )}
 
@@ -380,14 +438,15 @@ function IntervCard({
   selected: boolean;
   onSelect: (id:string, checked:boolean) => void;
 }) {
-  const [open,       setOpen]       = useState(false);
-  const [note,       setNote]       = useState('');
-  const [resolution, setResolution] = useState('');
-  const [status,     setStatus]     = useState(item.status);
-  const [saving,     setSaving]     = useState(false);
-  const [activeTab,  setActiveTab]  = useState<'detail'|'outcome'>('detail');
-  const [escalating, setEscalating] = useState(false);
-  const [priority,   setPriority]   = useState(item.priority);
+  const [open,          setOpen]          = useState(false);
+  const [note,          setNote]          = useState('');
+  const [resolution,    setResolution]    = useState('');
+  const [effectiveness, setEffectiveness] = useState<number>(3);
+  const [status,        setStatus]        = useState(item.status);
+  const [saving,        setSaving]        = useState(false);
+  const [activeTab,     setActiveTab]     = useState<'detail'|'outcome'>('detail');
+  const [escalating,    setEscalating]    = useState(false);
+  const [priority,      setPriority]      = useState(item.priority);
 
   const overdue    = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'resolved';
   const isCrit     = item.priority === 'critical' && item.status !== 'resolved';
@@ -428,7 +487,10 @@ function IntervCard({
         }),
         changed ? fetch(`/api/v1/interventions/${item.id}`, {
           method:'PATCH', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({
+            status,
+            ...(isResolving ? { effectiveness, resolution_notes: resolution.trim() } : {}),
+          }),
         }) : Promise.resolve(),
       ]);
 
@@ -617,7 +679,7 @@ function IntervCard({
                       </select>
                     </div>
                     {isResolving && (
-                      <div className="rounded-xl p-3 space-y-2"
+                      <div className="rounded-xl p-3 space-y-3"
                         style={{ background:'var(--ds-success-light)', border:'1px solid var(--ds-success)' }}>
                         <p className="text-xs font-bold flex items-center gap-1.5" style={{ color:'var(--ds-success)' }}>
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -627,6 +689,28 @@ function IntervCard({
                         <textarea value={resolution} onChange={e => setResolution(e.target.value)}
                           placeholder="What was done? What was the outcome for the learner?"
                           rows={3} className="form-input w-full text-sm resize-none" />
+                        {/* Effectiveness rating */}
+                        <div>
+                          <p className="text-[11px] font-semibold mb-1.5" style={{ color: DS.textMid }}>
+                            Effectiveness rating <span className="font-normal">(how well did this intervention work?)</span>
+                          </p>
+                          <div className="flex gap-1.5">
+                            {[1,2,3,4,5].map(n => (
+                              <button key={n} type="button"
+                                onClick={() => setEffectiveness(n)}
+                                className="flex-1 rounded-lg py-1.5 text-xs font-bold transition-all cursor-pointer"
+                                style={effectiveness >= n
+                                  ? { background:'var(--ds-success)', color:'#fff' }
+                                  : { background: DS.surfaceHover, color: DS.textMuted }}>
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-[10px]" style={{ color: DS.textMuted }}>Not effective</span>
+                            <span className="text-[10px]" style={{ color: DS.textMuted }}>Highly effective</span>
+                          </div>
+                        </div>
                       </div>
                     )}
                     <textarea value={note} onChange={e => setNote(e.target.value)}
