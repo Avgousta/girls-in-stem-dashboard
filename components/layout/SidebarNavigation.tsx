@@ -29,7 +29,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Mentorship',    href: '/mentorship',      icon: HeartHandshake,  roles: ['admin','instructor'] },
   { label: 'Interventions', href: '/interventions',   icon: AlertTriangle,   roles: ['admin','instructor'] },
   { label: 'Risk Monitor',  href: '/risk',            icon: AlertTriangle,   roles: ['admin','instructor'] },
-  { label: 'Analytics',     href: '/analytics',       icon: BarChart3,       roles: ['admin','instructor'] },
   { label: 'Alumni',        href: '/alumni',          icon: GraduationCap,   roles: ['admin','instructor'] },
   { label: 'Reports',       href: '/reports',         icon: FileText,        roles: ['admin','instructor'] },
   { label: 'Notifications', href: '/notifications',   icon: Bell,            roles: ['admin','instructor'] },

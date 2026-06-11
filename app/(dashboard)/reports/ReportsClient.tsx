@@ -24,11 +24,14 @@ interface RawAssessment   { percentage: number | null; grade_band: string | null
 interface RawProject      { project_name: string | null; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null }
 interface RawIntervention { learner_id: string; status: string; created_at: string }
 
+interface YearRow { year: string; count: number; att: number; score: number; high: number; medium: number; low: number }
+
 interface Props {
   schoolBreakdown:    SchoolRow[];
   gradeBreakdown:     GradeRow[];
   programmeBreakdown: ProgrammeRow[];
   sponsorBreakdown:   SponsorRow[];
+  yearBreakdown:      YearRow[];
   scoreDist:          BandRow[];
   rawLearners:        RawLearner[];
   rawAttendance:      RawAttendance[];
@@ -37,7 +40,7 @@ interface Props {
   rawInterventions:   RawIntervention[];
 }
 
-type Tab = 'overview' | 'schools' | 'grades' | 'programmes' | 'sponsors' | 'export';
+type Tab = 'overview' | 'schools' | 'grades' | 'programmes' | 'sponsors' | 'cohort' | 'export';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const BAND_COLOR: Record<string, string> = {
@@ -443,7 +446,7 @@ function ExportPreview({ headers, rows, filename, onDownload }: {
 // ─── Main ──────────────────────────────────────────────────────────────────
 export default function ReportsClient({
   schoolBreakdown, gradeBreakdown, programmeBreakdown, sponsorBreakdown,
-  scoreDist, rawLearners, rawAttendance, rawAssessments, rawProjects, rawInterventions,
+  yearBreakdown, scoreDist, rawLearners, rawAttendance, rawAssessments, rawProjects, rawInterventions,
 }: Props) {
   const [tab,        setTab]        = useState<Tab>('overview');
   const [schoolQ,    setSchoolQ]    = useState('');
@@ -456,6 +459,7 @@ export default function ReportsClient({
     { key: 'grades',      label: 'Grades',      icon: Users           },
     { key: 'programmes',  label: 'Programmes',  icon: BarChart3       },
     { key: 'sponsors',    label: 'Sponsors',    icon: Award           },
+    { key: 'cohort',      label: 'Cohort Year', icon: TrendingUp      },
     { key: 'export',      label: 'Export',      icon: Download        },
   ];
 
@@ -686,6 +690,79 @@ export default function ReportsClient({
             </DTable>
           )}
         </SectionCard>
+      )}
+
+      {/* ── COHORT YEAR ── */}
+      {tab === 'cohort' && (
+        <div className="space-y-5">
+          {/* Insight callouts */}
+          {yearBreakdown.length >= 2 && (() => {
+            const best  = [...yearBreakdown].sort((a, b) => (b.att + b.score) - (a.att + a.score))[0];
+            const worst = [...yearBreakdown].sort((a, b) => (a.att + a.score) - (b.att + b.score))[0];
+            if (best.year === worst.year) return null;
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-2xl p-4" style={{ background: 'var(--ds-success-light)', border: '1px solid var(--ds-success)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--ds-success)' }}>Strongest Cohort Year</p>
+                  <p className="text-sm font-bold" style={{ color: DS.text }}>Enrolled {best.year}</p>
+                  <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{best.att}% attendance · {best.score}% avg score · {best.count} learners</p>
+                </div>
+                <div className="rounded-2xl p-4" style={{ background: 'var(--ds-warn-light)', border: '1px solid var(--ds-warn)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--ds-warn)' }}>Needs Most Support</p>
+                  <p className="text-sm font-bold" style={{ color: DS.text }}>Enrolled {worst.year}</p>
+                  <p className="text-xs mt-0.5" style={{ color: DS.textMuted }}>{worst.att}% attendance · {worst.score}% avg score · {worst.high} high risk</p>
+                </div>
+              </div>
+            );
+          })()}
+
+          <SectionCard title="Attendance & Score by Enrolment Year">
+            <div style={{ height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={yearBreakdown.map(y => ({ name: y.year, 'Att %': y.att, 'Score %': y.score, learners: y.count }))} barGap={4} barSize={20}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={DS.borderLight as string} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: DS.textMuted as string }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: DS.textMuted as string }} axisLine={false} tickLine={false} unit="%" />
+                  <Tooltip contentStyle={{ background: DS.bg, border: `1px solid ${DS.border}`, borderRadius: 10, fontSize: 12 }} />
+                  <Bar dataKey="Att %"   fill="#7C3AED" radius={[4,4,0,0]} />
+                  <Bar dataKey="Score %" fill="#34D399" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Risk Distribution by Cohort Year">
+            <div style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={yearBreakdown.map(y => ({ name: y.year, High: y.high, Medium: y.medium, Low: y.low }))} barSize={16}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={DS.borderLight as string} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: DS.textMuted as string }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: DS.textMuted as string }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={{ background: DS.bg, border: `1px solid ${DS.border}`, borderRadius: 10, fontSize: 12 }} />
+                  <Bar dataKey="High"   fill="#EF4444" stackId="r" />
+                  <Bar dataKey="Medium" fill="#FBBF24" stackId="r" />
+                  <Bar dataKey="Low"    fill="#34D399" stackId="r" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Cohort Year Summary">
+            <DTable headers={['Year','Learners','Att %','Score %','High Risk','Med Risk','Low Risk']}>
+              {yearBreakdown.map(y => (
+                <DRow key={y.year} cells={[
+                  y.year,
+                  String(y.count),
+                  <span key="att" style={{ color: y.att >= 75 ? 'var(--ds-success)' : 'var(--ds-danger)', fontWeight: 700 }}>{y.att}%</span>,
+                  <span key="sc"  style={{ color: y.score >= 60 ? 'var(--ds-success)' : 'var(--ds-warn)',   fontWeight: 700 }}>{y.score}%</span>,
+                  <span key="h"   style={{ color: '#EF4444', fontWeight: 700 }}>{y.high}</span>,
+                  <span key="m"   style={{ color: '#FBBF24', fontWeight: 700 }}>{y.medium}</span>,
+                  <span key="l"   style={{ color: '#34D399', fontWeight: 700 }}>{y.low}</span>,
+                ]} />
+              ))}
+            </DTable>
+          </SectionCard>
+        </div>
       )}
 
       {/* ── EXPORT ── */}

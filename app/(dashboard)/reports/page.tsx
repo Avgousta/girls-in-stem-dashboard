@@ -133,6 +133,33 @@ export default async function ReportsPage() {
     avgScore: p.assCount ? Math.round(p.avgScore / p.assCount) : 0,
   })).sort((a, b) => b.learners - a.learners);
 
+  // ── Enrolment year breakdown ────────────────────────────────────────────────
+  const yearMap: Record<string, { count: number; att: number; score: number; high: number; medium: number; low: number }> = {};
+  data.learners.filter(l => l.programme_status === 'active').forEach(l => {
+    const yr = l.enrollment_date ? new Date(l.enrollment_date).getFullYear().toString() : 'Unknown';
+    if (!yearMap[yr]) yearMap[yr] = { count: 0, att: 0, score: 0, high: 0, medium: 0, low: 0 };
+    yearMap[yr].count++;
+    const r = l.risk_scores;
+    if (r) {
+      yearMap[yr].att   += r.attendance_rate || 0;
+      yearMap[yr].score += r.avg_score || 0;
+      if (r.risk_level === 'high')        yearMap[yr].high++;
+      else if (r.risk_level === 'medium') yearMap[yr].medium++;
+      else                                yearMap[yr].low++;
+    }
+  });
+  const yearBreakdown = Object.entries(yearMap)
+    .map(([year, s]) => ({
+      year,
+      count:  s.count,
+      att:    s.count ? Math.round(s.att   / s.count) : 0,
+      score:  s.count ? Math.round(s.score / s.count) : 0,
+      high:   s.high,
+      medium: s.medium,
+      low:    s.low,
+    }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
   // ── Sponsor breakdown ───────────────────────────────────────────────────────
   const sponsorBreakdown = data.sponsors.map(s => ({
     name:  s.sponsor_name,
@@ -189,6 +216,7 @@ export default async function ReportsPage() {
         gradeBreakdown={gradeBreakdown}
         programmeBreakdown={programmeBreakdown}
         sponsorBreakdown={sponsorBreakdown}
+        yearBreakdown={yearBreakdown}
         scoreDist={scoreDist}
         rawLearners={data.learners}
         rawAttendance={data.attendance}
