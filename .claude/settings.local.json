@@ -131,7 +131,11 @@
       "Bash(xargs grep -l \"mentorship\\\\|Sidebar\\\\|nav\")",
       "Bash(grep -E \"\\\\.tsx$\")",
       "Bash(mkdir -p \"app/api/v1/sponsors/[id]/reports\")",
-      "Bash(mkdir -p \"app/api/v1/reports/sponsor/[id]\")"
+      "Bash(mkdir -p \"app/api/v1/reports/sponsor/[id]\")",
+      "Bash(mkdir -p \"app/api/v1/certificates/[id]\")",
+      "Bash(mkdir -p \"app/api/v1/verify/[code]\")",
+      "Bash(mkdir -p \"app/api/v1/reports/certificate/[id]\")",
+      "Bash(mkdir -p \"app/verify/[code]\")"
     ]
   }
 }

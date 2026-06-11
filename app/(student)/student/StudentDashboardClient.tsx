@@ -26,7 +26,8 @@ interface Props {
   totalXP:   number;
   levelData: { level: number; currentXP: number; neededXP: number; pct: number };
   challenges: Challenge[];
-  pulse:     { learnerId: string; alreadySubmitted: boolean; existingRating: number | null };
+  pulse:          { learnerId: string; alreadySubmitted: boolean; existingRating: number | null };
+  certificates:   Array<{ certificate_id: string; cert_type: string; issued_at: string; verification_code: string; programs: { program_name: string } | null }>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -123,7 +124,7 @@ function SectionHeader({ icon, title, action }: { icon: string; title: string; a
 }
 
 // ─── Main dashboard ───────────────────────────────────────────────────────────
-export default function StudentDashboardClient({ learner, meetings, streak, totalXP, levelData, challenges, pulse }: Props) {
+export default function StudentDashboardClient({ learner, meetings, streak, totalXP, levelData, challenges, pulse, certificates }: Props) {
   const { theme, accentColor } = useTheme();
 
   if (!learner) return (
@@ -417,6 +418,32 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
     </div>
   ) : null;
 
+  const CertificatesCard = certificates.length > 0 ? (
+    <div className="rounded-2xl p-5 space-y-3" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
+      <SectionHeader icon="🎓" title="My Certificates" />
+      <div className="space-y-2">
+        {certificates.map(c => (
+          <a key={c.certificate_id}
+            href={`/api/v1/reports/certificate/${c.certificate_id}`}
+            target="_blank" rel="noreferrer"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
+            style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, textDecoration: 'none' }}>
+            <span className="text-xl">🏅</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold capitalize" style={{ color: accentColor }}>
+                Certificate of {c.cert_type}
+              </p>
+              <p className="text-[10px]" style={{ color: theme.textMuted }}>
+                {c.programs?.program_name ?? 'Girls in STEM'} · {new Date(c.issued_at).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })}
+              </p>
+            </div>
+            <span className="text-[10px] font-bold shrink-0" style={{ color: accentColor }}>View ↗</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   const UpcomingClasses = meetings.length > 0 ? (
     <div>
       <SectionHeader icon="🗓️" title="Upcoming Classes" />
@@ -479,6 +506,7 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
         </div>
         <div className="col-span-1 space-y-4">
           {ChallengesCard}
+          {CertificatesCard}
         </div>
         <div className="col-span-1 space-y-4">
           {RecentResults}
@@ -508,6 +536,7 @@ export default function StudentDashboardClient({ learner, meetings, streak, tota
       />
       {StreakCard}
       {ChallengesCard}
+      {CertificatesCard}
       {RecentResults}
       {UpcomingClasses}
       {ProgrammesCard}

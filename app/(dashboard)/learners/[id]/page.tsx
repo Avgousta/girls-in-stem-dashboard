@@ -5,13 +5,14 @@ import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
 import {
   CalendarCheck2, BarChart3, BookOpen, AlertTriangle,
-  HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban, Heart,
+  HeartHandshake, ArrowLeft, Pencil, FileText, FolderKanban, Heart, GraduationCap,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import AssessmentsClient from './AssessmentsClient';
 import DeleteLearnerButton from './DeleteLearnerButton';
 import BaselinePanel from '@/components/learners/BaselinePanel';
+import CertificatesPanel from '@/components/learners/CertificatesPanel';
 
 interface LearnerProject { project_id: string; project_name: string; stage: string | null; completion_status: string; score: number | null; max_score: number | null; due_date: string | null; programs: { program_name: string } | null; project_feedback: Array<{ feedback_id: string; body: string; is_private: boolean; created_at: string; users: { full_name: string; role: string } | null }> }
 interface LearnerMentorSession { session_id: string; session_date: string; duration_minutes: number | null; notes: string | null; next_steps: string | null; users: { full_name: string } | null }
@@ -94,6 +95,15 @@ export default async function LearnerProfilePage({ params }: Props) {
   const supabase = await createClient();
   const learner = await getLearnerProfile(id);
   if (!learner) notFound();
+
+  // Fetch certificates
+  const { data: certRows } = await supabase
+    .from('certificates')
+    .select('certificate_id, cert_type, issued_at, verification_code, programs(program_name)')
+    .eq('learner_id', id)
+    .order('issued_at', { ascending: false });
+  interface CertRow { certificate_id: string; cert_type: string; issued_at: string; verification_code: string; programs: { program_name: string } | null }
+  const certificates = (certRows || []) as unknown as CertRow[];
 
   // Fetch baseline
   const { data: baselineRow } = await supabase
@@ -375,6 +385,15 @@ export default async function LearnerProfilePage({ params }: Props) {
           </div>
         </Section>
       )}
+
+      {/* Certificates */}
+      <Section title="Certificates" icon={GraduationCap} iconColor="#1D4ED8" count={certificates.length || undefined}>
+        <CertificatesPanel
+          learnerId={learner.learner_id}
+          certificates={certificates}
+          programmes={programs.map(p => ({ program_id: p.program_id, program_name: p.programs?.program_name ?? '' }))}
+        />
+      </Section>
 
       {/* Weekly pulse history */}
       {pulseHistory.length > 0 && (() => {

@@ -75,6 +75,17 @@ export default async function StudentDashboard() {
 
   const typedPulse = pulseRow as { rating: number; barrier_flag: string | null; notes: string | null } | null;
 
+  // Fetch learner's certificates
+  const { data: certData } = learnerId
+    ? await supabase
+        .from('certificates')
+        .select('certificate_id, cert_type, issued_at, verification_code, programs(program_name)')
+        .eq('learner_id', learnerId)
+        .order('issued_at', { ascending: false })
+    : { data: [] };
+  interface StudentCert { certificate_id: string; cert_type: string; issued_at: string; verification_code: string; programs: { program_name: string } | null }
+  const certificates = (certData || []) as unknown as StudentCert[];
+
   return (
     <StudentDashboardClient
       learner={learner as unknown as LearnerData}
@@ -84,6 +95,7 @@ export default async function StudentDashboard() {
       levelData={levelData}
       challenges={challenges.filter(c => !c.done).slice(0, 2)}
       pulse={{ learnerId, alreadySubmitted: !!typedPulse, existingRating: typedPulse?.rating ?? null }}
+      certificates={certificates}
     />
   );
 }
