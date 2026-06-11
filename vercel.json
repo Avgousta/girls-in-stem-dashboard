@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/sponsor-reports",
       "schedule": "0 8 1 1,4,7,10 *"
+    },
+    {
+      "path": "/api/cron/parent-summary",
+      "schedule": "0 9 1 * *"
     }
   ],
   "buildCommand": "npm run build",

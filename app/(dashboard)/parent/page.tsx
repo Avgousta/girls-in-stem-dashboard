@@ -2,7 +2,8 @@ import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { fmt } from '@/utils';
 import { DS } from '@/components/platform/tokens';
-import { CalendarCheck2, BarChart3, FolderKanban, Bell, FileText, AlertTriangle } from 'lucide-react';
+import { CalendarCheck2, BarChart3, FolderKanban, Bell, FileText, AlertTriangle, MessageSquare } from 'lucide-react';
+import ContactForm from '@/components/parent/ContactForm';
 
 interface ChildLearner {
   learner_id: string; learner_code: string; grade: number; programme_status: string;
@@ -46,6 +47,18 @@ export default async function ParentPage() {
 
   const kids   = (children || []) as unknown as ChildLearner[];
   const notifs = (notifications || []) as unknown as Notification[];
+
+  // Fetch parent messages for all children
+  const kidIds = kids.map(k => k.learner_id);
+  const { data: msgData } = kidIds.length
+    ? await supabase
+        .from('parent_messages')
+        .select('message_id, learner_id, message_type, subject, body, absence_date, status, reply_body, replied_at, created_at')
+        .eq('parent_id', user.user_id)
+        .order('created_at', { ascending: false })
+    : { data: [] };
+  interface ParentMsg { message_id: string; learner_id: string; message_type: string; subject: string; body: string; absence_date: string | null; status: string; reply_body: string | null; replied_at: string | null; created_at: string }
+  const allMessages = (msgData || []) as unknown as ParentMsg[];
 
   const scoreColor = (v: number) =>
     v >= 80 ? '#818CF8' : v >= 70 ? 'var(--ds-success)' : v >= 50 ? 'var(--ds-warn)' : 'var(--ds-danger)';
@@ -253,6 +266,19 @@ export default async function ParentPage() {
                   </div>
                 </div>
               )}
+
+              {/* Two-way messaging */}
+              <div style={{ borderTop: `1px solid ${DS.border}`, paddingTop: '20px' }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: DS.textMuted }}>
+                  <MessageSquare className="w-3.5 h-3.5" /> Contact Coordinator
+                </h3>
+                <ContactForm
+                  learnerId={child.learner_id}
+                  learnerName={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim()}
+                  initialMessages={allMessages.filter(m => m.learner_id === child.learner_id)}
+                  absentDates={att.filter(a => a.status === 'absent').map(a => a.session_date).sort().reverse().slice(0, 10)}
+                />
+              </div>
             </div>
           </div>
         );
