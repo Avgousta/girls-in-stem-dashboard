@@ -202,6 +202,14 @@ export default async function LearnerProfilePage({ params }: Props) {
               {learner.enrollment_date && <span>📅 Enrolled {fmt.date(learner.enrollment_date)}</span>}
               {profile?.email       && <span>✉ {profile.email}</span>}
               {profile?.parent_name && <span>👨‍👩‍👧 {profile.parent_name}</span>}
+              {(profile as any)?.primary_language  && <span>🗣 {(profile as any).primary_language}</span>}
+              {(profile as any)?.transport_type    && <span>🚌 {(profile as any).transport_type}</span>}
+              {(profile as any)?.internet_access   != null && (
+                <span title="Home internet access">{(profile as any).internet_access ? '📶 Internet' : '📵 No internet'}</span>
+              )}
+              {(profile as any)?.first_gen_student === true && (
+                <span title="First-generation student">🎓 1st gen</span>
+              )}
             </div>
           </div>
 

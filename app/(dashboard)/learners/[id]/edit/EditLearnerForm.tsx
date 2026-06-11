@@ -21,15 +21,21 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
 
   const [form, setForm] = useState({
-    first_name:      profile.first_name      || '',
-    last_name:       profile.last_name       || '',
-    email:           profile.email           || '',
-    phone:           profile.phone           || '',
-    parent_name:     profile.parent_name     || '',
-    parent_contact:  profile.parent_contact  || '',
-    grade:           String(learner.grade    || 10),
-    school_id:       learner.school_id       || '',
-    programme_status:learner.programme_status|| 'active',
+    first_name:        profile.first_name        || '',
+    last_name:         profile.last_name         || '',
+    email:             profile.email             || '',
+    phone:             profile.phone             || '',
+    parent_name:       profile.parent_name       || '',
+    parent_contact:    profile.parent_contact    || '',
+    grade:             String(learner.grade      || 10),
+    school_id:         learner.school_id         || '',
+    programme_status:  learner.programme_status  || 'active',
+    // context fields
+    primary_language:  profile.primary_language  || '',
+    transport_type:    profile.transport_type    || '',
+    household_size:    profile.household_size != null ? String(profile.household_size) : '',
+    internet_access:   profile.internet_access  != null ? String(profile.internet_access)  : '',
+    first_gen_student: profile.first_gen_student != null ? String(profile.first_gen_student) : '',
   });
 
   // Current enrolments
@@ -57,15 +63,20 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          first_name:      form.first_name,
-          last_name:       form.last_name,
-          email:           form.email           || undefined,
-          phone:           form.phone           || undefined,
-          parent_name:     form.parent_name     || undefined,
-          parent_contact:  form.parent_contact  || undefined,
-          grade:           Number(form.grade),
-          school_id:       form.school_id       || undefined,
-          programme_status:form.programme_status,
+          first_name:        form.first_name,
+          last_name:         form.last_name,
+          email:             form.email           || undefined,
+          phone:             form.phone           || undefined,
+          parent_name:       form.parent_name     || undefined,
+          parent_contact:    form.parent_contact  || undefined,
+          grade:             Number(form.grade),
+          school_id:         form.school_id       || undefined,
+          programme_status:  form.programme_status,
+          primary_language:  form.primary_language  || undefined,
+          transport_type:    form.transport_type    || undefined,
+          household_size:    form.household_size    ? Number(form.household_size) : undefined,
+          internet_access:   form.internet_access   !== '' ? form.internet_access   === 'true' : undefined,
+          first_gen_student: form.first_gen_student !== '' ? form.first_gen_student === 'true' : undefined,
         }),
       });
       const json = await res.json();
@@ -247,6 +258,54 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
             <label className="form-label">Contact Number</label>
             <input type="tel" value={form.parent_contact} onChange={e => set('parent_contact', e.target.value)}
               className="form-input" placeholder="083 000 0000" />
+          </div>
+        </div>
+      </div>
+
+      {/* Context & Background */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
+          Context &amp; Background
+        </h2>
+        <p className="text-xs text-gray-400 mb-3">Optional. Used for risk segmentation and sponsor reporting.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="form-label">Primary Language</label>
+            <input value={form.primary_language} onChange={e => set('primary_language', e.target.value)}
+              className="form-input" placeholder="isiZulu, Sesotho, English…" />
+          </div>
+          <div>
+            <label className="form-label">Transport to School</label>
+            <select value={form.transport_type} onChange={e => set('transport_type', e.target.value)} className="form-select">
+              <option value="">Not specified</option>
+              <option value="walk">Walk</option>
+              <option value="taxi">Taxi / Minibus</option>
+              <option value="bus">Bus</option>
+              <option value="car">Private car</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Household Size</label>
+            <input type="number" min={1} max={20} value={form.household_size}
+              onChange={e => set('household_size', e.target.value)}
+              className="form-input" placeholder="e.g. 5" />
+          </div>
+          <div>
+            <label className="form-label">Home Internet Access</label>
+            <select value={form.internet_access} onChange={e => set('internet_access', e.target.value)} className="form-select">
+              <option value="">Not specified</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label">First-Generation Student</label>
+            <select value={form.first_gen_student} onChange={e => set('first_gen_student', e.target.value)} className="form-select">
+              <option value="">Not specified</option>
+              <option value="true">Yes — first in family at higher ed</option>
+              <option value="false">No</option>
+            </select>
           </div>
         </div>
       </div>

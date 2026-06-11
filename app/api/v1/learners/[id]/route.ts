@@ -40,6 +40,12 @@ const updateSchema = z.object({
   phone:            z.string().optional(),
   parent_name:      z.string().optional(),
   parent_contact:   z.string().optional(),
+  // context fields
+  internet_access:   z.boolean().optional(),
+  household_size:    z.number().int().min(1).max(20).optional(),
+  primary_language:  z.string().optional(),
+  transport_type:    z.enum(['walk','taxi','bus','car','other']).optional(),
+  first_gen_student: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -50,7 +56,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.issues[0].message);
 
-  const { first_name, last_name, email, phone, parent_name, parent_contact, ...learnerFields } = parsed.data;
+  const {
+    first_name, last_name, email, phone, parent_name, parent_contact,
+    internet_access, household_size, primary_language, transport_type, first_gen_student,
+    ...learnerFields
+  } = parsed.data;
 
   // Update learner
   if (Object.keys(learnerFields).length) {
@@ -59,7 +69,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   // Update profile
-  const profileFields = { first_name, last_name, email, phone, parent_name, parent_contact };
+  const profileFields = {
+    first_name, last_name, email, phone, parent_name, parent_contact,
+    internet_access, household_size, primary_language, transport_type, first_gen_student,
+  };
   const nonNull = Object.fromEntries(Object.entries(profileFields).filter(([, v]) => v !== undefined));
   if (Object.keys(nonNull).length) {
     await supabase.from('learner_profiles').update(nonNull).eq('learner_id', (await params).id);
