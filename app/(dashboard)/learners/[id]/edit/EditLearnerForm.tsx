@@ -95,7 +95,12 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
       ]);
 
       toast.success('Learner updated successfully');
-      router.push(`/learners/${learner.learner_id}`);
+      // If marking as graduated, redirect to alumni page to create record
+      if (form.programme_status === 'graduated' && learner.programme_status !== 'graduated') {
+        router.push('/alumni');
+      } else {
+        router.push(`/learners/${learner.learner_id}`);
+      }
       router.refresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
