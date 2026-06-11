@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, BookOpen, CalendarCheck2, BarChart3,
   HeartHandshake, AlertTriangle, FolderKanban, School, Settings,
-  GraduationCap, ChevronRight, LogOut, UserCheck, Award, FileText, Bell, Smartphone, Upload
+  GraduationCap, ChevronRight, LogOut, UserCheck, Award, FileText, Bell, Smartphone, Upload, UserRoundCheck
 } from 'lucide-react';
 import { cn } from '@/utils';
 import type { User, UserRole } from '@/types';
@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Projects',      href: '/projects',        icon: FolderKanban,    roles: ['admin','instructor'] },
   { label: 'Mentorship',    href: '/mentorship',      icon: HeartHandshake,  roles: ['admin','instructor'] },
   { label: 'Interventions', href: '/interventions',   icon: AlertTriangle,   roles: ['admin','instructor'] },
+  { label: 'Peer Support',  href: '/peer-support',   icon: UserRoundCheck,  roles: ['admin','instructor'] },
   { label: 'Risk Monitor',  href: '/risk',            icon: AlertTriangle,   roles: ['admin','instructor'] },
   { label: 'Alumni',        href: '/alumni',          icon: GraduationCap,   roles: ['admin','instructor'] },
   { label: 'Reports',       href: '/reports',         icon: FileText,        roles: ['admin','instructor'] },
