@@ -167,6 +167,8 @@ export interface RiskScore {
   avg_score: number;
   risk_level: RiskLevel;
   risk_flags: string[];
+  risk_trajectory?: 'improving' | 'stable' | 'declining' | 'critical';
+  trajectory_flags?: string[];
   last_calculated: string;
   // Joined
   learner_name?: string;

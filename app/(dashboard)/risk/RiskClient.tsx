@@ -16,6 +16,8 @@ import { fmt } from '@/utils';
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RiskRow {
   score_id: string; risk_level: 'high' | 'medium' | 'low';
+  risk_trajectory: 'improving' | 'stable' | 'declining' | 'critical';
+  trajectory_flags: string[];
   attendance_rate: number; avg_score: number;
   risk_flags: string[]; last_calculated: string;
   learner_id: string; learner_name: string;
@@ -132,10 +134,27 @@ function RiskCard({ risk, currentUserId, selected, onToggle }: {
             </p>
           </div>
         </div>
-        <span className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 uppercase"
-          style={{ background: cfg.bg, color: cfg.color }}>
-          {cfg.label}
-        </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase"
+            style={{ background: cfg.bg, color: cfg.color }}>
+            {cfg.label}
+          </span>
+          {risk.risk_trajectory !== 'stable' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{
+                background: risk.risk_trajectory === 'critical'  ? 'rgba(239,68,68,0.15)' :
+                            risk.risk_trajectory === 'declining'  ? 'rgba(251,191,36,0.15)' :
+                            'rgba(52,211,153,0.15)',
+                color:      risk.risk_trajectory === 'critical'  ? '#EF4444' :
+                            risk.risk_trajectory === 'declining'  ? '#FBBF24' :
+                            '#34D399',
+              }}>
+              {risk.risk_trajectory === 'critical'  ? '⚠ Critical trend' :
+               risk.risk_trajectory === 'declining'  ? '↓ Declining'      :
+               '↑ Improving'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Metrics */}
@@ -404,29 +423,35 @@ function AnalyticsPanel({ risks }: { risks: RiskRow[] }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function RiskClient({ risks, schools, currentUserId }: Props) {
-  const [search,       setSearch]       = useState('');
-  const [schoolF,      setSchoolF]      = useState('');
-  const [levelF,       setLevelF]       = useState('');
-  const [showAnalytics,setShowAnalytics]= useState(false);
-  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
-  const [bulkLoading,  setBulkLoading]  = useState(false);
+  const [search,        setSearch]        = useState('');
+  const [schoolF,       setSchoolF]       = useState('');
+  const [levelF,        setLevelF]        = useState('');
+  const [trajectoryF,   setTrajectoryF]   = useState('');
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [selectedIds,   setSelectedIds]   = useState<Set<string>>(new Set());
+  const [bulkLoading,   setBulkLoading]   = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return risks.filter(r => {
-      if (schoolF && r.school_name !== schoolF)   return false;
-      if (levelF  && r.risk_level  !== levelF)    return false;
+      if (schoolF     && r.school_name     !== schoolF)     return false;
+      if (levelF      && r.risk_level      !== levelF)      return false;
+      if (trajectoryF && r.risk_trajectory !== trajectoryF) return false;
       if (q && !`${r.learner_name} ${r.school_name}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [risks, search, schoolF, levelF]);
+  }, [risks, search, schoolF, levelF, trajectoryF]);
 
   const high   = filtered.filter(r => r.risk_level === 'high');
   const medium = filtered.filter(r => r.risk_level === 'medium');
   const low    = filtered.filter(r => r.risk_level === 'low');
 
-  const hasFilters = search || schoolF || levelF;
-  const clear      = () => { setSearch(''); setSchoolF(''); setLevelF(''); };
+  // Predictive summary counts
+  const criticalTraj  = risks.filter(r => r.risk_trajectory === 'critical').length;
+  const decliningTraj = risks.filter(r => r.risk_trajectory === 'declining').length;
+
+  const hasFilters = search || schoolF || levelF || trajectoryF;
+  const clear      = () => { setSearch(''); setSchoolF(''); setLevelF(''); setTrajectoryF(''); };
 
   const toggleSelect = (id: string) =>
     setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
@@ -518,6 +543,35 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
 
       {showAnalytics && <AnalyticsPanel risks={risks} />}
 
+      {/* Predictive risk banner */}
+      {(criticalTraj > 0 || decliningTraj > 0) && (
+        <div className="rounded-2xl p-4 flex flex-wrap items-center gap-3"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
+          <div className="flex items-center gap-2">
+            <TrendingDown className="w-4 h-4 shrink-0" style={{ color: 'var(--ds-danger)' }} />
+            <p className="text-sm font-bold" style={{ color: 'var(--ds-danger)' }}>
+              Predictive alert — learners heading toward higher risk
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {criticalTraj > 0 && (
+              <button onClick={() => setTrajectoryF('critical')}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer"
+                style={{ background: 'var(--ds-danger)', color: '#fff' }}>
+                {criticalTraj} on critical trajectory — view
+              </button>
+            )}
+            {decliningTraj > 0 && (
+              <button onClick={() => setTrajectoryF('declining')}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
+                style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--ds-danger)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                {decliningTraj} declining — view
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Filter bar */}
       <div className="rounded-2xl p-4" style={{ background: DS.surface, border: `1px solid ${DS.border}` }}>
         <div className="flex flex-wrap gap-3 items-center">
@@ -538,6 +592,14 @@ export default function RiskClient({ risks, schools, currentUserId }: Props) {
             <option value="high">High Risk</option>
             <option value="medium">Medium Risk</option>
             <option value="low">Low Risk</option>
+          </select>
+
+          <select value={trajectoryF} onChange={e => setTrajectoryF(e.target.value)} style={selectStyle}>
+            <option value="">All trajectories</option>
+            <option value="critical">⚠ Critical trajectory</option>
+            <option value="declining">↓ Declining</option>
+            <option value="stable">→ Stable</option>
+            <option value="improving">↑ Improving</option>
           </select>
 
           {hasFilters && (

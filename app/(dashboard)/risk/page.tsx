@@ -10,7 +10,8 @@ async function getRiskData() {
   const { data } = await supabase
     .from('risk_scores')
     .select(`
-      score_id, risk_level, attendance_rate, avg_score, risk_flags, last_calculated,
+      score_id, risk_level, attendance_rate, avg_score, risk_flags,
+      risk_trajectory, trajectory_flags, last_calculated,
       learner_id,
       learners!inner(
         learner_id, learner_code,
@@ -22,18 +23,20 @@ async function getRiskData() {
     .order('risk_level', { ascending: false })
     .order('attendance_rate', { ascending: true });
 
-  interface RRow { score_id:string; risk_level:string; attendance_rate:number|null; avg_score:number|null; risk_flags:string[]|null; last_calculated:string; learner_id:string; learners:{learner_profiles:{first_name:string;last_name:string}|null;schools:{school_name:string}|null;program_enrollments:Array<{programs:{program_name:string}|null}>}|null }
+  interface RRow { score_id:string; risk_level:string; attendance_rate:number|null; avg_score:number|null; risk_flags:string[]|null; risk_trajectory:string|null; trajectory_flags:string[]|null; last_calculated:string; learner_id:string; learners:{learner_profiles:{first_name:string;last_name:string}|null;schools:{school_name:string}|null;program_enrollments:Array<{programs:{program_name:string}|null}>}|null }
   const risks = ((data || []) as unknown as RRow[]).map(r => ({
-    score_id:        r.score_id,
-    risk_level:      r.risk_level as 'high' | 'medium' | 'low',
-    attendance_rate: Math.floor(r.attendance_rate ?? 0),
-    avg_score:       Math.round(r.avg_score ?? 0),
-    risk_flags:      r.risk_flags ?? [],
-    last_calculated: r.last_calculated,
-    learner_id:      r.learner_id,
-    learner_name:    `${r.learners?.learner_profiles?.first_name ?? ''} ${r.learners?.learner_profiles?.last_name ?? ''}`.trim(),
-    school_name:     r.learners?.schools?.school_name ?? '—',
-    programme_name:  r.learners?.program_enrollments?.[0]?.programs?.program_name ?? null,
+    score_id:         r.score_id,
+    risk_level:       r.risk_level as 'high' | 'medium' | 'low',
+    attendance_rate:  Math.floor(r.attendance_rate ?? 0),
+    avg_score:        Math.round(r.avg_score ?? 0),
+    risk_flags:       r.risk_flags ?? [],
+    risk_trajectory:  (r.risk_trajectory ?? 'stable') as 'improving' | 'stable' | 'declining' | 'critical',
+    trajectory_flags: r.trajectory_flags ?? [],
+    last_calculated:  r.last_calculated,
+    learner_id:       r.learner_id,
+    learner_name:     `${r.learners?.learner_profiles?.first_name ?? ''} ${r.learners?.learner_profiles?.last_name ?? ''}`.trim(),
+    school_name:      r.learners?.schools?.school_name ?? '—',
+    programme_name:   r.learners?.program_enrollments?.[0]?.programs?.program_name ?? null,
   }));
 
   // Unique school list for filter

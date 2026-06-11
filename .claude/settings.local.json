@@ -136,7 +136,8 @@
       "Bash(mkdir -p \"app/api/v1/verify/[code]\")",
       "Bash(mkdir -p \"app/api/v1/reports/certificate/[id]\")",
       "Bash(mkdir -p \"app/verify/[code]\")",
-      "Bash(mkdir -p \"app/api/v1/parent/messages\" && mkdir -p \"app/api/v1/parent/messages/[id]/reply\" && mkdir -p \"app/api/cron/parent-summary\")"
+      "Bash(mkdir -p \"app/api/v1/parent/messages\" && mkdir -p \"app/api/v1/parent/messages/[id]/reply\" && mkdir -p \"app/api/cron/parent-summary\")",
+      "Bash(grep -v \"//\\\\|useState\\\\|setShow\")"
     ]
   }
 }

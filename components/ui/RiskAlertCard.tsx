@@ -42,9 +42,23 @@ export default function RiskAlertCard({ risk, onIntervene }: Props) {
             <p className="text-xs text-gray-400 capitalize">{risk.programme_name}</p>
           </div>
         </div>
-        <span className={cn('badge uppercase text-[10px] tracking-wide', c.bg, c.text)}>
-          {risk.risk_level}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={cn('badge uppercase text-[10px] tracking-wide', c.bg, c.text)}>
+            {risk.risk_level}
+          </span>
+          {risk.risk_trajectory && risk.risk_trajectory !== 'stable' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{
+                background: risk.risk_trajectory === 'critical' ? 'rgba(239,68,68,0.15)' :
+                            risk.risk_trajectory === 'declining' ? 'rgba(251,191,36,0.15)' : 'rgba(52,211,153,0.15)',
+                color:      risk.risk_trajectory === 'critical' ? '#EF4444' :
+                            risk.risk_trajectory === 'declining' ? '#FBBF24' : '#34D399',
+              }}>
+              {risk.risk_trajectory === 'critical' ? '⚠ critical trend' :
+               risk.risk_trajectory === 'declining' ? '↓ declining' : '↑ improving'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Metrics */}
