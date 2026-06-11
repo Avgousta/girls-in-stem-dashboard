@@ -125,7 +125,13 @@
       "PowerShell(docker --version 2>&1)",
       "PowerShell(npx playwright --version 2>&1)",
       "Bash(sed -n '11,22p' components/ui/RiskAlertCard.tsx)",
-      "Bash(sed -n '35,47p' app/\\\\\\(dashboard\\\\\\)/risk/RiskClient.tsx)"
+      "Bash(sed -n '35,47p' app/\\\\\\(dashboard\\\\\\)/risk/RiskClient.tsx)",
+      "Bash(mkdir -p \"app/api/v1/alumni/[id]\")",
+      "Bash(mkdir -p \"app/api/v1/alumni/[id]/surveys\")",
+      "Bash(xargs grep -l \"mentorship\\\\|Sidebar\\\\|nav\")",
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(mkdir -p \"app/api/v1/sponsors/[id]/reports\")",
+      "Bash(mkdir -p \"app/api/v1/reports/sponsor/[id]\")"
     ]
   }
 }

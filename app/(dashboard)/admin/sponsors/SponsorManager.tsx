@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Users, Loader2, Award, X, Key, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Users, Loader2, Award, X, Key, CheckCircle2, Eye, EyeOff, FileText } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
 interface SponsorUser { user_id: string; full_name: string; email: string; role: string }
@@ -33,6 +33,52 @@ const inputSt: React.CSSProperties = {
   border: `1px solid ${DS.border}`, borderRadius: '10px',
   padding: '8px 10px', fontSize: '13px', outline: 'none', colorScheme: 'dark',
 };
+
+function GenerateReportButton({ sponsorId }: { sponsorId: string }) {
+  const [loading,  setLoading]  = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
+
+  const today     = new Date().toISOString().slice(0, 10);
+  const threeAgo  = new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/v1/sponsors/${sponsorId}/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period_start: threeAgo, period_end: today, report_type: 'quarterly', send_email: true }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setReportId(json.data?.report_id);
+      toast.success('Report generated & emailed to sponsor');
+    } catch {
+      toast.error('Could not generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (reportId) {
+    return (
+      <a href={`/api/v1/reports/sponsor/${reportId}`} target="_blank" rel="noreferrer"
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+        style={{ background: 'var(--ds-success-light)', color: 'var(--ds-success)', border: '1px solid var(--ds-success)' }}>
+        <FileText className="w-3.5 h-3.5" /> View Report ↗
+      </a>
+    );
+  }
+
+  return (
+    <button onClick={generate} disabled={loading}
+      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+      style={{ background: DS.surfaceHover, color: DS.textMid, border: `1px solid ${DS.border}` }}>
+      {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+      {loading ? 'Generating…' : 'Generate Report'}
+    </button>
+  );
+}
 
 export default function SponsorManager({ sponsors: initial, allLearners }: Props) {
   const [sponsors,   setSponsors]   = useState(initial);
@@ -267,6 +313,7 @@ export default function SponsorManager({ sponsors: initial, allLearners }: Props
                       <Users className="w-4 h-4" />
                       Link / Manage Learners
                     </button>
+                    <GenerateReportButton sponsorId={sponsor.sponsor_id} />
                   </div>
                 </div>
               </div>
