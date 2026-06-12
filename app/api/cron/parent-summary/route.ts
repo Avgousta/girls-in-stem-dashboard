@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
+import { whatsappMonthlySummary } from '@/lib/whatsapp';
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -18,14 +19,14 @@ export async function GET(req: NextRequest) {
   // Fetch all parents with linked learners
   const { data: parents } = await supabase
     .from('users')
-    .select('user_id, full_name, email')
+    .select('user_id, full_name, email, whatsapp_number, whatsapp_opted_in')
     .eq('role', 'parent');
 
   if (!parents?.length) return NextResponse.json({ ok: true, sent: 0 });
 
   let sent = 0;
 
-  for (const parent of parents as { user_id: string; full_name: string; email: string }[]) {
+  for (const parent of parents as { user_id: string; full_name: string; email: string; whatsapp_number?: string | null; whatsapp_opted_in?: boolean | null }[]) {
     const { data: children } = await supabase
       .from('learners')
       .select(`
@@ -96,10 +97,31 @@ export async function GET(req: NextRequest) {
       </div>
     </body></html>`;
 
-    if (resend) {
-      await resend.emails.send({ from: FROM, to: parent.email, subject: 'Your monthly Girls in STEM progress update', html }).catch(() => {});
-      sent++;
+    const sends: Promise<unknown>[] = [];
+
+    if (resend && parent.email) {
+      sends.push(
+        resend.emails.send({ from: FROM, to: parent.email, subject: 'Your monthly Girls in STEM progress update', html }).catch(() => {})
+      );
     }
+
+    sends.push(
+      whatsappMonthlySummary({
+        parentNumber:  parent.whatsapp_number,
+        parentOptedIn: parent.whatsapp_opted_in,
+        parentName:    parent.full_name || 'Parent/Guardian',
+        children: kids.map(c => ({
+          name:      `${c.learner_profiles?.first_name ?? ''} ${c.learner_profiles?.last_name ?? ''}`.trim(),
+          grade:     c.grade,
+          attRate:   c.risk_scores?.attendance_rate ?? 0,
+          avgScore:  c.risk_scores?.avg_score       ?? 0,
+          riskLevel: c.risk_scores?.risk_level       ?? 'low',
+        })),
+      }).catch(() => {})
+    );
+
+    await Promise.all(sends);
+    sent++;
   }
 
   return NextResponse.json({ ok: true, sent });

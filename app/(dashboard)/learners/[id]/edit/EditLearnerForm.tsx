@@ -36,6 +36,9 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
     household_size:    profile.household_size != null ? String(profile.household_size) : '',
     internet_access:   profile.internet_access  != null ? String(profile.internet_access)  : '',
     first_gen_student: profile.first_gen_student != null ? String(profile.first_gen_student) : '',
+    // WhatsApp
+    whatsapp_number:   profile.whatsapp_number   || '',
+    whatsapp_opted_in: profile.whatsapp_opted_in != null ? String(profile.whatsapp_opted_in) : 'false',
   });
 
   // Current enrolments
@@ -77,6 +80,8 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
           household_size:    form.household_size    ? Number(form.household_size) : undefined,
           internet_access:   form.internet_access   !== '' ? form.internet_access   === 'true' : undefined,
           first_gen_student: form.first_gen_student !== '' ? form.first_gen_student === 'true' : undefined,
+          whatsapp_number:   form.whatsapp_number   || undefined,
+          whatsapp_opted_in: form.whatsapp_opted_in === 'true',
         }),
       });
       const json = await res.json();
@@ -306,6 +311,30 @@ export default function EditLearnerForm({ learner, schools, programs }: Props) {
               <option value="true">Yes — first in family at higher ed</option>
               <option value="false">No</option>
             </select>
+          </div>
+        </div>
+
+        {/* WhatsApp */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">📲 WhatsApp Notifications</p>
+          <p className="text-xs text-gray-400 mb-3">
+            WhatsApp alerts (absence, re-engagement, monthly summaries) are sent only when a number is provided
+            and the parent/guardian has explicitly opted in.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">WhatsApp Number</label>
+              <input type="tel" value={form.whatsapp_number} onChange={e => set('whatsapp_number', e.target.value)}
+                className="form-input" placeholder="+27821234567" />
+              <p className="text-[10px] text-gray-400 mt-1">E.164 format — include country code, e.g. +27</p>
+            </div>
+            <div>
+              <label className="form-label">WhatsApp Opt-In</label>
+              <select value={form.whatsapp_opted_in} onChange={e => set('whatsapp_opted_in', e.target.value)} className="form-select">
+                <option value="false">Not opted in</option>
+                <option value="true">✅ Opted in — parent/guardian has consented</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

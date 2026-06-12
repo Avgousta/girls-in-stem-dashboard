@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
 import { emailAbsenceAlert } from '@/lib/email';
+import { whatsappAbsenceAlert } from '@/lib/whatsapp';
 
 const bulkSchema = z.object({
   program_id:   z.string().uuid(),
@@ -51,14 +52,14 @@ export async function POST(req: NextRequest) {
   if (absentIds.length > 0) {
     const { data: learners } = await supabase
       .from('learners')
-      .select('learner_id, parent_id, learner_profiles(first_name, last_name)')
+      .select('learner_id, parent_id, learner_profiles(first_name, last_name, whatsapp_number, whatsapp_opted_in)')
       .in('learner_id', absentIds)
       .not('parent_id', 'is', null);
 
     const { data: prog } = await supabase
       .from('programs').select('program_name').eq('program_id', program_id).single();
 
-    interface AbsLearner { learner_id: string; parent_id: string | null; learner_profiles: { first_name: string; last_name: string } | null }
+    interface AbsLearner { learner_id: string; parent_id: string | null; learner_profiles: { first_name: string; last_name: string; whatsapp_number?: string | null; whatsapp_opted_in?: boolean | null } | null }
     const typedProg = prog as unknown as { program_name: string } | null;
     const programName = typedProg?.program_name || 'a session';
 
@@ -79,13 +80,22 @@ export async function POST(req: NextRequest) {
         const name        = `${l.learner_profiles?.first_name} ${l.learner_profiles?.last_name}`.trim();
         const parentEmail = parentEmailMap[l.parent_id];
         if (!parentEmail) return Promise.resolve();
-        return emailAbsenceAlert({
-          parentEmail,
-          parentUserId: l.parent_id,
-          learnerName:  name,
-          programName,
-          sessionDate:  session_date,
-        }).catch(() => {});
+        return Promise.all([
+          emailAbsenceAlert({
+            parentEmail,
+            parentUserId: l.parent_id,
+            learnerName:  name,
+            programName,
+            sessionDate:  session_date,
+          }).catch(() => {}),
+          whatsappAbsenceAlert({
+            parentNumber:  l.learner_profiles?.whatsapp_number,
+            parentOptedIn: l.learner_profiles?.whatsapp_opted_in,
+            learnerName:   name,
+            programName,
+            sessionDate:   session_date,
+          }).catch(() => {}),
+        ]);
       })
     );
   }

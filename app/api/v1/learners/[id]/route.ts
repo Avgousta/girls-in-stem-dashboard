@@ -46,6 +46,9 @@ const updateSchema = z.object({
   primary_language:  z.string().optional(),
   transport_type:    z.enum(['walk','taxi','bus','car','other']).optional(),
   first_gen_student: z.boolean().optional(),
+  // WhatsApp
+  whatsapp_number:   z.string().optional(),
+  whatsapp_opted_in: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -59,6 +62,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const {
     first_name, last_name, email, phone, parent_name, parent_contact,
     internet_access, household_size, primary_language, transport_type, first_gen_student,
+    whatsapp_number, whatsapp_opted_in,
     ...learnerFields
   } = parsed.data;
 
@@ -72,6 +76,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const profileFields = {
     first_name, last_name, email, phone, parent_name, parent_contact,
     internet_access, household_size, primary_language, transport_type, first_gen_student,
+    whatsapp_number, whatsapp_opted_in,
   };
   const nonNull = Object.fromEntries(Object.entries(profileFields).filter(([, v]) => v !== undefined));
   if (Object.keys(nonNull).length) {

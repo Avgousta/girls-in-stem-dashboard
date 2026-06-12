@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { emailLearnerReengagement } from '@/lib/email';
+import { whatsappReengagement } from '@/lib/whatsapp';
 
 // A learner is contacted at most once every COOLDOWN_DAYS days.
 const COOLDOWN_DAYS   = 14;
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
       learner_id,
       programme_status,
       program_enrollments(program_id, programs(program_name)),
-      learner_profiles(first_name, last_name, email, parent_name, parent_contact),
+      learner_profiles(first_name, last_name, email, parent_name, parent_contact, whatsapp_number, whatsapp_opted_in),
       attendance(status, session_date),
       risk_scores(risk_trajectory),
       learner_pulse(week_date)
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
   interface AttRow    { status: string; session_date: string }
   interface PulseRow  { week_date: string }
   interface EnrolRow  { program_id: string; programs: { program_name: string } | null }
-  interface ProfileRow { first_name: string; last_name: string; email: string | null; parent_name: string | null; parent_contact: string | null }
+  interface ProfileRow { first_name: string; last_name: string; email: string | null; parent_name: string | null; parent_contact: string | null; whatsapp_number?: string | null; whatsapp_opted_in?: boolean | null }
   interface RiskRow    { risk_trajectory: string | null }
 
   interface LRow {
@@ -130,17 +131,30 @@ export async function GET(req: NextRequest) {
 
     // ── Send outreach ─────────────────────────────────────────────────────
     try {
-      await emailLearnerReengagement({
-        learnerEmail:    profile?.email ?? null,
-        learnerName,
-        parentEmail:     profile?.parent_contact ?? null,
-        parentName:      profile?.parent_name ?? null,
-        triggerDetail,
-        programName,
-        coordinatorName,
-        appUrl,
-        adminUserIds,
-      });
+      await Promise.all([
+        emailLearnerReengagement({
+          learnerEmail:    profile?.email ?? null,
+          learnerName,
+          parentEmail:     profile?.parent_contact ?? null,
+          parentName:      profile?.parent_name ?? null,
+          triggerDetail,
+          programName,
+          coordinatorName,
+          appUrl,
+          adminUserIds,
+        }),
+        whatsappReengagement({
+          learnerNumber:   profile?.whatsapp_number,
+          learnerOptedIn:  profile?.whatsapp_opted_in,
+          learnerName,
+          parentNumber:    profile?.whatsapp_number,
+          parentOptedIn:   profile?.whatsapp_opted_in,
+          parentName:      profile?.parent_name ?? null,
+          triggerDetail,
+          programName,
+          coordinatorName,
+        }),
+      ]);
 
       // Log the outreach
       await supabase.from('learner_reengagement').insert({
