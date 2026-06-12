@@ -12,16 +12,18 @@
  * Production: set TWILIO_WHATSAPP_FROM=whatsapp:+<your-approved-number>
  */
 
-let twilioClient: ReturnType<typeof import('twilio')> | null = null;
+import Twilio from 'twilio';
 
-function getClient() {
+type TwilioClient = ReturnType<typeof Twilio>;
+
+let twilioClient: TwilioClient | null = null;
+
+function getClient(): TwilioClient | null {
   if (twilioClient) return twilioClient;
   const sid   = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   if (!sid || !token || sid === 'placeholder') return null;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const twilio = require('twilio');
-  twilioClient = twilio(sid, token);
+  twilioClient = Twilio(sid, token);
   return twilioClient;
 }
 
@@ -45,8 +47,7 @@ async function sendWA(to: string, body: string): Promise<SendResult> {
     return { ok: true };
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const msg = await (client as any).messages.create({ from: from(), to: toWA(to), body });
+    const msg = await client.messages.create({ from: from(), to: toWA(to), body });
     return { ok: true, sid: msg.sid };
   } catch (e: unknown) {
     const msg = (e as Error).message;
@@ -143,11 +144,11 @@ export async function whatsappMonthlySummary({
   parentOptedIn: boolean | null | undefined;
   parentName:    string;
   children: Array<{
-    name:         string;
-    grade:        number;
-    attRate:      number;
-    avgScore:     number;
-    riskLevel:    string;
+    name:      string;
+    grade:     number;
+    attRate:   number;
+    avgScore:  number;
+    riskLevel: string;
   }>;
 }) {
   const to = guard(parentNumber, parentOptedIn);
