@@ -20,6 +20,7 @@ A full-stack STEM education management platform for South African schools. Built
 | Database | Supabase (PostgreSQL 17) |
 | Auth | Supabase Auth + RLS |
 | Email | Resend (`re_KTqUyFJn_...` — set on Vercel) |
+| WhatsApp | Twilio WhatsApp Business API (`lib/whatsapp.ts`) |
 | Deployment | Vercel (GitHub auto-deploy on push to `master`; fallback: `npx vercel deploy --prod`) |
 
 ### Commands
@@ -99,6 +100,18 @@ All tables live in the `public` schema.
 | `sponsor_reports` | Generated quarterly impact reports (content_json, sent_at) | 016 |
 | `certificates` | Issued certificates with unique verification_code | 017 |
 | `parent_messages` | Two-way parent ↔ coordinator messaging (general/excuse/concern) | 018 |
+| `learner_reengagement` | Outreach log per learner (trigger_reason, sent_at, responded_at, response_notes) | 022 |
+| `peer_support_pairs` | Tutor ↔ mentee pairings (status: suggested/active/paused/ended) | 023 |
+
+### learner_profiles — new columns (Jun 2026)
+Added by migrations 021 and 024:
+- `internet_access` BOOLEAN — does learner have home internet?
+- `household_size` SMALLINT (1–20)
+- `primary_language` TEXT
+- `transport_type` TEXT CHECK `('walk','taxi','bus','car','other')`
+- `first_gen_student` BOOLEAN — first in family to pursue higher education
+- `whatsapp_number` TEXT — E.164 format (+27…); used by `lib/whatsapp.ts`
+- `whatsapp_opted_in` BOOLEAN NOT NULL DEFAULT false — must be true before any WA message is sent
 
 ### assessments table — important constraints
 - `assessment_type` CHECK: `('quiz','test','project','practical','assignment','oral','other')`
@@ -131,6 +144,10 @@ All tables live in the `public` schema.
 | 018 | parent_messages |
 | 019 | risk_trajectory |
 | 020 | learner_barriers |
+| 021 | learner_context_fields |
+| 022 | learner_reengagement |
+| 023 | peer_support |
+| 024 | whatsapp_fields |
 
 ---
 
@@ -177,6 +194,9 @@ import { DS } from '@/components/platform/tokens';
 | `NEXT_PUBLIC_APP_URL` | ✅ `https://girls-stem-dashboard.vercel.app` |
 | `RESEND_API_KEY` | ✅ Set — emails active |
 | `CRON_SECRET` | ✅ Set — crons authenticated |
+| `TWILIO_ACCOUNT_SID` | ✅ Set — Twilio WhatsApp |
+| `TWILIO_AUTH_TOKEN` | ✅ Set — Twilio WhatsApp |
+| `TWILIO_WHATSAPP_FROM` | ✅ Set — `whatsapp:+<approved-number>` (sandbox: `whatsapp:+14155238886`) |
 
 No `.env.local` file exists locally. Pull with `npx vercel env pull .env.local`.
 
@@ -199,8 +219,9 @@ No `.env.local` file exists locally. Pull with `npx vercel env pull .env.local`.
 |----------|------|---------|
 | `0 7 * * *` | `/api/cron/mentorship-cadence` | Daily — email+notify mentors of at-risk learners with no session in 14+ days |
 | `0 7 * * 1` | `/api/cron/risk-digest` | Weekly (Mon) — email admins a risk summary by school |
+| `0 8 * * 3` | `/api/cron/learner-reengagement` | Weekly (Wed) — outreach to disengaged learners via email + WhatsApp |
 | `0 8 1 1,4,7,10 *` | `/api/cron/sponsor-reports` | Quarterly (1 Jan/Apr/Jul/Oct) — auto-generate + email sponsor impact reports |
-| `0 9 1 * *` | `/api/cron/parent-summary` | Monthly (1st) — email parents a child progress summary |
+| `0 9 1 * *` | `/api/cron/parent-summary` | Monthly (1st) — email + WhatsApp parents a child progress summary |
 
 All crons require `Authorization: Bearer $CRON_SECRET`.
 
@@ -241,6 +262,8 @@ All crons require `Authorization: Bearer $CRON_SECRET`.
 | `/api/v1/sponsors/[id]/reports` | GET/POST | List / generate sponsor reports |
 | `/api/v1/parent/messages` | GET/POST | Parent two-way messages; notifies admins on send |
 | `/api/v1/parent/messages/[id]/reply` | POST | Admin reply to parent message; notifies parent |
+| `/api/v1/peer-support` | GET/POST | List saved pairs; GET `?suggest=true` runs greedy matching algorithm |
+| `/api/v1/peer-support/[id]` | PATCH/DELETE | Update pair status/notes; delete pair (admin only) |
 
 All API routes have `export const dynamic = 'force-dynamic'`.
 
@@ -263,6 +286,7 @@ All API routes have `export const dynamic = 'force-dynamic'`.
 | `/assessments/bulk` | Grade tabs, structured source/subject picker |
 | `/alumni` | KPI strip, unrecorded-graduate banner, expandable cards, inline survey logging |
 | `/notifications` | In-app alerts + parent messages inbox with reply |
+| `/peer-support` | Suggested pairings (algorithm), active pairs, paused pairs; Pause/Resume/End controls |
 | `/analytics` | Removed — cohort comparison folded into `/reports` Cohort Year tab |
 | `middleware.ts` | `getUser()` (not `getSession()`), role-based allowlist |
 
@@ -326,6 +350,24 @@ All live in `lib/email.ts`:
 | `emailInterventionEscalated` | Intervention escalate route |
 | `emailInterventionResolved` | Resolved notification to original flagger |
 | `emailRiskDigest` | Weekly cron — admins get school-by-school risk summary |
+| `emailLearnerReengagement` | Re-engagement cron — email to learner + parent; in-app notify to admins |
+
+---
+
+## WhatsApp Notifications — Twilio (`lib/whatsapp.ts`)
+
+Phone numbers stored in E.164 format (+27…). All functions guard on `whatsapp_opted_in === true` — no opt-in, no message sent. Gracefully no-ops when Twilio env vars are absent.
+
+| Function | Trigger |
+|----------|---------|
+| `whatsappAbsenceAlert` | Attendance bulk save — fires alongside email for each absent learner |
+| `whatsappReengagement` | Re-engagement cron — messages learner + parent separately |
+| `whatsappMonthlySummary` | Monthly parent-summary cron — plain-text summary alongside HTML email |
+
+**Peer support matching algorithm** (`GET /api/v1/peer-support?suggest=true`):
+- Tutor criteria: ≥75% attendance, ≥65% avg score, trajectory not declining/critical, not already paired
+- Mentee criteria: risk_level high or medium, not already paired
+- Match preference: same grade + shared programme > shared programme > any available tutor
 
 ---
 
@@ -342,10 +384,6 @@ All live in `lib/email.ts`:
 
 - [ ] **#15 School LMS data integration** — import marks from Siyavula/GreenBook; high effort
 - [ ] **E2E mutation tests** — write/delete flows need isolated test DB (local Supabase via Docker)
-- [ ] **Learner context fields** — `internet_access`, `household_size`, `primary_language`, `transport_type`, `first_gen_student` on `learner_profiles`
-- [ ] **WhatsApp/SMS via Twilio** — most SA parents don't use email; Twilio integration deferred
-- [ ] **Learner re-engagement journey** — automated outreach when learner disengages
-- [ ] **Peer support pairing** — identify strong learners as near-peer tutors
 
 ---
 
@@ -432,14 +470,15 @@ All 29 public tables have authenticated + service_role policies (9 new tables ad
 | 12 | Mobile-first field capture UI | ✅ `/capture` — 3-step tap-through attendance |
 | 13 | Learner barrier tracking | ✅ + pulse auto-creation of barrier records |
 | 14 | Programme effectiveness analytics | ✅ Effectiveness tab in /reports |
-| 15 | School LMS data integration | ⏳ Next session |
+| 15 | School LMS data integration | ⏳ Deferred |
+| 16 | Learner context fields | ✅ Migration 021; edit form + profile display |
+| 17 | Learner re-engagement journey | ✅ Migration 022; weekly cron (Wed); email + WhatsApp |
+| 18 | Peer support pairing | ✅ Migration 023; greedy algorithm; `/peer-support` page |
+| 19 | WhatsApp/Twilio integration | ✅ Migration 024; `lib/whatsapp.ts`; absence + re-engagement + monthly summary |
 
 ### Remaining Open Items
 - [ ] **#15 School LMS integration** — Siyavula/GreenBook import; high effort
-- [ ] **Learner re-engagement journey** — automated outreach on disengagement
-- [ ] **Peer support pairing** — identify strong learners as near-peer tutors
-- [ ] **WhatsApp/Twilio** — most SA parents don't use email
-- [ ] **E2E mutation tests** — needs isolated test DB
+- [ ] **E2E mutation tests** — needs isolated test DB (local Supabase via Docker)
 
 ### Long-Term Roadmap (unchanged)
 
