@@ -139,7 +139,13 @@
       "Bash(mkdir -p \"app/api/v1/parent/messages\" && mkdir -p \"app/api/v1/parent/messages/[id]/reply\" && mkdir -p \"app/api/cron/parent-summary\")",
       "Bash(grep -v \"//\\\\|useState\\\\|setShow\")",
       "Bash(mkdir -p \"app/api/v1/learners/[id]/barriers\")",
-      "Bash(mkdir -p \"app/api/v1/learners/[id]/barriers/[bid]\")"
+      "Bash(mkdir -p \"app/api/v1/learners/[id]/barriers/[bid]\")",
+      "Bash(xargs grep -l \"LearnerProfile\")",
+      "Bash(mkdir -p \"app/api/v1/peer-support\" \"app/api/v1/peer-support/[id]\")",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__list_teams",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__list_projects",
+      "Bash(npx next *)",
+      "mcp__06d6cd58-ba38-4e26-874b-72dfc9be778a__get_deployment"
     ]
   }
 }

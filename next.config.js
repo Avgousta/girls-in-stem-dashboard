@@ -47,21 +47,19 @@ const nextConfig = {
 };
 
 module.exports = withSentryConfig(nextConfig, {
-  // Sentry organisation + project — update these after creating your Sentry project
   org:     process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
 
-  // Upload source maps silently during build
   silent: true,
 
-  // Automatically instrument Next.js Data Fetching methods and API routes
-  autoInstrumentServerFunctions: true,
-
-  // Tree-shake Sentry debug code in production builds
-  disableLogger: true,
-
-  // Avoid sending source maps to Sentry in development
   sourcemaps: {
     disable: process.env.NODE_ENV !== 'production',
+  },
+
+  webpack: {
+    autoInstrumentServerFunctions: true,
+    treeshake: {
+      removeDebugLogging: true,
+    },
   },
 });
