@@ -7,7 +7,7 @@ import { emailInterventionAssigned } from '@/lib/email';
 
 const createSchema = z.object({
   learner_id:        z.string().uuid(),
-  flagged_by:        z.string().uuid(),
+  flagged_by:        z.string().uuid().optional(),
   intervention_type: z.enum(['academic','attendance','behavioural','personal','technical','other']).default('academic'),
   priority:          z.enum(['low','medium','high','critical']).default('medium'),
   reason:            z.string().min(5),
@@ -39,13 +39,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { supabase, denied } = await requireApiAuth(['admin','instructor']);
+  const { supabase, profile, denied } = await requireApiAuth(['admin','instructor']);
   if (denied) return denied;
   const body   = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.issues[0].message);
+  const insertData = {
+    ...parsed.data,
+    flagged_by: parsed.data.flagged_by ?? profile?.user_id,
+  };
   const { data, error } = await supabase
-    .from('interventions').insert(parsed.data).select().single();
+    .from('interventions').insert(insertData).select().single();
   if (error) return err(error.message, 500);
 
   // Snapshot current risk score as "before" baseline for outcome tracking
