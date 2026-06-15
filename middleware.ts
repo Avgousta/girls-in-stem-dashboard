@@ -1,24 +1,27 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// ─── Simple in-memory rate limiter for auth endpoints ────────────────────────
-// Limits login/register attempts to 10 per IP per minute.
-// Note: resets on serverless function cold start — sufficient to stop casual abuse.
+// ─── In-memory rate limiter ───────────────────────────────────────────────────
+// Two tiers: strict for auth/login (10 req/min), relaxed for general API (120 req/min).
+// Resets on cold start — sufficient to stop casual abuse on a Vercel serverless deployment.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX      = 10;
-const RATE_LIMIT_WINDOW   = 60 * 1000; // 1 minute
-const RATE_LIMITED_PATHS  = ['/api/v1/auth/', '/auth/callback'];
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
+function checkRateLimit(ip: string, max: number, windowMs: number): boolean {
+  const key = `${ip}:${windowMs}`;
+  const now  = Date.now();
+  const entry = rateLimitMap.get(key);
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
-    return true; // allowed
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
   }
   entry.count++;
-  return entry.count <= RATE_LIMIT_MAX;
+  return entry.count <= max;
 }
+
+// Strict: login page + auth API endpoints — 10 requests per minute per IP
+const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/api/v1/auth/', '/auth/callback'];
+// Relaxed: all other API routes — 120 requests per minute per IP
+const API_PREFIX = '/api/v1/';
 
 // ─── Public paths — no auth required ─────────────────────────────────────────
 const PUBLIC_PATHS = [
@@ -74,14 +77,23 @@ export async function middleware(request: NextRequest) {
   // Always build a mutable response so we can refresh session cookies
   const response = NextResponse.next({ request: { headers: request.headers } });
 
-  // Rate limit auth API endpoints
-  const isRateLimited = RATE_LIMITED_PATHS.some(p => pathname.startsWith(p));
-  if (isRateLimited) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-            ?? request.headers.get('x-real-ip')
-            ?? 'unknown';
-    if (!checkRateLimit(ip)) {
+  // Rate limiting — two tiers
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+          ?? request.headers.get('x-real-ip')
+          ?? 'unknown';
+
+  if (AUTH_PATHS.some(p => pathname === p || pathname.startsWith(p))) {
+    // Strict: 10 req / 60s for auth endpoints
+    if (!checkRateLimit(ip, 10, 60_000)) {
       return new NextResponse(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+      });
+    }
+  } else if (pathname.startsWith(API_PREFIX)) {
+    // Relaxed: 120 req / 60s for general API
+    if (!checkRateLimit(ip, 120, 60_000)) {
+      return new NextResponse(JSON.stringify({ error: 'Too many requests.' }), {
         status: 429,
         headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
       });
