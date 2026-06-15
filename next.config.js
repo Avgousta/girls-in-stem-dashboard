@@ -1,16 +1,13 @@
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // TypeScript and ESLint — errors must be fixed, not suppressed
-  // typescript: { ignoreBuildErrors: true },  // REMOVED — audit fix C2
-  // eslint:     { ignoreDuringBuilds: true },  // REMOVED — audit fix C2
-
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '*.supabase.co' }],
   },
 
   experimental: {
     serverActions: {
-      // Production domain added — audit fix C4
       allowedOrigins: [
         'localhost:3000',
         'girls-stem-dashboard.vercel.app',
@@ -18,7 +15,6 @@ const nextConfig = {
     },
   },
 
-  // Security headers — audit fix T4
   async headers() {
     return [
       {
@@ -36,10 +32,10 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",   // Next.js requires unsafe-inline
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.sentry.io",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https://*.supabase.co",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io",
               "font-src 'self'",
               "frame-ancestors 'none'",
             ].join('; '),
@@ -50,4 +46,22 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  // Sentry organisation + project — update these after creating your Sentry project
+  org:     process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Upload source maps silently during build
+  silent: true,
+
+  // Automatically instrument Next.js Data Fetching methods and API routes
+  autoInstrumentServerFunctions: true,
+
+  // Tree-shake Sentry debug code in production builds
+  disableLogger: true,
+
+  // Avoid sending source maps to Sentry in development
+  sourcemaps: {
+    disable: process.env.NODE_ENV !== 'production',
+  },
+});
