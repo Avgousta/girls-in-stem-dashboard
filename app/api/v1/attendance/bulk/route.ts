@@ -9,7 +9,7 @@ import { whatsappAbsenceAlert } from '@/lib/whatsapp';
 const bulkSchema = z.object({
   program_id:   z.string().uuid(),
   session_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  captured_by:  z.string().uuid(),
+  captured_by:  z.string().uuid().optional(),
   records: z.array(z.object({
     learner_id: z.string().uuid(),
     status:     z.enum(['present', 'absent', 'late', 'excused']),
@@ -18,14 +18,15 @@ const bulkSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { supabase, denied } = await requireApiAuth(['admin', 'instructor']);
+  const { supabase, profile, denied } = await requireApiAuth(['admin', 'instructor']);
   if (denied) return denied;
 
   const body   = await req.json();
   const parsed = bulkSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.issues[0].message);
 
-  const { program_id, session_date, captured_by, records } = parsed.data;
+  const { program_id, session_date, records } = parsed.data;
+  const captured_by = parsed.data.captured_by ?? profile?.user_id;
 
   const rows = records.map(r => ({
     learner_id:  r.learner_id,
