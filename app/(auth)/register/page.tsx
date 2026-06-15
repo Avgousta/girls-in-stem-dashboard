@@ -6,6 +6,18 @@ import { toast } from 'sonner';
 import { Loader2, GraduationCap, BookOpen, UserCheck, Eye, EyeOff, Lock } from 'lucide-react';
 import Link from 'next/link';
 
+const ConsentCheckbox = ({
+  id, checked, onChange, children,
+}: { id: string; checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) => (
+  <label htmlFor={id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
+    <input
+      id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
+      style={{ marginTop: '0.2rem', accentColor: '#7C3AED', width: 16, height: 16, flexShrink: 0 }}
+    />
+    <span style={{ fontSize: '0.8rem', color: 'rgba(240,238,255,0.6)', lineHeight: 1.5 }}>{children}</span>
+  </label>
+);
+
 type Role = 'learner' | 'instructor';
 
 const DARK_BG = 'linear-gradient(160deg, #0F0820 0%, #1C0B38 50%, #2D1B4E 100%)';
@@ -23,6 +35,9 @@ function RegisterForm() {
   const [done,          setDone]          = useState(false);
   const [lookingUp,     setLookingUp]     = useState(false);
   const [learnerName,   setLearnerName]   = useState('');
+
+  const [consentPrivacy,  setConsentPrivacy]  = useState(false);
+  const [consentParental, setConsentParental] = useState(false);
 
   const [form, setForm] = useState({
     full_name:    '',
@@ -91,6 +106,15 @@ function RegisterForm() {
     }
     if (role === 'instructor' && !form.school_id) {
       toast.error('Select your school'); return;
+    }
+
+    if (!consentPrivacy) {
+      toast.error('Please accept the Privacy Notice and Terms of Service to continue');
+      return;
+    }
+    if (role === 'learner' && !consentParental) {
+      toast.error('Please confirm parental/guardian consent for learners under 18');
+      return;
     }
 
     setLoading(true);
@@ -230,6 +254,20 @@ function RegisterForm() {
               {form.password.length > 0 && form.password.length < 8 && (
                 <p className="text-xs mt-1" style={{ color: '#F87171' }}>At least 8 characters required</p>
               )}
+            </div>
+
+            <div className="space-y-3 pt-1">
+              <ConsentCheckbox id="privacy-code" checked={consentPrivacy} onChange={setConsentPrivacy}>
+                I have read and agree to the{' '}
+                <Link href="/privacy" target="_blank" className="font-medium underline" style={{ color: '#A78BFA' }}>Privacy Notice</Link>
+                {' '}and{' '}
+                <Link href="/terms" target="_blank" className="font-medium underline" style={{ color: '#A78BFA' }}>Terms of Service</Link>.
+                I consent to my personal information being processed for Girls in STEM programme purposes.
+              </ConsentCheckbox>
+              <ConsentCheckbox id="parental-code" checked={consentParental} onChange={setConsentParental}>
+                If I am under 18, a parent or guardian has given consent for me to register and for my
+                information to be processed as described in the Privacy Notice.
+              </ConsentCheckbox>
             </div>
 
             <button type="submit" disabled={loading || lookingUp} className="btn-primary w-full justify-center py-3 mt-2">
@@ -376,6 +414,22 @@ function RegisterForm() {
                     </p>
                   </div>
                 )}
+
+                <div className="space-y-3 pt-1">
+                  <ConsentCheckbox id="privacy-step2" checked={consentPrivacy} onChange={setConsentPrivacy}>
+                    I have read and agree to the{' '}
+                    <Link href="/privacy" target="_blank" className="font-medium underline" style={{ color: '#A78BFA' }}>Privacy Notice</Link>
+                    {' '}and{' '}
+                    <Link href="/terms" target="_blank" className="font-medium underline" style={{ color: '#A78BFA' }}>Terms of Service</Link>.
+                    I consent to my personal information being processed for Girls in STEM programme purposes.
+                  </ConsentCheckbox>
+                  {role === 'learner' && (
+                    <ConsentCheckbox id="parental-step2" checked={consentParental} onChange={setConsentParental}>
+                      If I am under 18, a parent or guardian has given consent for me to register and for my
+                      information to be processed as described in the Privacy Notice.
+                    </ConsentCheckbox>
+                  )}
+                </div>
 
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1">
