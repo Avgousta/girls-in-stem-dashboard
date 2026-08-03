@@ -114,6 +114,10 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/icon' ||
+    pathname === '/icon-512' ||
+    pathname === '/apple-icon' ||
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$/.test(pathname)
   ) {
     return response;

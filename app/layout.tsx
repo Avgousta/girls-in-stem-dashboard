@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display, DM_Sans, Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -25,7 +25,15 @@ const jakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: { default: 'Girls in STEM Platform', template: '%s | Girls in STEM' },
   description: 'Empowering girls through STEM education — learner management and analytics platform',
-  icons: { icon: '/favicon.ico' },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Girls in STEM',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#7C3AED',
 };
 
 // Runs before React hydration — prevents flash of wrong theme
