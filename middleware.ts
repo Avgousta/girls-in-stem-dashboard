@@ -118,6 +118,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/icon' ||
     pathname === '/icon-512' ||
     pathname === '/apple-icon' ||
+    pathname === '/sw.js' ||
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$/.test(pathname)
   ) {
     return response;

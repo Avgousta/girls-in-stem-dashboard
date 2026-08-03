@@ -39,6 +39,9 @@ export const viewport: Viewport = {
 // Runs before React hydration — prevents flash of wrong theme
 const themeScript = `(function(){try{var t=localStorage.getItem('girls-stem-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
 
+// A registered service worker is required for Chrome to offer the PWA install prompt
+const swScript = `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -49,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* eslint-disable-next-line @next/next/no-sync-scripts */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: swScript }} />
       </head>
       <body className="antialiased">
         <ThemeProvider>
