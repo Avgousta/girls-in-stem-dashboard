@@ -55,7 +55,10 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.issues[0].message);
 
-  const { data, error } = await supabase.from('assessments').insert(parsed.data).select().single();
+  // A labelled mark (notes) is unique per learner: saving the same label again updates it
+  const { data, error } = parsed.data.notes
+    ? await supabase.from('assessments').upsert(parsed.data, { onConflict: 'learner_id,notes' }).select().single()
+    : await supabase.from('assessments').insert(parsed.data).select().single();
   if (error) return err(error.message, 500);
 
   // Refresh risk scores

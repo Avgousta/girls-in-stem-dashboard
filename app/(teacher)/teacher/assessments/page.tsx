@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Save, Download } from 'lucide-react';
@@ -149,9 +150,12 @@ export default function TeacherAssessmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: DS.text }}>Capture Marks</h1>
-        <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>Record assessment scores for your learners</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: DS.text }}>Capture Marks</h1>
+          <p className="text-sm mt-0.5" style={{ color: DS.textMuted }}>Record assessment scores for your learners</p>
+        </div>
+        <Link href="/assessments/upload" className="btn-secondary text-sm">Upload an Excel mark sheet</Link>
       </div>
 
       {/* Assessment setup */}

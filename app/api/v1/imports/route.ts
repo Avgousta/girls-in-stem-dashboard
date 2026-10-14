@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
   const CHUNK = 50;
   for (let i = 0; i < inserts.length; i += CHUNK) {
     const chunk = inserts.slice(i, i + CHUNK);
-    const { error: insErr } = await supabase.from('assessments').insert(chunk);
+    const { error: insErr } = await supabase.from('assessments').upsert(chunk, { onConflict: 'learner_id,notes' });
     if (!insErr) imported += chunk.length;
   }
 

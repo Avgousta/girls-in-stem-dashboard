@@ -126,8 +126,10 @@ Added by migrations 021 and 024:
 - `risk_flags` TEXT[]: `attendance_critical`, `score_critical`, `attendance_warning`, `score_warning`, `consecutive_absences`, `declining_scores`, `no_recent_mentorship`
 
 ### Active Girls in STEM programme IDs
-- `d39f75b7-4612-4a49-acaa-c00e0aa7db07` — **Girls in STEM (Mar 19, active with data)**
-- `346b2d9a-1fcf-4caa-8073-cdc5807110eb` — Girls in STEM (Mar 18, is_active=false, duplicate)
+Two components of the same programme; every learner is enrolled in both (Oct 2026).
+- `d39f75b7-4612-4a49-acaa-c00e0aa7db07` — **Mathematics and Science Tuition**: all maths/science marks live here
+- `346b2d9a-1fcf-4caa-8073-cdc5807110eb` — **Girls in STEM** (Coding & Robotics component): attendance lives here
+- `e3b8c7ae-212c-4fc1-97a2-2bf21536f659` — Online Math and Science Tuition (2 enrolments)
 
 ### Migrations applied
 | Version | Name |

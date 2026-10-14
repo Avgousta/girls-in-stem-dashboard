@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Attendance',    href: '/attendance',      icon: CalendarCheck2,  roles: ['admin','instructor'] },
   { label: '📱 Capture',   href: '/capture',         icon: Smartphone,      roles: ['admin','instructor'] },
   { label: 'Assessments',   href: '/assessments',     icon: BarChart3,       roles: ['admin','instructor'] },
+  { label: 'Upload Marks',  href: '/assessments/upload', icon: Upload,       roles: ['admin','instructor'] },
   { label: 'Projects',      href: '/projects',        icon: FolderKanban,    roles: ['admin','instructor'] },
   { label: 'Mentorship',    href: '/mentorship',      icon: HeartHandshake,  roles: ['admin','instructor'] },
   { label: 'Interventions', href: '/interventions',   icon: AlertTriangle,   roles: ['admin','instructor'] },
