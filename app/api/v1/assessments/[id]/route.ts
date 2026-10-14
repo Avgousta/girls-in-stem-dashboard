@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
+import { fillStaffNames } from '@/lib/staff-names';
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -44,5 +45,5 @@ export async function GET(req: NextRequest, { params }: Params) {
     captured_user:users!captured_by(full_name)
   `).eq('assessment_id', id).single();
   if (error) return err(error.message, 500);
-  return ok(data);
+  return ok(await fillStaffNames(data, [{ fk: 'captured_by', as: 'captured_user' }]));
 }

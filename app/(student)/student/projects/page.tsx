@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fmt } from '@/utils';
 import { FolderKanban, Clock, CheckCircle2, Circle } from 'lucide-react';
 import ProjectSubmitButton from './ProjectSubmitButton';
+import { fillStaffNames } from '@/lib/staff-names';
 
 // CSS variables injected by StudentThemeProvider — work on all themes
 const t = {
@@ -26,11 +27,12 @@ export default async function StudentProjectsPage() {
       project_id, project_name, description, stage, completion_status,
       score, max_score, due_date, submitted_at, file_url, created_at,
       programs(program_name, program_type),
-      project_feedback(feedback_id, body, created_at, is_private,
+      project_feedback(feedback_id, body, created_at, is_private, author_id,
         users!author_id(full_name, role))
     `)
     .eq('learner_id', learnerId)
     .order('created_at', { ascending: false }) : { data: [] };
+  await fillStaffNames(projects, [{ fk: 'author_id', as: 'users', path: ['project_feedback'] }]);
 
   const list = (projects || []);
 

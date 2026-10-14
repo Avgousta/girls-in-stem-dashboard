@@ -2,13 +2,15 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 interface Params { params: Promise<{ code: string }> }
 
 // Public endpoint — no auth required
 export async function GET(_: NextRequest, { params }: Params) {
-  const supabase = await createClient();
+  // Public page: certificates are only readable when signed in, so look up this
+  // one code with the service client and return only what the page shows
+  const supabase = createAdminClient();
   const { code } = await params;
 
   const { data, error } = await supabase

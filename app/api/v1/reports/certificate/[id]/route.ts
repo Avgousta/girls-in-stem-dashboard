@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { fillStaffNames } from '@/lib/staff-names';
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -24,7 +25,7 @@ export async function GET(_: NextRequest, { params }: Params) {
   const { data: cert, error } = await supabase
     .from('certificates')
     .select(`
-      certificate_id, cert_type, issued_at, verification_code, notes,
+      certificate_id, cert_type, issued_at, verification_code, notes, issued_by,
       learners!inner(
         learner_code,
         learner_profiles(first_name, last_name),
@@ -39,6 +40,7 @@ export async function GET(_: NextRequest, { params }: Params) {
   if (error || !cert) {
     return new NextResponse('Certificate not found', { status: 404 });
   }
+  await fillStaffNames(cert, [{ fk: 'issued_by', as: 'issued_by_user' }]);
 
   type CertRow = {
     certificate_id: string; cert_type: string; issued_at: string; verification_code: string; notes: string | null;

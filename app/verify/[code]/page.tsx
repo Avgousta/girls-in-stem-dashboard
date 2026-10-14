@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { CheckCircle2, XCircle, GraduationCap, ExternalLink } from 'lucide-react';
 
@@ -18,7 +18,9 @@ const CERT_TITLES: Record<string, string> = {
 
 export default async function VerifyCertificatePage({ params }: Props) {
   const { code }   = await params;
-  const supabase   = await createClient();
+  // Public page: certificates are only readable when signed in, so look up this
+  // one code with the service client and return only what the page shows
+  const supabase   = createAdminClient();
 
   const { data, error } = await supabase
     .from('certificates')

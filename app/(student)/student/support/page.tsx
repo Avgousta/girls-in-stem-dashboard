@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ActivityTimeline } from '@/components/interventions/InterventionBadges';
 import { fmt } from '@/utils';
+import { fillStaffNames } from '@/lib/staff-names';
 
 const t = {
   text:   'var(--t-text)',
@@ -37,13 +38,17 @@ export default async function StudentSupportPage() {
     .from('interventions')
     .select(`
       intervention_id, intervention_type, status, created_at, resolved_at,
-      reason, action_plan,
+      reason, action_plan, assigned_to,
       assigned_user:users!assigned_to(full_name),
-      intervention_updates(update_id, note, status_change, created_at,
+      intervention_updates(update_id, note, status_change, created_at, author_id,
         author:users!author_id(full_name))
     `)
     .eq('learner_id', learnerId)
     .order('created_at', { ascending: false });
+  await fillStaffNames(interventions, [
+    { fk: 'assigned_to', as: 'assigned_user' },
+    { fk: 'author_id', as: 'author', path: ['intervention_updates'] },
+  ]);
 
   interface SupportItem { intervention_id: string; intervention_type: string | null; status: string; created_at: string; resolved_at: string | null; reason: string; action_plan: string | null; assigned_user: { full_name: string } | null; intervention_updates: Array<{ update_id: string; note: string; status_change: string | null; created_at: string; author: { full_name: string } | null }> }
   const items    = (interventions || []) as unknown as SupportItem[];
