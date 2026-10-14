@@ -1,12 +1,14 @@
 import { requireAuth } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import ApprovalList from './ApprovalList';
 import { UserCheck } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
 export default async function ApprovalsPage() {
   await requireAuth(['admin']);
-  const supabase = await createClient();
+  // users RLS only exposes a person's own row, so list users with the
+  // service client — requireAuth above has already checked this is an admin
+  const supabase = createAdminClient();
 
   const { data: all } = await supabase
     .from('users')

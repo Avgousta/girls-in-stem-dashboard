@@ -1,12 +1,14 @@
 import { requireAuth } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import UsersManager from './UsersManager';
 import { Users } from 'lucide-react';
 import { DS } from '@/components/platform/tokens';
 
 export default async function AdminUsersPage() {
   await requireAuth(['admin']);
-  const supabase = await createClient();
+  // users RLS only exposes a person's own row, so list users with the
+  // service client — requireAuth above has already checked this is an admin
+  const supabase = createAdminClient();
 
   const [{ data: users }, { data: schools }] = await Promise.all([
     supabase.from('users').select('*, schools(school_name), sponsors(sponsor_name)').order('created_at', { ascending: false }),
