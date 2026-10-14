@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err, created, getPagination, paginatedResponse } from '@/app/api/helpers';
+import { fillStaffNames } from '@/lib/staff-names';
 
 const createSchema = z.object({
   learner_id:       z.string().uuid(),
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   const learnerId = sp.get('learner_id');
   const mentorId  = sp.get('mentor_id');
   let q = supabase.from('mentorship_sessions')
-    .select(`session_id, session_date, session_type, duration_minutes, notes, next_steps, outcome, learner_mood, created_at,
+    .select(`session_id, session_date, session_type, duration_minutes, notes, next_steps, outcome, learner_mood, created_at, mentor_id,
       learners!inner(learner_profiles(first_name,last_name)),
       users!mentor_id(full_name)`, { count:'exact' })
     .range(from, to).order('session_date', { ascending:false });
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   if (mentorId)  q = q.eq('mentor_id',  mentorId);
   const { data, count, error } = await q;
   if (error) return err(error.message, 500);
-  return paginatedResponse(data || [], count || 0, page, limit);
+  return paginatedResponse(await fillStaffNames(data || [], [{ fk: 'mentor_id', as: 'users' }]), count || 0, page, limit);
 }
 
 export async function POST(req: NextRequest) {

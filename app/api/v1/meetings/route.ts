@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err, created } from '@/app/api/helpers';
+import { fillStaffNames } from '@/lib/staff-names';
 
 const createSchema = z.object({
   program_id:   z.string().uuid().optional(),
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     .from('online_meetings')
     .select(`
       meeting_id, title, description, meeting_url, platform,
-      scheduled_at, duration_min, is_cancelled, created_at,
+      scheduled_at, duration_min, is_cancelled, created_at, instructor_id,
       users!instructor_id(full_name),
       programs(program_name, program_type)
     `)
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query.limit(50);
   if (error) return err(error.message, 500);
-  return ok(data || []);
+  return ok(await fillStaffNames(data || [], [{ fk: 'instructor_id', as: 'users' }]));
 }
 
 export async function POST(req: NextRequest) {

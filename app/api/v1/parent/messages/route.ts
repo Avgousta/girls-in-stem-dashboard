@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err, created } from '@/app/api/helpers';
 import { createNotification } from '@/lib/notifications';
+import { fillStaffNames } from '@/lib/staff-names';
 
 const sendSchema = z.object({
   learner_id:   z.string().uuid(),
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
     .from('parent_messages')
     .select(`
       message_id, message_type, subject, body, absence_date,
-      status, reply_body, replied_at, created_at,
+      status, reply_body, replied_at, replied_by, created_at,
       learners!inner(
         learner_profiles(first_name, last_name),
         schools(school_name)
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await q;
   if (error) return err(error.message, 500);
-  return ok(data);
+  return ok(await fillStaffNames(data, [{ fk: 'replied_by', as: 'replier' }]));
 }
 
 export async function POST(req: NextRequest) {

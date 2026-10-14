@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import MeetingsClient, { type Meeting } from './MeetingsClient';
+import { fillStaffNames } from '@/lib/staff-names';
 
 export default async function StudentMeetingsPage() {
   const user     = await requireAuth(['learner']);
@@ -23,7 +24,7 @@ export default async function StudentMeetingsPage() {
         .from('online_meetings')
         .select(`
           meeting_id, title, description, meeting_url, platform,
-          scheduled_at, duration_min, created_at,
+          scheduled_at, duration_min, created_at, instructor_id,
           users!instructor_id(full_name),
           programs(program_name, program_type),
           meeting_ratings(rating, comment, learner_id)
@@ -34,6 +35,7 @@ export default async function StudentMeetingsPage() {
         .order('scheduled_at', { ascending: true })
         .limit(30)
     : { data: [] };
+  await fillStaffNames(meetings, [{ fk: 'instructor_id', as: 'users' }]);
 
   return (
     <div className="space-y-4 pt-2">

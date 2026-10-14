@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err } from '@/app/api/helpers';
 import { auditLog } from '@/lib/audit';
+import { fillStaffNames } from '@/lib/staff-names';
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -28,7 +29,7 @@ export async function GET(_: NextRequest, { params }: Params) {
     .single();
 
   if (error) return err(error.message, 404);
-  return ok(data);
+  return ok(await fillStaffNames(data, [{ fk: 'mentor_id', as: 'users', path: ['mentorship_sessions'] }]));
 }
 
 const updateSchema = z.object({

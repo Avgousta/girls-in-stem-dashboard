@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { LearnerSessionSummary, LearnerGoalCard } from '@/components/mentorship/MentorshipBadges';
+import { fillStaffNames } from '@/lib/staff-names';
 
 const t = {
   text:   'var(--t-text)',
@@ -25,15 +26,17 @@ export default async function StudentMentorshipPage() {
 
   const [sessionsRes, goalsRes] = await Promise.all([
     supabase.from('mentorship_sessions')
-      .select('session_id, session_date, session_type, duration_minutes, notes, next_steps, goals_discussed, learner_mood, outcome, users!mentor_id(full_name)')
+      .select('session_id, session_date, session_type, duration_minutes, notes, next_steps, goals_discussed, learner_mood, outcome, mentor_id, users!mentor_id(full_name)')
       .eq('learner_id', learnerId)
       .order('session_date', { ascending: false })
       .limit(20),
     supabase.from('mentorship_goals')
-      .select('goal_id, title, description, target_date, status, created_at, users!mentor_id(full_name)')
+      .select('goal_id, title, description, target_date, status, created_at, mentor_id, users!mentor_id(full_name)')
       .eq('learner_id', learnerId)
       .order('created_at', { ascending: false }),
   ]);
+  await fillStaffNames(sessionsRes.data, [{ fk: 'mentor_id', as: 'users' }]);
+  await fillStaffNames(goalsRes.data, [{ fk: 'mentor_id', as: 'users' }]);
 
   interface SessionRow { session_id: string; session_date: string; session_type: string | null; duration_minutes: number | null; notes: string | null; next_steps: string | null; goals_discussed: string | null; learner_mood: number | null; outcome: string | null; users: { full_name: string } | null }
   interface GoalRow    { goal_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; users: { full_name: string } | null }

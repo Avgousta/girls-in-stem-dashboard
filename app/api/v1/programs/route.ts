@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireApiAuth, ok, err, created, getPagination, paginatedResponse } from '@/app/api/helpers';
+import { fillStaffNames } from '@/lib/staff-names';
 
 const createSchema = z.object({
   program_name:  z.string().min(1, 'Programme name is required'),
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('programs')
     .select(`
-      program_id, program_name, program_type, start_date, end_date, max_capacity, is_active, description,
+      program_id, program_name, program_type, start_date, end_date, max_capacity, is_active, description, instructor_id,
       users!instructor_id(full_name),
       schools(school_name),
       program_enrollments(count)
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
 
   const { data, count, error } = await query;
   if (error) return err(error.message, 500);
+  await fillStaffNames(data, [{ fk: 'instructor_id', as: 'users' }]);
 
   interface ProgRow { program_id:string; program_name:string; program_type:string; start_date:string; end_date:string|null; max_capacity:number; is_active:boolean; description:string|null; users:{full_name:string}|null; schools:{school_name:string}|null; program_enrollments:Array<unknown> }
   const shaped = ((data || []) as unknown as ProgRow[]).map(p => ({
