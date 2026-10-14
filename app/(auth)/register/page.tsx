@@ -106,7 +106,7 @@ function RegisterForm() {
       toast.error('Enter your learner code'); return;
     }
     if (role === 'instructor' && !form.school_id) {
-      toast.error('Select your school'); return;
+      toast.error('Select your school, or choose Girls in STEM staff'); return;
     }
 
     if (!consentPrivacy) {
@@ -168,7 +168,7 @@ function RegisterForm() {
           full_name:    form.full_name.trim(),
           role,
           phone:        form.phone || undefined,
-          school_id:    role === 'instructor' ? form.school_id : undefined,
+          school_id:    role === 'instructor' && !form.school_id.startsWith('__') ? form.school_id : undefined,
         }),
       });
       const json = await res.json();
@@ -425,10 +425,12 @@ function RegisterForm() {
                     <select value={form.school_id} onChange={e => set('school_id', e.target.value)}
                       className="form-select">
                       <option value="">Select school…</option>
+                      <option value="__staff">Girls in STEM / Melisizwe staff (no school)</option>
                       {loadingSchools
                         ? <option disabled>Loading…</option>
                         : schools.map(s => <option key={s.school_id} value={s.school_id}>{s.school_name}</option>)
                       }
+                      <option value="__other">My school isn&apos;t listed</option>
                     </select>
                     <p className="text-xs mt-1" style={{ color: '#FBBF24' }}>
                       Teacher accounts require admin approval before you can sign in.
