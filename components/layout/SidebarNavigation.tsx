@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, BookOpen, CalendarCheck2, BarChart3,
   HeartHandshake, AlertTriangle, FolderKanban, School, Settings,
-  GraduationCap, ChevronRight, LogOut, UserCheck, Award, FileText, Bell, Smartphone, Upload, UserRoundCheck, Handshake
+  GraduationCap, ChevronRight, LogOut, UserCheck, Award, FileText, Bell, Smartphone, Upload, UserRoundCheck
 } from 'lucide-react';
 import { cn } from '@/utils';
 import type { User, UserRole } from '@/types';
@@ -38,7 +38,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Users',          href: '/admin/users',           icon: Settings,        roles: ['admin'] },
   { label: 'Approvals',      href: '/admin/approvals',       icon: UserCheck,       roles: ['admin'] },
   { label: 'Sponsors',       href: '/admin/sponsors',        icon: Award,           roles: ['admin'] },
-  { label: 'Conference Leads', href: '/admin/leads',         icon: Handshake,       roles: ['admin'] },
   { label: 'Learner Access', href: '/admin/learner-access',  icon: GraduationCap,   roles: ['admin'] },
   { label: 'LMS Import',    href: '/admin/imports',         icon: Upload,          roles: ['admin'] },
   // Learner portal

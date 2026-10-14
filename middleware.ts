@@ -36,7 +36,6 @@ const PUBLIC_PATHS = [
   '/privacy',
   '/terms',
   '/verify',
-  '/connect',
 ];
 
 // ─── Role → home redirect ─────────────────────────────────────────────────────
@@ -88,16 +87,7 @@ export async function middleware(request: NextRequest) {
           ?? request.headers.get('x-real-ip')
           ?? 'unknown';
 
-  // Public conference lead form — it emails the visitor, so keep it tight.
-  // 20/min still covers a busy stand sharing the venue Wi-Fi.
-  if (pathname === '/api/v1/connect' && request.method === 'POST') {
-    if (!checkRateLimit(`connect:${ip}`, 20, 60_000)) {
-      return new NextResponse(JSON.stringify({ error: 'Too many submissions. Please wait a moment.' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
-      });
-    }
-  } else if (AUTH_PATHS.some(p => pathname === p || pathname.startsWith(p))) {
+  if (AUTH_PATHS.some(p => pathname === p || pathname.startsWith(p))) {
     // Strict: 60 req / 60s for auth endpoints
     if (!checkRateLimit(ip, 60, 60_000)) {
       return new NextResponse(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
