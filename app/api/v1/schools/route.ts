@@ -14,9 +14,11 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  // Schools list is public — needed for registration page
-  const { createClient } = await import('@/lib/supabase/server');
-  const supabase = await createClient();
+  // Schools list is public — needed for the registration page. RLS only lets
+  // signed-in users read schools, so read with the service client and return
+  // nothing beyond names and location.
+  const { createAdminClient } = await import('@/lib/supabase/server');
+  const supabase = createAdminClient();
 
   const sp = req.nextUrl.searchParams;
   const { page, limit, from, to } = getPagination(sp);
