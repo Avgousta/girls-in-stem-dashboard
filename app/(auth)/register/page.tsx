@@ -34,7 +34,6 @@ function RegisterForm() {
   const [showPass,      setShowPass]      = useState(false);
   const [done,          setDone]          = useState(false);
   const [lookingUp,     setLookingUp]     = useState(false);
-  const [learnerName,   setLearnerName]   = useState('');
 
   const [consentPrivacy,  setConsentPrivacy]  = useState(false);
   const [consentParental, setConsentParental] = useState(false);
@@ -60,7 +59,9 @@ function RegisterForm() {
     fetch(`/api/v1/auth/lookup-learner?code=${codeFromUrl}`)
       .then(r => r.json())
       .then(j => {
-        if (j.full_name) setLearnerName(j.full_name);
+        if (j.found === false) {
+          toast.error(`Learner code ${codeFromUrl} wasn't found. Check the link with your teacher.`);
+        }
         if (j.already_registered) {
           toast.info('This learner code already has an account. Please sign in instead.');
         }
@@ -119,6 +120,29 @@ function RegisterForm() {
 
     setLoading(true);
     try {
+      if (role === 'learner') {
+        // Server creates the account (no verification email, so no email rate limit)
+        const res = await fetch('/api/v1/auth/register-learner', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            learner_code: form.learner_code.trim().toUpperCase(),
+            full_name:    form.full_name.trim(),
+            email:        form.email.trim(),
+            password:     form.password,
+            phone:        form.phone || undefined,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(res.status === 429
+            ? 'Too many sign-ups from this network right now. Please wait a minute and try again.'
+            : json.error || 'Registration failed — please try again');
+        }
+        setDone(true);
+        return;
+      }
+
       const supabase = createClient();
 
       const { data: authData, error: authErr } = await supabase.auth.signUp({
@@ -126,7 +150,11 @@ function RegisterForm() {
         password: form.password,
         options:  { data: { full_name: form.full_name, role } },
       });
-      if (authErr) throw new Error(authErr.message);
+      if (authErr) {
+        throw new Error(/rate limit/i.test(authErr.message)
+          ? 'Too many sign-ups right now. Please wait a few minutes and try again, or ask your teacher for help.'
+          : authErr.message);
+      }
       if (!authData.user) throw new Error('Registration failed — please try again');
 
       const userId = authData.user.id;
@@ -140,7 +168,6 @@ function RegisterForm() {
           full_name:    form.full_name.trim(),
           role,
           phone:        form.phone || undefined,
-          learner_code: role === 'learner'    ? form.learner_code.trim().toUpperCase() : undefined,
           school_id:    role === 'instructor' ? form.school_id : undefined,
         }),
       });
@@ -174,7 +201,7 @@ function RegisterForm() {
           <p className="text-sm mb-6" style={{ color: 'rgba(240,238,255,0.6)' }}>
             {role === 'instructor'
               ? 'Your teacher account is pending approval. You\'ll be able to sign in once an admin approves it.'
-              : 'Your account is ready! Check your email to verify your address, then sign in to access your learner dashboard.'
+              : 'Your account is ready! Sign in with your email and password to open your learner dashboard.'
             }
           </p>
           <Link href="/login" className="btn-primary w-full justify-center">
@@ -198,14 +225,9 @@ function RegisterForm() {
             <GraduationCap className="w-7 h-7" style={{ color: '#A78BFA' }} />
           </div>
           <h1 className="text-2xl font-bold text-white">Girls in STEM</h1>
-          {learnerName
-            ? <p className="text-sm mt-1" style={{ color: 'rgba(240,238,255,0.7)' }}>
-                Welcome, <strong style={{ color: '#C4B5FD' }}>{learnerName}</strong>! Set up your account below.
-              </p>
-            : <p className="text-sm mt-1" style={{ color: 'rgba(240,238,255,0.5)' }}>
-                {lookingUp ? 'Looking up your learner code…' : 'Create your learner account'}
-              </p>
-          }
+          <p className="text-sm mt-1" style={{ color: 'rgba(240,238,255,0.5)' }}>
+            {lookingUp ? 'Checking your learner code…' : 'Create your learner account'}
+          </p>
         </div>
 
         <div className="rounded-2xl p-8" style={GLASS}>
@@ -228,8 +250,7 @@ function RegisterForm() {
             <div>
               <label className="form-label">Full Name <span style={{ color: '#F87171' }}>*</span></label>
               <input value={form.full_name} onChange={e => set('full_name', e.target.value)}
-                className="form-input" placeholder="Your full name"
-                defaultValue={learnerName} />
+                className="form-input" placeholder="Your full name, as your teacher has it" />
             </div>
             <div>
               <label className="form-label">Email Address <span style={{ color: '#F87171' }}>*</span></label>

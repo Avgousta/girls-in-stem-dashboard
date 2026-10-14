@@ -2,7 +2,9 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // ─── In-memory rate limiter ───────────────────────────────────────────────────
-// Two tiers: strict for auth/login (10 req/min), relaxed for general API (120 req/min).
+// Two tiers: strict for auth API endpoints (60 req/min), relaxed for general API (120 req/min).
+// The strict limit is per IP, and a class registering together on school Wi-Fi
+// shares one IP, so it must allow a full class. Page loads aren't limited.
 // Resets on cold start — sufficient to stop casual abuse on a Vercel serverless deployment.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -18,8 +20,8 @@ function checkRateLimit(ip: string, max: number, windowMs: number): boolean {
   return entry.count <= max;
 }
 
-// Strict: login page + auth API endpoints — 10 requests per minute per IP
-const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/api/v1/auth/', '/auth/callback'];
+// Strict: auth API endpoints — 60 requests per minute per IP
+const AUTH_PATHS = ['/api/v1/auth/'];
 // Relaxed: all other API routes — 120 requests per minute per IP
 const API_PREFIX = '/api/v1/';
 
@@ -86,8 +88,8 @@ export async function middleware(request: NextRequest) {
           ?? 'unknown';
 
   if (AUTH_PATHS.some(p => pathname === p || pathname.startsWith(p))) {
-    // Strict: 10 req / 60s for auth endpoints
-    if (!checkRateLimit(ip, 10, 60_000)) {
+    // Strict: 60 req / 60s for auth endpoints
+    if (!checkRateLimit(ip, 60, 60_000)) {
       return new NextResponse(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
         status: 429,
         headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },

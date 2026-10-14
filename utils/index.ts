@@ -96,3 +96,31 @@ export function exportToCsv<T extends Record<string, unknown>>(data: T[], filena
 // ── Truncate ──────────────────────────────────────────────────────────────────
 export const truncate = (s: string, n: number) =>
   s.length > n ? s.slice(0, n) + '…' : s;
+
+// ── Learner name matching ─────────────────────────────────────────────────────
+// Loose check that a registering learner's typed name belongs to the learner
+// record behind their code. Passes when any first/last name is within one
+// typo of a name on the record (e.g. "Kamano" vs "Kamono").
+const nameTokens = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .split(/[^a-z]+/).filter(t => t.length >= 2);
+
+function withinOneEdit(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (b.length > a.length) j++;
+    else { i++; j++; }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+}
+
+export function learnerNameMatches(typed: string, first: string | null, last: string | null): boolean {
+  const record = nameTokens(`${first ?? ''} ${last ?? ''}`);
+  if (!record.length) return true; // no name on file to compare against
+  const entered = nameTokens(typed);
+  return entered.some(t => record.some(r => t === r || (t.length >= 4 && withinOneEdit(t, r))));
+}

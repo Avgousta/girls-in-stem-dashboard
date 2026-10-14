@@ -9,16 +9,15 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('learners')
-    .select('learner_id, user_id, learner_profiles(first_name, last_name)')
+    .select('user_id')
     .eq('learner_code', code)
     .single();
 
   if (!data) return NextResponse.json({ found: false });
 
-  const p = (data as unknown as { learner_profiles: Record<string, unknown> }).learner_profiles;
+  // Deliberately no name here: this endpoint is public and codes are sequential.
   return NextResponse.json({
     found:              true,
-    full_name:          p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : '',
     already_registered: !!data.user_id,
   });
 }

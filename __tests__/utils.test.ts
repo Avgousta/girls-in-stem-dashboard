@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pct, avg, round2, calcGradeBand, calcRiskLevel, calcRiskFlags, padId, truncate } from '../utils/index';
+import { pct, avg, round2, calcGradeBand, calcRiskLevel, calcRiskFlags, padId, truncate, learnerNameMatches } from '../utils/index';
 
 describe('pct', () => {
   it('rounds to nearest integer', () => expect(pct(1, 3)).toBe(33));
@@ -68,4 +68,14 @@ describe('truncate', () => {
   it('truncates and appends ellipsis', () => expect(truncate('hello world', 5)).toBe('hello…'));
   it('leaves short strings unchanged', () => expect(truncate('hi', 10)).toBe('hi'));
   it('truncates exactly at boundary', () => expect(truncate('abcde', 5)).toBe('abcde'));
+});
+
+describe('learnerNameMatches', () => {
+  it('matches an exact first name', () => expect(learnerNameMatches('Jordyn', 'Jordyn', 'Sinclair')).toBe(true));
+  it('tolerates a one-letter typo', () => expect(learnerNameMatches('Kamano', 'Kamono', 'Mofokeng')).toBe(true));
+  it('matches on surname only', () => expect(learnerNameMatches('N. Ngobeni', 'Ndzetelo', 'Ngobeni')).toBe(true));
+  it('ignores case and extra spaces', () => expect(learnerNameMatches('  ndzetelo  NGOBENI ', 'Ndzetelo', 'Ngobeni')).toBe(true));
+  it('rejects a different learner', () => expect(learnerNameMatches('Jordyn', 'Ndzetelo', 'Ngobeni')).toBe(false));
+  it('rejects a different learner with similar length', () => expect(learnerNameMatches('Kamano', 'Jordyn', 'Sinclair')).toBe(false));
+  it('allows when the record has no name', () => expect(learnerNameMatches('Anyone', null, null)).toBe(true));
 });

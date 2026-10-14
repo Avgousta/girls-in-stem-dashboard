@@ -70,7 +70,7 @@ EXTRA_MATCHES = {
     'olwethu hlongwane':        'LRN062',
     'precious mathumba':        'LRN063',
     'tracy ngonayma':           'LRN064',
-    'yusayrah adam':            'LRN065',
+    'yusayrah adam':            'LRN067',
 }
 name_to_code.update(EXTRA_MATCHES)
 
