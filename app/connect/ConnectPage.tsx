@@ -184,7 +184,7 @@ export default function ConnectPage() {
           <div className="relative">
             <Image
               src="/connect/hero-photo.jpg" alt="Two young women from the Melisizwe Girls in STEM programme"
-              width={647} height={552} priority className="h-auto w-full"
+              width={625} height={453} priority className="h-auto w-full"
               sizes="(min-width: 768px) 50vw, 100vw"
             />
           </div>
