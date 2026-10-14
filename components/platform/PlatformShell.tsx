@@ -9,7 +9,7 @@ import {
   HeartHandshake, AlertTriangle, FolderKanban, School, Settings,
   GraduationCap, LogOut, UserCheck, Award, FileText, Bell, Video,
   ChevronDown, Menu, X, TrendingUp, Building2, ShieldCheck, Activity,
-  Sun, Moon,
+  Sun, Moon, Handshake,
 } from 'lucide-react';
 
 // ─── Design tokens (shared across all portals) ───────────────────────────────
@@ -32,6 +32,7 @@ const ADMIN_NAV: NavItem[] = [
   { section: 'Administration', label: 'Users',    href: '/admin/users',            icon: Settings },
   { label: 'Approvals',                           href: '/admin/approvals',        icon: UserCheck,    badge: 'approvals' },
   { label: 'Sponsors',                            href: '/admin/sponsors',         icon: Award },
+  { label: 'Conference Leads',                    href: '/admin/leads',            icon: Handshake },
   { label: 'Schools',                             href: '/admin/schools',          icon: School },
   { label: 'Learner Access',                      href: '/admin/learner-access',   icon: GraduationCap },
   { label: 'Notifications',                       href: '/notifications',          icon: Bell,         badge: 'notifications' },

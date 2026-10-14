@@ -391,3 +391,94 @@ export async function emailLearnerReengagement({
 
   await Promise.all(sends);
 }
+
+// ─── Conference lead emails (/connect) ────────────────────────────────────────
+
+function esc(value: string) {
+  return value
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Public-facing Melisizwe template — light, brand colours, not the dashboard theme
+function melisizweHtml(title: string, body: string) {
+  return `<!DOCTYPE html><html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#F4F5F7;font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #E3E5E8;">
+    <div style="height:6px;background:linear-gradient(90deg,#C8102E 0 33%,#0B5E86 33% 66%,#1E7B34 66%);"></div>
+    <div style="padding:24px 32px 8px;">
+      <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#C8102E;text-transform:uppercase;">Melisizwe</p>
+      <h1 style="margin:8px 0 0;font-size:21px;line-height:1.3;font-weight:800;color:#111;">${title}</h1>
+    </div>
+    <div style="padding:16px 32px 28px;font-size:14px;line-height:1.6;">${body}</div>
+    <div style="padding:16px 32px;border-top:1px solid #EEF0F2;font-size:11px;color:#6B7280;">
+      Melisizwe · From untapped talent to global digital delivery · <a href="https://www.melisizwe.co.za" style="color:#0B5E86;">melisizwe.co.za</a>
+    </div>
+  </div>
+</body></html>`;
+}
+
+function leadRow(label: string, value: string) {
+  return `<tr><td style="padding:6px 12px 6px 0;font-size:12px;font-weight:700;color:#6B7280;vertical-align:top;white-space:nowrap;">${label}</td>
+    <td style="padding:6px 0;font-size:14px;color:#111;">${value}</td></tr>`;
+}
+
+export interface LeadEmailData {
+  fullName: string; email: string; organisation: string; jobTitle: string; country: string;
+  interests: string[]; category: string; priority: string; contextQuestion: string;
+  contextAnswer: string; message: string; nextStep: string; marketingOptIn: boolean;
+}
+
+/** Alert the designated Melisizwe inbox(es) that a new lead arrived. */
+export async function emailNewConferenceLead(to: string[], lead: LeadEmailData) {
+  if (to.length === 0) return;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const subject = `New conference lead — ${lead.fullName}${lead.organisation ? ` (${lead.organisation})` : ''} · ${lead.category}`;
+  const html = melisizweHtml('New lead from the conference QR code', `
+    <table style="border-collapse:collapse;width:100%;">
+      ${leadRow('Name', esc(lead.fullName))}
+      ${leadRow('Email', `<a href="mailto:${esc(lead.email)}" style="color:#0B5E86;">${esc(lead.email)}</a>`)}
+      ${lead.organisation ? leadRow('Organisation', esc(lead.organisation)) : ''}
+      ${lead.jobTitle ? leadRow('Job title', esc(lead.jobTitle)) : ''}
+      ${leadRow('Country', esc(lead.country))}
+      ${leadRow('Category', `${esc(lead.category)} · ${esc(lead.priority)} priority`)}
+      ${leadRow('Interests', lead.interests.map(esc).join('<br/>'))}
+      ${leadRow('Next step', esc(lead.nextStep))}
+      ${lead.contextAnswer ? leadRow(esc(lead.contextQuestion), esc(lead.contextAnswer)) : ''}
+      ${lead.message ? leadRow('Message', esc(lead.message)) : ''}
+      ${leadRow('Marketing opt-in', lead.marketingOptIn ? 'Yes' : 'No')}
+    </table>
+    <a href="${appUrl}/admin/leads"
+      style="display:inline-block;margin-top:20px;padding:12px 22px;background:#C8102E;color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
+      Open lead register
+    </a>
+  `);
+  await Promise.all(to.map(addr => sendEmail(addr, subject, html)));
+}
+
+const PILLAR_COPY: Record<string, string> = {
+  MCX:     'Our MCX team will be in touch about the process or business challenge you would like to explore.',
+  Academy: 'Our Academy team will be in touch about skills and talent development opportunities.',
+  NPO:     'Our NPO team will be in touch about how you can support our programmes, including Girls in STEM Africa.',
+};
+
+/** Acknowledge the visitor, tailored to the pillars they selected. */
+export async function emailConferenceLeadAcknowledgement(lead: LeadEmailData & { pillars: string[] }) {
+  const firstName = lead.fullName.split(/\s+/)[0];
+  const lines = (lead.pillars.length ? lead.pillars : ['MCX', 'Academy', 'NPO'])
+    .map(p => `<li style="margin-bottom:6px;">${PILLAR_COPY[p]}</li>`).join('');
+  const html = melisizweHtml('Thank you for connecting with Melisizwe!', `
+    <p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
+    <p style="margin:0 0 14px;">We look forward to exploring how we can create commercial value, develop talent and unlock potential together.</p>
+    <ul style="margin:0 0 14px;padding-left:18px;">${lines}</ul>
+    <p style="margin:0 0 14px;">You asked us to: <strong>${esc(lead.nextStep)}</strong>.</p>
+    <p style="margin:0 0 20px;">In the meantime, explore the Melisizwe flywheel and our work:</p>
+    <a href="https://www.melisizwe.co.za"
+      style="display:inline-block;padding:12px 22px;background:#C8102E;color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
+      Visit melisizwe.co.za
+    </a>
+    <p style="margin:24px 0 0;font-size:12px;color:#6B7280;">You are receiving this one-off email because you submitted an enquiry at ${esc('Shared Services & Outsourcing Week, Amsterdam 2026')}. To have your details removed, contact us via melisizwe.co.za.</p>
+  `);
+  await sendEmail(lead.email, 'Thank you for connecting with Melisizwe', html);
+}
